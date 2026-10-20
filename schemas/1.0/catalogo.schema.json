@@ -1,0 +1,983 @@
+{
+  "$defs": {
+    "Administradora": {
+      "additionalProperties": false,
+      "properties": {
+        "ativo": {
+          "default": true,
+          "title": "Ativo",
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "identificadores": {
+          "default": [],
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Identificadores",
+          "type": "array"
+        },
+        "nome": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "nome"
+      ],
+      "title": "Administradora",
+      "type": "object"
+    },
+    "Aprovacao": {
+      "additionalProperties": false,
+      "properties": {
+        "em": {
+          "format": "date-time",
+          "title": "Em",
+          "type": "string"
+        },
+        "evidencia_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Evidencia Id",
+          "type": "string"
+        },
+        "responsavel_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Responsavel Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "responsavel_id",
+        "evidencia_id",
+        "em"
+      ],
+      "title": "Aprovacao",
+      "type": "object"
+    },
+    "CondicaoRegra": {
+      "additionalProperties": false,
+      "description": "Contrato declarativo apenas; Fase 1 não interpreta nem executa condições.",
+      "properties": {
+        "acao": {
+          "enum": [
+            "incluir",
+            "excluir",
+            "adiar",
+            "alertar",
+            "bloquear"
+          ],
+          "title": "Acao",
+          "type": "string"
+        },
+        "alcance": {
+          "enum": [
+            "boleto",
+            "unidade",
+            "condominio"
+          ],
+          "title": "Alcance",
+          "type": "string"
+        },
+        "campo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Campo",
+          "type": "string"
+        },
+        "operador": {
+          "enum": [
+            "igual",
+            "contem",
+            "maior_que",
+            "maior_ou_igual",
+            "dias_atraso"
+          ],
+          "title": "Operador",
+          "type": "string"
+        },
+        "prioridade": {
+          "minimum": 0,
+          "title": "Prioridade",
+          "type": "integer"
+        },
+        "valor": {
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "campo",
+        "operador",
+        "valor",
+        "alcance",
+        "acao",
+        "prioridade"
+      ],
+      "title": "CondicaoRegra",
+      "type": "object"
+    },
+    "Condominio": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "ativo": {
+          "default": true,
+          "title": "Ativo",
+          "type": "boolean"
+        },
+        "codigo_na_administradora": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Codigo Na Administradora",
+          "type": "string"
+        },
+        "formato_ids": {
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Formato Ids",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        },
+        "perfil_version_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Perfil Version Id",
+          "type": "string"
+        },
+        "vinculos": {
+          "items": {
+            "$ref": "#/$defs/VinculoAdministradora"
+          },
+          "minItems": 1,
+          "title": "Vinculos",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "administradora_id",
+        "codigo_na_administradora",
+        "perfil_version_id",
+        "formato_ids",
+        "vinculos"
+      ],
+      "title": "Condominio",
+      "type": "object"
+    },
+    "Endereco": {
+      "additionalProperties": false,
+      "properties": {
+        "bairro": {
+          "default": "",
+          "title": "Bairro",
+          "type": "string"
+        },
+        "cep": {
+          "default": "",
+          "pattern": "^(\\d{8})?$",
+          "title": "Cep",
+          "type": "string"
+        },
+        "cidade": {
+          "default": "",
+          "title": "Cidade",
+          "type": "string"
+        },
+        "complemento": {
+          "default": "",
+          "title": "Complemento",
+          "type": "string"
+        },
+        "logradouro": {
+          "default": "",
+          "title": "Logradouro",
+          "type": "string"
+        },
+        "numero": {
+          "default": "",
+          "title": "Numero",
+          "type": "string"
+        },
+        "uf": {
+          "default": "",
+          "pattern": "^([A-Z]{2})?$",
+          "title": "Uf",
+          "type": "string"
+        }
+      },
+      "title": "Endereco",
+      "type": "object"
+    },
+    "Formato": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_ids": {
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Administradora Ids",
+          "type": "array"
+        },
+        "aprovacao": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Aprovacao"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "leitor_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Leitor Id",
+          "type": "string"
+        },
+        "marcadores": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Marcadores",
+          "type": "array"
+        },
+        "nome": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        },
+        "status": {
+          "default": "rascunho",
+          "enum": [
+            "rascunho",
+            "validado"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tipo_arquivo": {
+          "enum": [
+            "pdf_texto",
+            "pdf_imagem",
+            "xlsx",
+            "csv"
+          ],
+          "title": "Tipo Arquivo",
+          "type": "string"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "versao",
+        "tipo_arquivo",
+        "administradora_ids",
+        "marcadores",
+        "leitor_id"
+      ],
+      "title": "Formato",
+      "type": "object"
+    },
+    "Gravidade": {
+      "enum": [
+        "informativo",
+        "alerta",
+        "critico"
+      ],
+      "title": "Gravidade",
+      "type": "string"
+    },
+    "Ocorrencia": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "escopo": {
+          "enum": [
+            "registro",
+            "arquivo",
+            "processamento"
+          ],
+          "title": "Escopo",
+          "type": "string"
+        },
+        "gravidade": {
+          "$ref": "#/$defs/Gravidade"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "processamento_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Processamento Id",
+          "type": "string"
+        },
+        "registro_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registro Id"
+        }
+      },
+      "required": [
+        "id",
+        "processamento_id",
+        "codigo",
+        "gravidade",
+        "escopo"
+      ],
+      "title": "Ocorrencia",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "PerfilCondominio": {
+      "additionalProperties": false,
+      "properties": {
+        "aprovacao": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Aprovacao"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "cadastro_antecipado": {
+          "title": "Cadastro Antecipado",
+          "type": "boolean"
+        },
+        "codificador_cedente": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codificador Cedente",
+          "type": "string"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "endereco": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Endereco"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome_cedente": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nome Cedente"
+        },
+        "produto_cedente": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Produto Cedente"
+        },
+        "regra_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Regra Id",
+          "type": "string"
+        },
+        "status": {
+          "default": "rascunho",
+          "enum": [
+            "rascunho",
+            "aprovado"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "template_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Template Id",
+          "type": "string"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "condominio_id",
+        "versao",
+        "template_id",
+        "regra_id",
+        "cadastro_antecipado",
+        "codificador_cedente"
+      ],
+      "title": "PerfilCondominio",
+      "type": "object"
+    },
+    "Processamento": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_hashes": {
+          "items": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Arquivo Hashes",
+          "type": "array"
+        },
+        "boletos": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Boletos",
+          "type": "integer"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "data_ref": {
+          "format": "date",
+          "title": "Data Ref",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "iniciado_em": {
+          "format": "date-time",
+          "title": "Iniciado Em",
+          "type": "string"
+        },
+        "linhas": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Linhas",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "pendente",
+            "bloqueado",
+            "concluido"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "unidades": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Unidades",
+          "type": "integer"
+        },
+        "versoes": {
+          "$ref": "#/$defs/ReferenciasVersoes"
+        }
+      },
+      "required": [
+        "id",
+        "condominio_id",
+        "status",
+        "data_ref",
+        "iniciado_em",
+        "versoes",
+        "arquivo_hashes"
+      ],
+      "title": "Processamento",
+      "type": "object"
+    },
+    "ReferenciasVersoes": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "formato_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Formato Id",
+          "type": "string"
+        },
+        "perfil_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Perfil Id",
+          "type": "string"
+        },
+        "regra_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Regra Id",
+          "type": "string"
+        },
+        "template_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Template Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "administradora_id",
+        "formato_id",
+        "perfil_id",
+        "regra_id",
+        "template_id"
+      ],
+      "title": "ReferenciasVersoes",
+      "type": "object"
+    },
+    "RegraCobranca": {
+      "additionalProperties": false,
+      "properties": {
+        "aprovacao": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Aprovacao"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "condicoes": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/CondicaoRegra"
+          },
+          "title": "Condicoes",
+          "type": "array"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "fonte": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "default": "rascunho",
+          "enum": [
+            "rascunho",
+            "aprovada"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        },
+        "vigente_ate": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigente Ate"
+        },
+        "vigente_de": {
+          "format": "date",
+          "title": "Vigente De",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "condominio_id",
+        "versao",
+        "vigente_de"
+      ],
+      "title": "RegraCobranca",
+      "type": "object"
+    },
+    "Template": {
+      "additionalProperties": false,
+      "properties": {
+        "colunas_logicas": {
+          "default": [
+            "NM_CEDENTE_CEDENTE",
+            "CEDENTE",
+            "CPF",
+            "NOME",
+            "ENDERECO",
+            "NUMERO",
+            "COMPLEMENTO",
+            "CEP",
+            "BAIRRO",
+            "CIDADE",
+            "UF",
+            "DDD1",
+            "FONE1",
+            "DDD2",
+            "FONE2",
+            "DDD3",
+            "FONE3",
+            "DDD4",
+            "FONE4",
+            "DDD5",
+            "FONE5",
+            "EMAIL1",
+            "EMAIL2",
+            "EMAIL3",
+            "NM_CONTRATO_CEDENTE",
+            "PRODUTO_CEDENTE",
+            "NM_DIVIDA_CEDENTE",
+            "NU_PARCELA",
+            "VENCIMENTO",
+            "VL_PARCELA"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Colunas Logicas",
+          "type": "array"
+        },
+        "espaco_final_coluna_27": {
+          "default": true,
+          "title": "Espaco Final Coluna 27",
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        },
+        "nome_aba": {
+          "const": "Dados",
+          "default": "Dados",
+          "title": "Nome Aba",
+          "type": "string"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "versao"
+      ],
+      "title": "Template",
+      "type": "object"
+    },
+    "VinculoAdministradora": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "fim": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fim"
+        },
+        "inicio": {
+          "format": "date",
+          "title": "Inicio",
+          "type": "string"
+        }
+      },
+      "required": [
+        "administradora_id",
+        "inicio"
+      ],
+      "title": "VinculoAdministradora",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:1.0:catalogo",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "administradoras": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Administradora"
+      },
+      "title": "Administradoras",
+      "type": "array"
+    },
+    "condominios": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Condominio"
+      },
+      "title": "Condominios",
+      "type": "array"
+    },
+    "formatos": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Formato"
+      },
+      "title": "Formatos",
+      "type": "array"
+    },
+    "ocorrencias": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Ocorrencia"
+      },
+      "title": "Ocorrencias",
+      "type": "array"
+    },
+    "perfis_condominio": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PerfilCondominio"
+      },
+      "title": "Perfis Condominio",
+      "type": "array"
+    },
+    "processamentos": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Processamento"
+      },
+      "title": "Processamentos",
+      "type": "array"
+    },
+    "regras_cobranca": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RegraCobranca"
+      },
+      "title": "Regras Cobranca",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "templates": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Template"
+      },
+      "title": "Templates",
+      "type": "array"
+    }
+  },
+  "title": "Catalogo",
+  "type": "object"
+}

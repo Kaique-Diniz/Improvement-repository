@@ -1,0 +1,40 @@
+{
+  "$id": "urn:conversor:1.0:classificacao",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "candidatos": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Candidatos",
+      "type": "array"
+    },
+    "estado": {
+      "enum": [
+        "conhecido_validado",
+        "desconhecido",
+        "ambiguo"
+      ],
+      "title": "Estado",
+      "type": "string"
+    },
+    "evidencia_hashes": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Evidencia Hashes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "estado",
+    "evidencia_hashes"
+  ],
+  "title": "ClassificacaoFormato",
+  "type": "object"
+}
