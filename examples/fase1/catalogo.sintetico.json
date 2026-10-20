@@ -1,0 +1,33 @@
+{
+  "schema_version": "1.0",
+  "administradoras": [
+    {"id": "adm_sintetica_a", "nome": "Administradora Sintética A", "ativo": true},
+    {"id": "adm_sintetica_b", "nome": "Administradora Sintética B", "ativo": true}
+  ],
+  "condominios": [{
+    "id": "cond_sintetico", "nome": "Condomínio Sintético",
+    "administradora_id": "adm_sintetica_a", "codigo_na_administradora": "0001",
+    "perfil_version_id": "perfil_sintetico_v1", "formato_ids": ["formato_sintetico_v1"],
+    "vinculos": [{"administradora_id": "adm_sintetica_a", "inicio": "2026-01-01"}]
+  }],
+  "formatos": [{
+    "id": "formato_sintetico_v1", "nome": "Layout Sintético Compartilhado", "versao": "1",
+    "tipo_arquivo": "pdf_texto", "status": "rascunho",
+    "administradora_ids": ["adm_sintetica_a", "adm_sintetica_b"],
+    "marcadores": ["RELATÓRIO SINTÉTICO"], "leitor_id": "leitor_sintetico_nao_implementado"
+  }],
+  "perfis_condominio": [{
+    "id": "perfil_sintetico_v1", "condominio_id": "cond_sintetico", "versao": "1",
+    "template_id": "template_universal_v1", "regra_id": "regra_sintetica_v1",
+    "cadastro_antecipado": false, "codificador_cedente": "pendente_homologacao", "status": "rascunho"
+  }],
+  "regras_cobranca": [{
+    "id": "regra_sintetica_v1", "condominio_id": "cond_sintetico", "versao": "1",
+    "status": "rascunho", "vigente_de": "2026-01-01", "condicoes": []
+  }],
+  "templates": [{
+    "id": "template_universal_v1", "nome": "Universal", "versao": "1",
+    "nome_aba": "Dados", "espaco_final_coluna_27": true
+  }],
+  "processamentos": [], "ocorrencias": []
+}

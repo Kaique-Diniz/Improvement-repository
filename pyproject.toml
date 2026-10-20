@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conversor-inadimplencia"
+version = "0.1.0"
+description = "Fundação do Conversor Inteligente de Inadimplência — Fase 1"
+requires-python = ">=3.12"
+dependencies = ["pydantic==2.13.4", "filelock==3.20.0"]
+
+[project.optional-dependencies]
+test = ["pytest==8.4.2"]
+
+[project.scripts]
+conversor = "conversor.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--strict-markers --strict-config -ra"

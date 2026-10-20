@@ -1,2 +1,39 @@
 .idea
 .vscode
+
+# Ruflo local secrets and runtime data
+.env
+.env.local
+.env.*.local
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/
+
+# Ambiente local e artefatos de execução (não são fontes do produto)
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+build/
+dist/
+.env.*
+
+# Dados operacionais, documentos e bancos nunca entram no controle de versão
+/dados/
+/private/
+*.pdf
+*.xlsx
+*.xls
+*.db
+*.db-*
+*.sqlite*
+
+# Ruflo é ferramenta local de desenvolvimento; pode conter memória e logs
+.claude/
+.claude-flow/
+.swarm/
+.mcp.json
+CLAUDE.md
