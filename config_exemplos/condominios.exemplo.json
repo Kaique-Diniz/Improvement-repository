@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "condominios": [
+    {
+      "id": "cond_plaza",
+      "nome": "PLAZA MAYOR IPIRANGA",
+      "codigo_na_administradora": "1078",
+      "administradora_id": "adm_fl",
+      "formato_ids": [
+        "fmt_fl_inadimplencia_v1"
+      ],
+      "template_id": "template_universal_v1",
+      "regra_id": "regra_plaza",
+      "cadastro_antecipado": true,
+      "ativo": true
+    },
+    {
+      "id": "cond_tree",
+      "nome": "TREE MORUMBI",
+      "codigo_na_administradora": "3021",
+      "administradora_id": "adm_habita",
+      "formato_ids": [
+        "fmt_habita_v1"
+      ],
+      "template_id": "template_universal_v1",
+      "regra_id": "regra_tree",
+      "cadastro_antecipado": false,
+      "ativo": true
+    }
+  ]
+}

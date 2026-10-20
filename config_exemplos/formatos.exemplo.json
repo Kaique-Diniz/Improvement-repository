@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "formatos": [
+    {
+      "id": "fmt_fl_inadimplencia_v1",
+      "nome": "Inadimplência com composição",
+      "tipo_arquivo": "pdf",
+      "status": "rascunho",
+      "marcadores": [
+        "Inadimplência com composição",
+        "Venc.",
+        "Comp.",
+        "Saldo"
+      ]
+    },
+    {
+      "id": "fmt_habita_v1",
+      "nome": "Inadimplência Atualizada",
+      "tipo_arquivo": "pdf",
+      "status": "rascunho",
+      "marcadores": [
+        "Bloco:",
+        "Unidade:",
+        "Total da Unidade:"
+      ]
+    }
+  ]
+}

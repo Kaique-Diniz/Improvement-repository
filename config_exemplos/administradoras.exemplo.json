@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "administradoras": [
+    {
+      "id": "adm_fl",
+      "nome": "FL",
+      "ativo": true
+    },
+    {
+      "id": "adm_habita",
+      "nome": "HABITACIONAL_2",
+      "ativo": true
+    }
+  ]
+}

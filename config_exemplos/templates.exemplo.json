@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "templates": [
+    {
+      "id": "template_universal_v1",
+      "nome_aba": "Dados",
+      "colunas_logicas": [
+        "NM_CEDENTE_CEDENTE",
+        "CEDENTE",
+        "CPF",
+        "NOME",
+        "ENDERECO",
+        "NUMERO",
+        "COMPLEMENTO",
+        "CEP",
+        "BAIRRO",
+        "CIDADE",
+        "UF",
+        "DDD1",
+        "FONE1",
+        "DDD2",
+        "FONE2",
+        "DDD3",
+        "FONE3",
+        "DDD4",
+        "FONE4",
+        "DDD5",
+        "FONE5",
+        "EMAIL1",
+        "EMAIL2",
+        "EMAIL3",
+        "NM_CONTRATO_CEDENTE",
+        "PRODUTO_CEDENTE",
+        "NM_DIVIDA_CEDENTE",
+        "NU_PARCELA",
+        "VENCIMENTO",
+        "VL_PARCELA"
+      ],
+      "nome_bruto_coluna_27": "NM_DIVIDA_CEDENTE ",
+      "conferir_espaco_final_com_sistema_destino": true
+    }
+  ]
+}

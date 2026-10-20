@@ -1,0 +1,30 @@
+{
+  "schema_version": "1.0",
+  "regras": [
+    {
+      "id": "regra_tree",
+      "condominio_id": "cond_tree",
+      "versao": "rascunho-1",
+      "status": "exemplo_nao_ativar",
+      "cobranca_extra_dias": 30,
+      "comparacao_atraso": ">",
+      "excluir_unidade_se_qualquer_boleto_valor": "0.01",
+      "excluir_unidade_se_qualquer_apontamento": [
+        "A",
+        "AJ",
+        "J"
+      ],
+      "modalidade_judicial_dias": 90,
+      "observacoes": "Somente ilustrativo; validar versão estruturada da régua e fixtures antes de ativar."
+    },
+    {
+      "id": "regra_plaza",
+      "condominio_id": "cond_plaza",
+      "versao": "rascunho-1",
+      "status": "exemplo_nao_ativar",
+      "cobranca_extra_dias": 30,
+      "modalidade_judicial_dias": 60,
+      "observacoes": "Não inferir ação judicial nem exclusões sem homologação."
+    }
+  ]
+}
