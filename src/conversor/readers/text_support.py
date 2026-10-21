@@ -61,6 +61,7 @@ class ContextoLeitura:
     formato_id: str
     arquivo_id: str
     codigo_condominio: str
+    leitor_versao: str | None = None
 
 
 @dataclass(frozen=True)
@@ -81,7 +82,7 @@ class TextoPDF:
 
     def origem(self, linha: LinhaFonte, *, continuacao_de=None) -> Origem:
         return Origem(arquivo_id=self.contexto.arquivo_id, sha256=self.sonda.arquivo_hash,
-                      leitor_versao=self.contexto.formato_id, pagina=linha.pagina, linha=linha.numero,
+                      leitor_versao=self.contexto.leitor_versao or self.contexto.formato_id, pagina=linha.pagina, linha=linha.numero,
                       identificador=f"p{linha.pagina}_l{linha.numero}", continuacao_de=continuacao_de)
 
 

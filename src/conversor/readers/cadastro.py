@@ -6,6 +6,8 @@ from .text_support import ContextoLeitura, ErroLeitura, TextoPDF, id_estavel, te
 
 
 class LeitorCadastroFLSintetico:
+    formato_id = "cadastro_fl_sintetico_v1"
+
     def ler(self, conteudo: bytes, *, contexto: ContextoLeitura):
         fonte = TextoPDF(conteudo, contexto)
         # W045A identifica o Cadastro, não é outro condomínio em relação ao W002A.
