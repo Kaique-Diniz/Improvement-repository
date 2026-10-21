@@ -1,8 +1,10 @@
 # Dossiê de transferência ao Codex — Conversor Inteligente de Inadimplência
 
-**Status:** Fases 1 e 2 implementadas. Laboratório adicional de extração, regras e Excel testado com o pacote sintético fornecido; nenhum formato real homologado.
-**Última fase concluída:** Fase 2. As Fases 3–5 têm implementações parciais de laboratório; a próxima fase pendente é a Fase 3. Consulte a [matriz de progresso e cobertura dos 275 testes](docs/DIAGNOSTICO_PROGRESSO.md).
-**Fase 3 em andamento:** leitores integrados ao contrato comum e validação privada preparada; **329 testes aprovados**. O aceite com fontes reais permanece pendente. Veja [implementação, checklist e publicação](docs/LEITORES_FASE3.md).
+**Status:** Fases 1 e 2 implementadas; Fase 3 tecnicamente encerrada por autorização do responsável, com ressalvas e bloqueios operacionais preservados. Sem homologação para produção.
+**Última fase concluída tecnicamente:** Fase 3 — Leitores. **458 testes aprovados**, 884 boletos reconciliados e 132 correspondências financeiras. Veja o [aceite técnico e decisão de encerramento](docs/ACEITE_TECNICO_FASE3.md).
+**Próxima etapa autorizada:** preparação da Fase 4 — Motor Geral de Cobrança, com arquitetura e modelo de regras apresentados antes da implementação. O laboratório sintético das Fases 4–5 não constitui motor geral aprovado nem homologação do Excel.
+**Correções dos layouts reais:** [resultado antes/depois, testes e pendências](docs/CORRECOES_LEITORES_REAIS_FASE3.md). Os bloqueios permanecem obrigatórios.
+**Atualização documental:** CPF/CNPJ válidos na coluna literal `CPF`, como texto; compatibilidade confirmada pelo responsável no CRM easyCollector. Conflitos documentais exigem revisão humana. Veja [contratos, auditoria e testes](docs/DOCUMENTOS_CPF_CNPJ.md). A homologação integral permanece pendente.
 **Atualização:** 21/10/2026.
 **Idioma do projeto:** português brasileiro.
 

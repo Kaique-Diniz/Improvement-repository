@@ -2,11 +2,13 @@
 from pydantic import Field
 
 from conversor.domain.base import Modelo
-from conversor.domain.canonical import LoteCanonico, Ocorrencia, cpf_validado
+from conversor.domain.canonical import LoteCanonico, Ocorrencia
+from .documents import ocorrencias_documentais
 from conversor.domain.recognition import ResultadoReconhecimento
 from conversor.readers.contracts import FonteProtegida, RepositorioFontes
 from conversor.readers.operational import ContextosCatalogo, RegistroLeitores
-from conversor.readers.text_support import ErroLeitura, id_estavel
+from conversor.readers.text_support import ErroLeitura
+from conversor.readers.text_support import id_estavel
 from .ports import Repositorio
 from .recognition_ports import RepositorioAssinaturas
 from .recognition import _hash
@@ -16,14 +18,20 @@ class LeituraCanonica(Modelo):
     lote: LoteCanonico = Field(repr=False)
     ocorrencias: tuple[Ocorrencia, ...]
 
+    @property
+    def bloqueante(self) -> bool:
+        return any(o.bloqueante for o in self.ocorrencias)
+
 
 def resultado_leitura(lote: LoteCanonico, *, processamento_id: str) -> LeituraCanonica:
     pessoas = {p.unidade_id: p for p in lote.pessoas}
     if len(pessoas) != len(lote.pessoas):
         raise ErroLeitura("TITULAR_AMBIGUO")
-    alertas = tuple(Ocorrencia(id=id_estavel("oc_cpf", processamento_id, p.unidade_id),
-        processamento_id=processamento_id, codigo="CPF_AUSENTE_OU_INVALIDO", gravidade="alerta", escopo="registro",
-        registro_id=p.unidade_id, origem=p.origem) for p in lote.pessoas if not cpf_validado(p.documento))
+    alertas = tuple(o for p in lote.pessoas for o in ocorrencias_documentais(p, processamento_id=processamento_id))
+    alertas += tuple(Ocorrencia(id=id_estavel("oc_leitura", processamento_id, i, r.codigo),
+        processamento_id=processamento_id, codigo=r.codigo, gravidade=r.gravidade,
+        escopo="registro" if r.registro_id else "arquivo", registro_id=r.registro_id, origem=r.origens[0])
+        for i, r in enumerate(lote.ressalvas))
     return LeituraCanonica(lote=lote, ocorrencias=alertas)
 
 

@@ -23,10 +23,12 @@ Administradoras fornecem relatórios heterogêneos. Uma conversão ingênua pode
 ## 4. Leitura e modelo canônico
 Suportar múltiplas fontes de um mesmo processamento, por exemplo: PDF de inadimplência + Cadastro Geral + XLSX por blocos. Cada adaptador retorna objetos do mesmo modelo canônico:
 - condominium_id, adm_id, fonte, página/linha/posição, bloco/torre, unidade original, chave normalizada de unidade;
-- pessoa/nome/cpf (somente CPF em saída), contatos/endereço, relação do cliente à unidade;
+- pessoa/nome/documento (CPF ou CNPJ válido na coluna literal CPF), contatos/endereço, relação do cliente à unidade;
 - boleto (número/código, vencimento, competência, emissão, status/apontamento, valores), composição e itens com sinal correto;
 - totals por boleto, unidade, original sem acréscimos, multa, juros, correção, quando disponíveis;
 - marcadores de continuidade entre páginas e justificativas de reconstrução.
+
+Campos ausentes não são inferidos: competência pode permanecer ausente no canônico; token de emissão e descrições são preservados, com origem. A exportação bloqueia dívida cuja competência exigida não tenha fonte aprovada. Ressalvas críticas de leitura/cadastro impedem exportação automática e preservam valores brutos em auditoria privada.
 
 Não transformar valores monetários por float binário; usar Decimal/centavos. Preservar dados brutos e referência de origem para fins de auditoria.
 
@@ -49,11 +51,11 @@ Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance
 - Ausência de algumas unidades na referência manual não torna o arquivo automaticamente errado se só há parcelas fora do prazo e o cadastro antecipado é opcional.
 
 ## 6. CPF e contato
-- A **coluna CPF contém apenas CPF**; nunca substituir por CNPJ, nome, números de unidade ou strings inventadas.
-- Ausente, inválido ou CNPJ como único documento: exportar CPF em branco e emitir alerta não bloqueante.
-- Preservar zeros à esquerda usando texto no Excel e normalizar pontuação antes da validação.
+- A **coluna literal `CPF` aceita CPF válido de 11 dígitos ou CNPJ válido de 14 dígitos**, conforme atualização geral aprovada em 21/10/2026. Validar os dígitos verificadores de acordo com o tipo; não retipar documento explícito para forçar validade.
+- Documento ausente ou inválido: exportar célula em branco e emitir alerta não bloqueante. Preservar valor bruto e fonte na auditoria protegida; não completar dígitos ou zeros que não constem na fonte.
+- Preservar zeros à esquerda de CPF e CNPJ usando texto literal e formato `@` no Excel; nunca números. Normalizar somente pontuação permitida antes da validação.
 - Telefones/e-mails opcionais. Até 5 pares DDD/FONE e 3 e-mails; não inventar.
-- Identificações de vários titulares/corresponsáveis exigem regras claras de identificação por unidade.
+- Identificações de vários titulares/corresponsáveis exigem regras claras de identificação por unidade. Unidade ou nome isolado não prova associação de documento ao titular. Não substituir automaticamente CPF por CNPJ ou vice-versa. Dois documentos válidos distintos para o mesmo titular bloqueiam resolução automática e exportação desse cadastro; encaminhar à revisão humana, com todas as evidências e fontes. Associação não confirmada também bloqueia. Não escolher fonte mais recente ou Cadastro como prioridade implícita.
 
 ## 7. CEDENTE e codificação de unidade
 - `CEDENTE` e `NM_CONTRATO_CEDENTE` podem ter padrões específicos por condomínio; não impor universalmente `BL00-UNI0000-NOME`.
@@ -71,13 +73,13 @@ Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance
 
 ## 9. Validação e bloqueios
 **Informativo:** telefone ausente, e-mail ausente.  
-**Alerta não bloqueante:** CPF vazio/invalidado, campos cadastrais opcionais sem origem.  
-**Crítico, bloquear registro ou arquivo conforme contaminação:** formato desconhecido, condomínio ambíguo, unidade ambígua, linha incompleta de boleto, soma inconsistente, duplicidade não reconciliada, campo requerido pelo destino incompatível, regra não validada.
+**Alerta não bloqueante:** documento vazio/invalidado, campos cadastrais opcionais sem origem.
+**Crítico, bloquear registro ou arquivo conforme contaminação:** documentos válidos conflitantes, titularidade documental não confirmada, formato desconhecido, condomínio ambíguo, unidade ambígua, linha incompleta de boleto, soma inconsistente, duplicidade não reconciliada, campo requerido pelo destino incompatível, regra não validada.
 
 Não deve existir exportação de cobranças com valor presumido. Dados não verificáveis permanecem pendentes e rastreados.
 
 ## 10. Auditoria
-Registrar ID da execução, horário, data de referência, hashes dos arquivos, fontes, versão do leitor, regra/perfil/template, total de unidades/boletos/linhas, incluídos/excluídos/adiados, motivo específico, CPF faltante, e origem (página/linha) da decisão. Logs operacionais não incluem credenciais; anonimizar documentos pessoais quando possível.
+Registrar ID da execução, horário, data de referência, hashes dos arquivos, fontes, versão do leitor, regra/perfil/template, total de unidades/boletos/linhas, incluídos/excluídos/adiados, motivo específico, documento faltante/inválido/conflitante, e origem (página/linha) da decisão. Logs operacionais não incluem credenciais; anonimizar documentos pessoais quando possível.
 
 ## 11. Tratamento de mudanças
 - Novos formatos entram como versão rascunho e precisam de testes/aprovação.
@@ -90,3 +92,11 @@ LGPD e minimização de dados; preferir repositórios privados, backups protegid
 
 ## 13. Tecnologia (PROPOSTA, NÃO DECISÃO DO USUÁRIO)
 Python, pytest, extratores configuráveis com bibliotecas especializadas PDF/XLSX; API opcional em FastAPI, UI web posterior; abstração de repositório para JSON -> PostgreSQL. Validar stack com usuário antes da implementação de UI/infra.
+
+## 14. Integração documental confirmada
+
+O responsável pelo processo confirmou em 21/10/2026 a aceitação de CPF/CNPJ
+na coluna literal `CPF` pelo CRM easyCollector. Essa confirmação é requisito
+geral aprovado e não equivale à homologação integral da saída Excel. Demais
+campos, formatos e comportamentos de importação continuam sujeitos a ensaio
+controlado; nenhuma operação real de cobrança é autorizada por esta confirmação.

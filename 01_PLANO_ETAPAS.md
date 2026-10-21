@@ -23,6 +23,15 @@
 
 ## Entrega incremental ao Codex
 
+### Estado autorizado após o aceite dos leitores
+
+Fase 3 tecnicamente encerrada pelo responsável, com 458 testes aprovados, 884
+boletos reconciliados e 132 correspondências financeiras. As ressalvas e os
+bloqueios operacionais de lote/unidade/cadastro continuam obrigatórios; não há
+homologação para produção. Ver [aceite técnico](docs/ACEITE_TECNICO_FASE3.md).
+Próximo incremento: propor arquitetura, modelo de regras e decisões operacionais
+da Fase 4 para aprovação antes de implementar seus componentes. Sem Fase 5.
+
 **Primeira tarefa:** desenvolver somente a Fase 1. Não pedir numa única execução: leitor de centenas de layouts + frontend + regra complexa + implantação.  
 **Segunda:** reconhecimento (Fase 2) usando PDFs sintéticos e reais previamente sanitizados/autorizados.  
 **Terceira:** leitores de Habita e FL (Fase 3).  
@@ -38,7 +47,7 @@
 5. Aplica cobrança com data de referência explícita, regras por condomínio e escopo correto.
 6. Diferencia registros de dívida de cadastros antecipados.
 7. Gera XLSX com exatas 30 colunas e relatório de auditoria.
-8. Quando CPF está ausente, exporta vazio com alerta; nunca coloca CNPJ na coluna CPF.
+8. A coluna literal CPF aceita CPF/CNPJ válido do titular como texto; ausência/invalidade -> vazio e alerta; documentos válidos conflitantes exigem revisão humana auditada.
 9. Não expõe credenciais da régua, nem logs com dados pessoais desnecessários.
 10. Teste de importação no **sistema de destino** aprovado em ambiente de homologação.
 

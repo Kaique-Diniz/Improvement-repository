@@ -72,7 +72,7 @@ def test_excel_30_colunas_nativas_cpf_vazio_zeros_e_alerta_por_unidade(tmp_path,
     finally: livro.close()
 
 
-def test_cnpj_nunca_e_exportado_como_cpf(tmp_path, pessoa):
+def test_cnpj_invalido_nao_e_exportado(tmp_path, pessoa):
     pessoa = Pessoa.model_validate(pessoa.model_dump() | {"documento": Documento(tipo="cnpj", valor="00000000000100")})
     destino = tmp_path / "saida.xlsx"
     alertas = escrever_xlsx((linha(pessoa),), Template(id="tpl", nome="Universal", versao="1"), destino, data_ref=date(2026, 10, 20))

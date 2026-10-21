@@ -6,7 +6,7 @@
 - Administradora -> muitos condomínios; condomínio -> uma administradora atual.
 - Reconhecimento e processamento automático para formato conhecido **sem confirmação**.
 - Segurança bloqueia inconsistências críticas; alertas não bloqueantes para CPF ausente.
-- CPF é exclusivamente CPF; CNPJ não pode ser substituto no template.
+- A coluna literal CPF aceita CPF/CNPJ válido do titular, como texto. Dois documentos válidos distintos ou associação não confirmada exigem revisão humana, com bloqueio e evidências preservadas.
 - Template universal Plaza Mayor de 30 colunas; linhas cadastrais sem contrato/dívida.
 - Régua de cobrança geral: versão atual `REGUA DE COBRANÇA -20.10.2026 ATUALIZADA.xlsx`.
 - Cadastro antecipado configurável (não obrigatório para todos).
@@ -19,7 +19,7 @@
 | P01 | Uma execução aceita vários condomínios? | Um por execução; múltiplos anexos do mesmo condomínio | Antes da interface |
 | P02 | Data padrão para prazo da régua? | Data de processamento configurável, registrada na auditoria; checar corte estrito `>N` | Antes do motor |
 | P03 | Novos formatos podem ser criados pela operação? | Inicialmente técnico/config JSON; futuro assistente visual | Antes da fase 7 |
-| P04 | CPF de empresa/único CNPJ, proprietário múltiplo, titular divergente? | CPF vazio + alerta; nenhuma atribuição indevida | Antes da homologação de cadastros |
+| P04 | CPF de empresa/único CNPJ, proprietário múltiplo, titular divergente? | CPF/CNPJ válido como texto; ausência/invalidade -> vazio + alerta; conflito/vínculo pendente -> revisão humana auditada | Antes da homologação de cadastros |
 | P05 | Alterações entre cadastro geral e inadimplência com datas distintas? | Gerar ocorrência, não substituir automaticamente titular | Antes da fase 3 |
 | P06 | Cabeçalho `NM_DIVIDA_CEDENTE ` com espaço final? | Compatibilidade fiel ao arquivo-base até teste contra importador | Antes da fase 5 |
 | P07 | Modalidade judicial e exceções específicas: importação vs negociação? | Manter separadas; aplicar só condições aprovadas de importação | Antes da fase 4 |
@@ -27,7 +27,7 @@
 | P09 | Política de retenção e acesso a PDFs/CPFs? | Pasta temporária protegida com prazo definido, sem salvar conteúdo em logs | Antes da produção |
 | P10 | Saída TREE MORUMBI de referência? | Criar fixture/gabarito aprovado com resultados esperados a partir do PDF; sem XLSX dourado confirmado na conversa | Antes dos testes finais |
 | P11 | Qual stack e ambiente? | Python + testes; FastAPI/React opcionais a validar | Antes da UI |
-| P12 | Sistema importador aceita CPF vazio, duplicados, valores e datas em quais tipos? | Homologar com importação controlada | **Bloqueante para produção** |
+| P12 | easyCollector: demais campos, vazios, duplicados, valores e datas em quais tipos? | CPF/CNPJ na coluna CPF confirmado pelo responsável em 21/10/2026; homologar importação integral controlada | **Bloqueante para produção** |
 
 ## Matriz mínima de testes
 
@@ -51,9 +51,9 @@
 
 ### Contrato de saída
 - 30 cabeçalhos exatos, ordem A:AD, aba Dados.
-- CPF ausente e CNPJ sem CPF -> célula CPF vazia com ocorrência não bloqueante.
+- CPF/CNPJ válido -> texto com zeros na coluna CPF; ausente/inválido -> vazio e alerta. Conflito de documentos válidos ou titular não confirmado -> bloqueio do cadastro e revisão humana; fontes na auditoria protegida.
 - Linhas cadastrais com Y:AD vazias; linhas de cobrança com data/valor corretos.
-- Zeros iniciais preservados em CPF/CEP/códigos quando presentes.
+- Zeros iniciais preservados em CPF/CNPJ/CEP/códigos quando presentes. CPF/CNPJ nunca numéricos; validar roundtrip e importador autorizado.
 - Reprocessar mesmas fontes/config/data produz saída determinística, sem duplicação.
 - Plaza Mayor: 112 linhas de referência (69 com dívida, 43 cadastrais, 47 cedentes distintos) **somente como gabarito de comparação condicionado à mesma data/política/versões**; não copiar números para todas as execuções.
 
@@ -64,3 +64,26 @@
 
 ## Critério de aceite por fase
 Teste automatizado verde + comparação amostral manual com fonte e registros de exceção + documentação de riscos/pontos não atendidos. Cada fase deve ter demonstrativo curto de como executá-la.
+
+## Revisão técnica dos leitores reais — 21/10/2026
+
+As três leituras operacionais passaram e o inventário financeiro foi confrontado
+sem divergências. Permanecem pendentes subtotal de bloco inconsistente da Habita,
+titularidade múltipla/divergente, dois conflitos de CPF contra referência e
+completude de competência/endereço para futura exportação. A nova aceitação de
+CPF/CNPJ como texto continua vigente. Os 382 testes anteriores e 50 novos
+passaram (432 ao todo); isso não equivale à homologação para produção.
+
+### Revisão final das pendências
+
+Os 432 testes anteriores e 26 novos passaram (458). Foram preservados os 884
+boletos e as 132 correspondências financeiras. O subtotal VG repete o total geral
+na própria fonte: bloqueio do lote mantido. As 34 unidades FL foram analisadas
+individualmente, sem troca automática de titular; os dois conflitos de CPF (duas
+ocorrências em uma unidade) seguem retidos, sem vigência documental comprovada.
+Foram segmentados 389 endereços; um cadastro com dois endereços permanece bloqueado.
+Competências Habita continuam ausentes, com alerta e impedimento de exportação
+quando exigidas; não houve inferência pelo vencimento. Consulte a classificação
+completa e a recomendação de encerramento técnico, com bloqueios preservados,
+em [Aceite técnico da Fase 3](docs/ACEITE_TECNICO_FASE3.md).
+Fase 4 não iniciada; sem homologação para produção.

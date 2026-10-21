@@ -58,9 +58,10 @@ e fonte alterada continuam bloqueantes. Não há OCR nem LLM para estimar valore
 Os leitores preservam composição, multa/juros e saldo acumulado separadamente;
 o contrato não converte saldo da unidade em valor individual de boleto.
 
-Ausência/invalidez de CPF ou existência apenas de CNPJ produz alerta
-`CPF_AUSENTE_OU_INVALIDO`, sem impedir a leitura. O dado documental é preservado
-no modelo privado; a política de CPF vazio na exportação permanece intacta.
+A atualização geral de 21/10/2026 aceita CPF/CNPJ válido na coluna literal CPF.
+Ausência/invalidez documental produz `DOCUMENTO_AUSENTE`/`DOCUMENTO_INVALIDO`, sem impedir a leitura.
+`DOCUMENTOS_CONFLITANTES` ou `DOCUMENTO_TITULAR_NAO_CONFIRMADO` bloqueiam resolução automática e exportação do cadastro; todas as fontes ficam na auditoria protegida.
+CPF/CNPJ são texto com zeros iniciais. A aceitação no importador continua pendente.
 O adapter cadastral não escolhe titular nem aplica a prioridade de Cadastro
 aprovada somente para o laboratório anterior. Conflitos reais e datas de cadastro
 permanecem para decisão/homologação; o enriquecimento existente bloqueia conflitos
@@ -139,7 +140,7 @@ o parser apenas após análise privada da evidência — não editar o PDF para 
 - [ ] PDF textual completo FL/Plaza Mayor Ipiranga, com componentes, descontos,
   saldos cumulativos, torres/unidades, notas e cabeçalhos/rodapés reais.
 - [ ] Cadastro Geral FL correspondente, preservando chaves e datas do período,
-  contatos opcionais, CPF ausente/CNPJ e casos de titular divergente.
+  contatos opcionais, CPF/CNPJ válido/inválido/ausente e casos de titular divergente.
 - [ ] Pelo menos duas páginas adjacentes de cada família com um boleto continuado
   e outro boleto distinto; incluir casos sem os marcadores artificiais dos PDFs
   recriados. O caso DEP deve possuir identificação e contagem revisadas.
@@ -166,14 +167,14 @@ provisória do laboratório passa a ser regra operacional nesta entrega.
 
 ```bash
 .venv/bin/python -m pytest -q
-# 269 testes regulares aprovados: 222 anteriores + 47 da Fase 3
+# 322 testes regulares aprovados: 269 anteriores + 53 de validação documental
 .venv/bin/python -m pytest -q tests/homologacao/pacote_suite.py tests/homologacao/revisao_suite.py tests/homologacao/leitores_fase3_suite.py
 # 60 aprovados: 53 anteriores + 7 do contrato comum com o pacote sintético
 .venv/bin/python -m conversor.schemas --check
 .venv/bin/python -m conversor.recognition_schemas --check
 ```
 
-Total: **329 testes aprovados**, sem pular casos por falta de amostras reais.
+Total: **382 testes aprovados**, sem pular casos por falta de amostras reais.
 Os testes regulares geram documentos sintéticos pequenos. As integrações explícitas
 dependem do pacote sintético local e não são teste real disfarçado.
 
@@ -209,3 +210,16 @@ documentos/gabaritos reais. Se a API `gh` continuar bloqueada no ambiente, usar
 o formulário de comparação no GitHub após o push:
 
 `https://github.com/Kaique-Diniz/Improvement-repository/compare/main...feature/fase-3-leitores?expand=1`
+
+## Atualização documental geral
+
+A regra aprovada de 21/10/2026 aceita CPF/CNPJ válido como texto na coluna literal
+CPF, com auditoria e revisão humana de conflitos. Compatibilidade documental no
+CRM easyCollector confirmada pelo responsável; o Excel integral segue pendente.
+Ver [contrato documental](DOCUMENTOS_CPF_CNPJ.md).
+
+As correções estruturais posteriores processaram os três PDFs reais pelo
+contrato operacional comum, preservando os bloqueios de dados críticos. Veja o
+[relatório técnico de correções](CORRECOES_LEITORES_REAIS_FASE3.md), que atualiza
+os resultados anteriores de bloqueio por layout e a suíte para 432 testes.
+Nenhuma regra financeira foi alterada e a Fase 4 não foi iniciada.

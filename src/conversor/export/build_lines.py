@@ -36,6 +36,8 @@ def construir_linhas(lote: LoteCanonico, resultados: tuple[ResultadoCobranca, ..
                      *, politica_cadastro: str, processamento_id: str, ocorrencias_extras=()):
     if politica_cadastro not in ("nunca", "unidades_com_boleto_adiado", "todas_unidades", "unidades_sem_divida"):
         raise ErroLeitura("POLITICA_CADASTRAL_INVALIDA")
+    if any(r.gravidade=='critico'for r in lote.ressalvas):
+        raise ErroLeitura("LEITURA_COM_PENDENCIA_CRITICA")
     if any(o.bloqueante or o.processamento_id != processamento_id for o in ocorrencias_extras):
         raise ErroLeitura("EXPORTACAO_COM_BLOQUEIO")
     pessoas = {p.unidade_id: p for p in lote.pessoas}
@@ -61,7 +63,7 @@ def construir_linhas(lote: LoteCanonico, resultados: tuple[ResultadoCobranca, ..
         origem_email = pessoa.origem if pessoa.origem.leitor_versao == "cadastro_fl_sintetico_v1" else origem_contato
         def ref(origem):
             return {"fonte_origem": origem.arquivo_id, "pagina": origem.pagina, "linha_fonte": origem.linha}
-        origens_campos = {"NOME": ref(pessoa.origem), "CPF": ref(pessoa.origem)}
+        origens_campos = {"NOME": ref(pessoa.origem), "CPF": ref(pessoa.documento_origem or pessoa.origem)}
         origens_campos.update({campo: ref(origem_contato) for i in range(1, 6) for campo in (f"DDD{i}", f"FONE{i}")})
         origens_campos.update({f"EMAIL{i}": ref(origem_email) for i in range(1, 4)})
         cedente, complemento = perfil.codificar(unidade)
@@ -78,6 +80,8 @@ def construir_linhas(lote: LoteCanonico, resultados: tuple[ResultadoCobranca, ..
             boleto = boletos[resultado.boleto_id]
             if boleto.composicao.total_original <= 0:
                 raise ErroLeitura("VALOR_DE_COBRANCA_NAO_POSITIVO", boleto=boleto.identificador)
+            if boleto.competencia is None:
+                raise ErroLeitura("COMPETENCIA_NAO_INFORMADA", boleto=boleto.identificador)
             ano, mes = boleto.competencia.split("-")
             divida = DividaExportacao(contrato=cedente, produto=perfil.produto,
                 nome_divida=f"COTA {mes}/{ano} - {perfil.parcela}", parcela=perfil.parcela,

@@ -2,7 +2,7 @@
 
 **Atualização posterior, Fase 3:** a branch `feature/fase-3-leitores`, criada de
 `main` em `410f7d6`, integra os leitores ao contrato comum e prepara a validação
-privada. São 329 testes no conjunto atualizado; os 275 abaixo são o inventário
+privada. São 432 testes no conjunto atualizado; os 275 abaixo são o inventário
 histórico anterior. O aceite com amostras reais continua pendente. Consulte
 [LEITORES_FASE3.md](LEITORES_FASE3.md) para a implementação atual e os bloqueios.
 
@@ -40,9 +40,9 @@ para uso com dados reais ou no importador de destino.
 | 3 | Leitura financeira de XLSX por blocos A–G | Pendente | XLSX do pacote é conferência de resumo em `laboratorio/comparison.py` | Não existe extrator financeiro geral das planilhas por bloco; item opcional do plano. |
 | 4 | Prazo, exclusão por unidade e apontamentos | Parcial | `rules/laboratory.py`; corte estrito, R$ 0,01 e A/AJ/J com namespace | Motor geral declarativo com prioridade/operadores e execução de regras aprovadas da régua ainda não entregue. |
 | 4 | Judicial, particularidades e versões operacionais | Pendente | Catálogo guarda versões/vigências; laboratório não interpreta a régua real | Homologar semântica judicial e exceções; não transformar 60 dias em exclusão automática. |
-| 5 | Contrato universal de 30 colunas, CPF e linha cadastral | Implementada | `export/contract.py`, `domain/template.py`; CPF vazio com alerta, CNPJ nunca ocupa CPF, Y:AD vazias no cadastro | Esse contrato pronto não conclui o aceite da Fase 5. |
+| 5 | Contrato universal de 30 colunas, CPF e linha cadastral | Implementada | `export/contract.py`, `domain/template.py`; CPF/CNPJ válido como texto na coluna CPF; documento vazio/inválido com alerta; conflito válido exige revisão humana, Y:AD vazias no cadastro | Esse contrato pronto não conclui o aceite da Fase 5. |
 | 5 | Escrita XLSX e auditoria da conversão | Parcial | `export/{build_lines,xlsx}.py`, `laboratorio/`; datas/valores nativos e saída determinística | Perfis didáticos, auditoria/pipeline de laboratório; falta integração operacional e política de dados. |
-| 5 | Aceite no importador de destino | Pendente | Nenhuma importação controlada executada | Validar tipos, CPF vazio, duplicados, códigos e espaço final da coluna AA. |
+| 5 | Aceite no importador de destino | Pendente | Nenhuma importação controlada executada | Validar tipos, CPF/CNPJ como texto na coluna CPF, vazio, duplicados, códigos e espaço final da coluna AA. |
 | 6 | Upload, dashboard, execução e download no workflow final | Pendente | CLI técnica disponível; `index.html` é apenas uma página Hello world | Sem interface do conversor, API de produto ou workflow ponta a ponta. |
 | 7 | Ampliação e monitoramento de formatos | Parcial | Catálogos e reconhecimento reutilizam formatos entre identidades em testes sintéticos | Não há catálogo operacional amplo, gestão assistida ou monitoramento de qualidade implantado. |
 | 8 | PostgreSQL, migrações, multi-condomínio e operação | Pendente | Portas de persistência e histórico preservam caminho de migração | Sem adapter SQL, migrações, lotes operacionais, backup/observabilidade/retenção de produção. |
@@ -130,3 +130,13 @@ A alteração da tarefa deste inventário foi apenas documental; a integração
 posterior está descrita no relatório da Fase 3. Os commits anteriores não foram
 reescritos. A situação efetiva de publicação é registrada em
 [ENVIO_GITHUB.md](ENVIO_GITHUB.md). Não existe autorização para merge automático.
+
+Atualização documental de 21/10/2026: aceitação de CPF/CNPJ na coluna literal
+CPF do CRM easyCollector confirmada pelo responsável pelo processo. Texto,
+zeros, conflitos e auditoria têm testes locais; demais comportamentos de
+importação exigem homologação integral. Ver [contrato documental](DOCUMENTOS_CPF_CNPJ.md).
+
+Correções estruturais da Fase 3: três PDFs reais processados, inventário
+financeiro confrontado sem divergências, bloqueios cadastrais e subtotal
+inconsistente preservados. Os 432 testes não concluem o aceite/homologação.
+Ver [atualização dos leitores reais](CORRECOES_LEITORES_REAIS_FASE3.md).

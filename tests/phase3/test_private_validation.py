@@ -50,7 +50,7 @@ def test_tres_casos_e_sem_canonicos_por_padrao(area, capsys):
     assert sorted(p.name for p in destino.iterdir()) == ["relatorio_leitores.json"]
     r = json.loads((destino / "relatorio_leitores.json").read_text())
     assert [c["boletos"] for c in r["casos"]] == [1, 1, 0]
-    assert all(c["alertas"] == {"CPF_AUSENTE_OU_INVALIDO": 1} for c in r["casos"])
+    assert all(c["alertas"] == {"DOCUMENTO_AUSENTE": 1} for c in r["casos"])
     assert "example.invalid" not in (destino / "relatorio_leitores.json").read_text()
 
 
@@ -60,6 +60,36 @@ def test_canonicos_so_por_opcao_explicita_na_area_privada(area):
     executar_validacao(raiz, manifesto, destino, salvar_canonicos=True)
     assert len(list(destino.glob("*.canonico.json"))) == 3
     assert (destino / "habita.canonico.json").stat().st_mode & 0o777 == 0o600
+
+
+def test_conflito_documental_nao_confirma_gabarito_e_grava_auditoria_protegida(area,monkeypatch,capsys):
+    from conversor.application.reading import resultado_leitura
+    from conversor.domain.canonical import Documento, EvidenciaDocumento, LoteCanonico, Pessoa
+    raiz,manifesto=area
+    def com_conflito(lote,*,processamento_id):
+        pessoa=lote.pessoas[0]
+        a=EvidenciaDocumento(documento=Documento(tipo='cpf',valor='00000000191'),
+            origem=pessoa.origem,titular_id=pessoa.id)
+        b=EvidenciaDocumento(documento=Documento(tipo='cnpj',valor='00000000000191'),
+            origem=pessoa.origem,titular_id=pessoa.id)
+        pessoa=Pessoa.model_validate(pessoa.model_dump()|{'documento':None,'evidencias_documentais':(a,b)})
+        novo=LoteCanonico.model_validate(lote.model_dump()|{'pessoas':(pessoa,)})
+        return resultado_leitura(novo,processamento_id=processamento_id)
+    monkeypatch.setattr('conversor.validacao_leitores.resultado_leitura',com_conflito)
+    destino=raiz/'revisao'
+    assert main(['--raiz',str(raiz),'--manifesto',str(manifesto),'--saida',str(destino)])==2
+    stdout=capsys.readouterr().out
+    assert '00000000191'not in stdout and '00000000000191'not in stdout
+    relatorio=json.loads((destino/'relatorio_leitores.json').read_text())
+    assert all(c['status']=='revisao_humana'for c in relatorio['casos'])
+    assert all(c['total_campos_divergentes']==0 for c in relatorio['casos'])
+    assert not list(destino.glob('*.canonico.json'))
+    for c in relatorio['casos']:
+        auditoria=destino/c['auditoria_revisao']
+        assert auditoria.stat().st_mode & 0o777 == 0o600
+        dados=json.loads(auditoria.read_text())
+        fontes=dados['ocorrencias'][0]['evidencias_documentais']
+        assert {f['documento']['tipo']for f in fontes}=={'cpf','cnpj'}
 
 
 @pytest.mark.parametrize("falha,codigo", [("hash", "HASH_FONTE_DIVERGENTE"), ("gabarito_ausente", "FONTE_INDISPONIVEL"),

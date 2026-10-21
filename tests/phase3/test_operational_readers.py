@@ -79,7 +79,7 @@ def test_cpf_ausente_alerta_nao_bloqueia_leitura(registro, fonte):
     r = resultado_leitura(lote, processamento_id="exec_sintetica")
     assert len(r.ocorrencias) == 1
     assert not r.ocorrencias[0].bloqueante
-    assert r.ocorrencias[0].codigo == "CPF_AUSENTE_OU_INVALIDO"
+    assert r.ocorrencias[0].codigo == "DOCUMENTO_AUSENTE"
     assert len(r.lote.boletos) == 1
 
 

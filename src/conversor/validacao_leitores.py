@@ -28,7 +28,8 @@ class CasoValidacao(Modelo):
     arquivo: str = Field(repr=False)
     gabarito: str = Field(repr=False)
     gabarito_sha256: Hash
-    leitor_id: Literal["habita_composicao_sintetico_v1", "fl_composicao_sintetico_v1", "cadastro_fl_sintetico_v1"]
+    leitor_id: Literal["habita_composicao_sintetico_v1", "fl_composicao_sintetico_v1", "cadastro_fl_sintetico_v1",
+                       "habita_composicao_real_v1", "fl_composicao_real_v1", "cadastro_fl_real_v1"]
     leitor_versao: Literal["1"] = "1"
     formato_id: Id
     condominio_id: Id
@@ -146,9 +147,20 @@ def executar_validacao(raiz: Path, manifesto: Path, saida: Path, *, salvar_canon
                 "unidades": len(lote.unidades), "boletos": len(lote.boletos), "pessoas": len(lote.pessoas),
                 "alertas": dict(Counter(o.codigo for o in resultado.ocorrencias)),
                 "campos_divergentes": diferencas[:100], "total_campos_divergentes": len(diferencas)}
+            if resultado.bloqueante:
+                item["status"] = "revisao_humana"
+                item["registros_em_revisao"] = sorted({o.registro_id for o in resultado.ocorrencias
+                    if o.bloqueante and o.registro_id is not None})
+                item["auditoria_revisao"] = f"{caso.id}.revisao_documental.json"
             # Detecta alteração de fontes e gabaritos durante a execução.
             fontes.ler(caso.fonte)
             gabaritos.ler(FonteProtegida(arquivo_id=id_gabarito, sha256=caso.gabarito_sha256))
+            if resultado.bloqueante:
+                escrever_json(saida / item["auditoria_revisao"], {
+                    "ocorrencias": [o.model_dump(mode="json") for o in resultado.ocorrencias if o.bloqueante],
+                    "ressalvas": [r.model_dump(mode="json") for r in resultado.lote.ressalvas if r.gravidade=='critico'],
+                    "homologado_producao": False,
+                })
             if salvar_canonicos:
                 escrever_json(saida / f"{caso.id}.canonico.json", lote.model_dump(mode="json"))
         except ErroLeitura as erro:
@@ -172,7 +184,7 @@ def main(argv=None):
         relatorio = executar_validacao(args.raiz, args.manifesto, args.saida, salvar_canonicos=args.salvar_canonicos)
         estados = Counter(c["status"] for c in relatorio["casos"])
         print(json.dumps({"casos": len(relatorio["casos"]), "estados": dict(estados), "homologado_producao": False}))
-        return 2 if estados["bloqueado"] else (1 if estados["divergente"] else 0)
+        return 2 if estados["bloqueado"] or estados["revisao_humana"] else (1 if estados["divergente"] else 0)
     except ErroLeitura as erro:
         print(json.dumps({"erro": erro.codigo}))
     except (ValidationError, ValueError, OSError, ErroAplicacao):

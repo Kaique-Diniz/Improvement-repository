@@ -29,6 +29,18 @@ class Gravidade(StrEnum):
     CRITICO = "critico"
 
 
+class Documento(Modelo):
+    """Valor bruto textual; a validade fiscal é avaliada sem apagar evidências inválidas."""
+    tipo: Literal["cpf", "cnpj", "outro"]
+    valor: str = Field(strict=True, repr=False, description="CPF/CNPJ bruto como texto, preservando zeros iniciais.")
+
+
+class EvidenciaDocumento(Modelo):
+    documento: Documento = Field(repr=False)
+    origem: Origem
+    titular_id: Id | None = None
+
+
 class Ocorrencia(Modelo):
     id: Id
     processamento_id: Id
@@ -37,6 +49,7 @@ class Ocorrencia(Modelo):
     escopo: Literal["registro", "arquivo", "processamento"]
     registro_id: Id | None = None
     origem: Origem | None = None
+    evidencias_documentais: tuple[EvidenciaDocumento, ...] = Field(default=(), repr=False)
 
     @property
     def bloqueante(self) -> bool:
@@ -65,11 +78,6 @@ class Contato(Modelo):
     origem: Origem | None = None
 
 
-class Documento(Modelo):
-    tipo: Literal["cpf", "cnpj", "outro"]
-    valor: str = Field(repr=False)
-
-
 def cpf_validado(documento: Documento | None) -> str:
     if documento is None or documento.tipo != "cpf":
         return ""
@@ -86,11 +94,41 @@ def cpf_validado(documento: Documento | None) -> str:
     return cpf
 
 
+def cnpj_validado(documento: Documento | None) -> str:
+    if documento is None or documento.tipo != "cnpj":
+        return ""
+    if not re.fullmatch(r"[0-9./\-\s]+", documento.valor):
+        return ""
+    cnpj = re.sub(r"\D", "", documento.valor)
+    if len(cnpj) != 14 or len(set(cnpj)) == 1:
+        return ""
+    for tamanho, pesos in ((12, (5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)),
+                           (13, (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2))):
+        resto = sum(int(cnpj[i]) * peso for i, peso in enumerate(pesos)) % 11
+        if int(cnpj[tamanho]) != (0 if resto < 2 else 11 - resto):
+            return ""
+    return cnpj
+
+
+def documento_validado(documento: Documento | None) -> str:
+    return cpf_validado(documento) or cnpj_validado(documento)
+
+
+def documento_de_texto(valor: str) -> Documento | None:
+    """Classifica comprimento sem corrigir tipo explícito ou inventar dígitos."""
+    if valor.strip() in ("", "(vazio)", "(ausente)"):
+        return None
+    n = len(re.sub(r"\D", "", valor))
+    return Documento(tipo="cpf" if n == 11 else "cnpj" if n == 14 else "outro", valor=valor)
+
+
 class Pessoa(Modelo):
     id: Id
     unidade_id: Id
     nome: str = Field(repr=False)
     documento: Documento | None = Field(default=None, repr=False)
+    documento_origem: Origem | None = None
+    evidencias_documentais: tuple[EvidenciaDocumento, ...] = Field(default=(), repr=False)
     contato: Contato = Field(default_factory=Contato, repr=False)
     relacao_unidade: Texto
     origem: Origem
@@ -111,6 +149,7 @@ class ItemComposicao(Modelo):
     codigo: Id
     valor: Dinheiro
     origem: Origem
+    descricao_original: str = Field(default="", repr=False)
 
 
 class Composicao(Modelo):
@@ -138,8 +177,9 @@ class Boleto(Modelo):
     unidade_id: Id
     identificador: Id  # identidade estável fornecida pelo futuro leitor; não é número de página
     vencimento: Data
-    competencia: Annotated[str, Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")]
+    competencia: Annotated[str, Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")] | None = None
     emissao: Data | None = None
+    emissao_original: str | None = Field(default=None, repr=False)
     composicao: Composicao
     multa: Dinheiro | None = None
     juros: Dinheiro | None = None
@@ -174,10 +214,19 @@ class ResultadoCobranca(Modelo):
         return self
 
 
+class RessalvaLeitura(Modelo):
+    codigo: Id
+    gravidade: Gravidade = Gravidade.ALERTA
+    registro_id: Id | None = None
+    origens: Annotated[tuple[Origem, ...], Field(min_length=1)]
+    valores_originais: tuple[str, ...] = Field(default=(), repr=False)
+
+
 class LoteCanonico(Modelo):
     unidades: tuple[Unidade, ...]
     boletos: tuple[Boleto, ...]
     pessoas: tuple[Pessoa, ...] = ()
+    ressalvas: tuple[RessalvaLeitura, ...] = Field(default=(), repr=False)
 
     @model_validator(mode="after")
     def integridade(self):

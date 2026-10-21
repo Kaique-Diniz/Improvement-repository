@@ -52,3 +52,29 @@ dados/
 
 ## Exemplos
 Veja `config_exemplos/`; os IDs são ilustrativos e devem ser harmonizados no cadastramento real.
+
+## Documentos e auditoria (atualização geral de 21/10/2026)
+
+`Pessoa.documento` preserva tipo e valor bruto textual; `documento_origem` e
+`evidencias_documentais` preservam referências de fonte e vínculo explícito ao
+titular. `Ocorrencia.evidencias_documentais` guarda todos os candidatos em
+auditoria protegida; não enviar esses valores a logs ou Git. Ausência/invalidade
+não bloqueia; conflito entre documentos válidos ou associação não confirmada
+bloqueia resolução/exportação automática do cadastro e encaminha à revisão humana.
+A coluna literal `CPF` aceita CPF (11) ou CNPJ (14), validado e sempre texto.
+Os campos de evidência são aditivos, com defaults vazios para ler JSON anterior.
+Schemas 1.0 regenerados; acrescentado `resolucao_documental.schema.json`. Não há
+migração do catálogo nem mudança nas interfaces JSON/PostgreSQL. Códigos novos:
+`DOCUMENTO_AUSENTE`, `DOCUMENTO_INVALIDO`, `DOCUMENTOS_CONFLITANTES`,
+`DOCUMENTO_TITULAR_NAO_CONFIRMADO`. O comparador de laboratório ainda reconhece
+o código legado `CPF_AUSENTE_OU_INVALIDO` em resultados históricos.
+
+## Extensão dos leitores reais na Fase 3
+
+`Boleto.competencia` admite ausência (`None`); `emissao_original` e
+`ItemComposicao.descricao_original` preservam o conteúdo de origem sem inventar
+competência/data. `LoteCanonico.ressalvas` conserva registros críticos ou
+informativos com origem e conteúdo bruto protegido. JSON com os campos
+anteriores continua legível; consumidores precisam tratar competência ausente
+explicitamente. Interfaces de repositório e schemas de catálogo não mudam por
+condomínio ou leitor. Ver [leitores reais](docs/CORRECOES_LEITORES_REAIS_FASE3.md).

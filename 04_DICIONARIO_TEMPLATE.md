@@ -9,7 +9,7 @@ Arquivo: `TEMPLATE - PLAZA_MAYOR_IPIRANGA_outubro_2026(1).xlsx`. Aba: **Dados**.
 |---:|---|---|---|
 | 1 | `NM_CEDENTE_CEDENTE` | Nome/código do cedente (perfil/administradora) | Obrigatório existir; conteúdo conforme perfil |
 | 2 | `CEDENTE` | Identificador do cliente/cedente conforme perfil | Obrigatório existir; código não pode ser inventado |
-| 3 | `CPF` | CPF válido; campo somente CPF, se ausente vazio + alerta | Pode ficar vazio com alerta, nunca CNPJ |
+| 3 | `CPF` | CPF válido (11 dígitos) ou CNPJ válido (14), associado ao titular | Texto obrigatório com zeros; ausente/inválido vazio + alerta; conflito exige revisão |
 | 4 | `NOME` | Nome do titular/cliente | Nome obtido da origem/cadastro |
 | 5 | `ENDERECO` | Logradouro | Texto cadastral |
 | 6 | `NUMERO` | Número do endereço | Texto para preservar caracteres |
@@ -44,11 +44,18 @@ O arquivo real possui **espaço final** no cabeçalho `NM_DIVIDA_CEDENTE ` da co
 ## Contratos de preenchimento
 - A planilha sempre possui os **30 campos em mesma ordem** e a aba `Dados`.
 - Campos de cadastro sem valor conhecido permanecem vazios, sem valores fabricados.
-- `CPF` nunca deve conter CNPJ; se não houver CPF validado, vazio + alerta.
-- CEP, CPF, telefone, DDD, CEDENTE e códigos com zeros devem ser tratados como texto quando a apresentação e o importador exigirem preservação de zeros.
+- `CPF` permanece o nome literal da coluna C: aceita CPF ou CNPJ válido, com dígitos verificadores, associado ao titular. Ausência/invalidade -> vazio + alerta. Conflitos entre documentos válidos ou vínculo não confirmado impedem resolução/exportação automática do cadastro e exigem revisão humana com auditoria das fontes.
+- CPF e CNPJ são sempre gravados como texto literal, formato `@`, nunca números. CEP, telefone, DDD, CEDENTE e códigos com zeros também preservam representação textual. Nunca completar documentos inválidos por inferência.
 - `VENCIMENTO`: data reconhecível/importável no Excel; confirmar convenção de serial e formato com destino.
 - `VL_PARCELA`: número monetário com precisão de centavos, não string formatada com `R$`.
 - Em linha cadastral (sem dívida), **Y:AD** (`NM_CONTRATO_CEDENTE`, `PRODUTO_CEDENTE`, `NM_DIVIDA_CEDENTE`, `NU_PARCELA`, `VENCIMENTO`, `VL_PARCELA`) devem permanecer vazias.
 - Em linha com dívida, as 6 colunas finais devem refletir exatamente contrato, produto, competência, parcela, vencimento e valor elegíveis segundo perfil/regra.
 - Uma mesma unidade pode ter uma linha cadastral além de linhas com dívidas caso política/perfil/exemplo homologado assim estabeleça.
 - Evitar fórmulas ou macros nos campos de dados; não alterar o template original em disco.
+
+## Compatibilidade documental confirmada — easyCollector
+
+Em 21/10/2026 o responsável pelo processo confirmou que o CRM easyCollector
+aceita CPF e CNPJ na coluna literal `CPF`. Esse requisito está aprovado. A
+homologação integral dos demais campos, formatos e comportamentos de importação
+permanece pendente; não foi realizada importação no destino nesta tarefa.

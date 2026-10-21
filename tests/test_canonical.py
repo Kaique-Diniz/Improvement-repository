@@ -87,7 +87,7 @@ def test_pessoa_e_contato_nao_expoem_dados_no_repr(pessoa):
 @pytest.mark.parametrize("documento", [None, Documento(tipo="cnpj", valor="00000000000000"),
     Documento(tipo="cpf", valor="00000000000"), Documento(tipo="cpf", valor="123"),
     Documento(tipo="cpf", valor="12345678901234")])
-def test_cpf_ausente_invalido_ou_cnpj_nunca_substituido(documento):
+def test_validador_especifico_cpf_nao_retipa_outros_documentos(documento):
     assert cpf_validado(documento) == ""
 
 

@@ -13,6 +13,9 @@ from .cadastro import LeitorCadastroFLSintetico
 from .contracts import FonteProtegida, RepositorioFontes, ResolutorContexto
 from .fl import LeitorFLSintetico
 from .habita import LeitorHabitaSintetico
+from .habita_real import LeitorHabitaReal
+from .fl_real import LeitorFLReal
+from .cadastro_real import LeitorCadastroFLReal
 from .text_support import ContextoLeitura, ErroLeitura
 
 
@@ -20,6 +23,9 @@ GRAMATICAS = {
     LeitorHabitaSintetico.formato_id: (LeitorHabitaSintetico, ("Inadimplencia Atualizada", "Bloco:", "Unidade:")),
     LeitorFLSintetico.formato_id: (LeitorFLSintetico, ("Inadimplencia com composicao", "Venc.", "Comp.", "Saldo")),
     LeitorCadastroFLSintetico.formato_id: (LeitorCadastroFLSintetico, ("W045A", "Proprietario")),
+    LeitorHabitaReal.formato_id: (LeitorHabitaReal, ("Inadimplencia Atualizada", "Bloco:", "Unidade:", "Emissao", "Monetaria")),
+    LeitorFLReal.formato_id: (LeitorFLReal, ("Inadimplencia com composicao", "Venc.", "Comp.", "Saldo", "W002A")),
+    LeitorCadastroFLReal.formato_id: (LeitorCadastroFLReal, ("W045A", "Unidade", "CPF/CNPJ")),
 }
 
 
@@ -35,6 +41,16 @@ def validar_assinatura_para_leitura(conteudo: bytes, leitor_id: str):
                          + (r"(?!\w)" if m[-1].isalnum() else ""), texto) is not None
     candidatos = [id_ for id_, (_, marcadores) in GRAMATICAS.items()
                   if any(all(contem(t, m) for m in marcadores) for t in textos)]
+    # Layout real é distinguido por estrutura, não pelo nome do condomínio.
+    reais = {
+        'habita_composicao_real_v1': any('•' in t and 'emissao' in t and 'monetaria' in t for t in textos),
+        'fl_composicao_real_v1': any(re.search(r'w002a\s+.*?\([0-9]+\)',t) for t in textos),
+        'cadastro_fl_real_v1': any('cpf/cnpj'in t and re.search(r'w045a\s+.*?\([0-9]+\)',t) for t in textos),
+    }
+    candidatos = [id_ for id_ in candidatos if not id_.endswith('_real_v1') or reais.get(id_)]
+    for id_ in tuple(candidatos):
+        if id_.endswith('_sintetico_v1') and reais.get(id_.replace('_sintetico_v1','_real_v1')):
+            candidatos.remove(id_)
     if not candidatos:
         raise ErroLeitura("FORMATO_DESCONHECIDO")
     if len(candidatos) > 1:

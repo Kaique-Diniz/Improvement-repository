@@ -30,6 +30,8 @@ def escrever_xlsx(linhas, template: Template, destino: Path, *, data_ref: date):
         for celula in aba[aba.max_row]:
             if isinstance(celula.value, str):
                 celula.data_type = "s"  # texto literal, nunca fórmula/macros vindas de fonte
+                if celula.column == 3:
+                    celula.number_format = "@"
             elif isinstance(celula.value, date):
                 celula.number_format = "dd/mm/yyyy"
             elif isinstance(celula.value, Decimal):
@@ -56,11 +58,17 @@ def escrever_xlsx(linhas, template: Template, destino: Path, *, data_ref: date):
         if tuple(valores[0]) != template.cabecalhos_fisicos or len(valores) != len(registros) + 1:
             raise ErroLeitura("XLSX_FORA_DO_CONTRATO")
         for obtido, registro in zip(valores[1:], registros):
+            documento = registro.valores[2]
+            if documento and (not isinstance(obtido[2], str) or obtido[2] != documento):
+                raise ErroLeitura("DOCUMENTO_XLSX_INCOMPATIVEL")
             valor = registro.valores[-1]
             if isinstance(valor, Decimal) and Decimal(str(obtido[-1])) != valor:
                 raise ErroLeitura("PRECISAO_XLSX_INCOMPATIVEL")
             if registro.valores[-2] != "" and not isinstance(obtido[-2], datetime):
                 raise ErroLeitura("DATA_XLSX_INCOMPATIVEL")
+        for row in conferir["Dados"].iter_rows(min_row=2, min_col=3, max_col=3):
+            if row[0].value is not None and (row[0].data_type != "s" or row[0].number_format != "@"):
+                raise ErroLeitura("DOCUMENTO_XLSX_INCOMPATIVEL")
     finally:
         conferir.close()
     destino.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
