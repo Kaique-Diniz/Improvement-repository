@@ -2,8 +2,9 @@
 
 **Status:** Fases 1 e 2 implementadas; Fase 3 tecnicamente encerrada por autorização do responsável, com ressalvas e bloqueios operacionais preservados. Sem homologação para produção.
 **Última fase concluída tecnicamente:** Fase 3 — Leitores. **458 testes aprovados**, 884 boletos reconciliados e 132 correspondências financeiras. Veja o [aceite técnico e decisão de encerramento](docs/ACEITE_TECNICO_FASE3.md).
-**Próxima etapa autorizada:** preparação da Fase 4 — Motor Geral de Cobrança, com arquitetura e modelo de regras apresentados antes da implementação. O laboratório sintético das Fases 4–5 não constitui motor geral aprovado nem homologação do Excel.
-**Proposta da Fase 4:** [arquitetura, modelo JSON, decisões D01–D09 e incrementos](docs/ARQUITETURA_MOTOR_FASE4.md), na branch `feature/fase-4-motor-cobranca`. Motor geral ainda não implementado; aguarda revisão da proposta.
+**Fase 4 — incremento 4.1 implementado:** contratos tipados, sete schemas e repositório JSON com aprovações autorizadas, HMAC e histórico imutável. Veja o [relatório, execução local e limitações](docs/INCREMENTO_4_1_PLANOS_E_APROVACOES.md), na branch `feature/fase-4-motor-cobranca`. Avaliador geral, regras reais e exportação operacional não implementados nesta entrega; 4.2 não iniciado.
+**Arquitetura da Fase 4:** [modelo JSON, decisões e incrementos](docs/ARQUITETURA_MOTOR_FASE4.md). O laboratório sintético anterior não constitui motor geral aprovado nem homologação do Excel.
+**Regressão atual:** 595 testes aprovados (458 anteriores + 137 do incremento 4.1), com schemas antigos e novos sincronizados.
 **Correções dos layouts reais:** [resultado antes/depois, testes e pendências](docs/CORRECOES_LEITORES_REAIS_FASE3.md). Os bloqueios permanecem obrigatórios.
 **Atualização documental:** CPF/CNPJ válidos na coluna literal `CPF`, como texto; compatibilidade confirmada pelo responsável no CRM easyCollector. Conflitos documentais exigem revisão humana. Veja [contratos, auditoria e testes](docs/DOCUMENTOS_CPF_CNPJ.md). A homologação integral permanece pendente.
 **Atualização:** 21/10/2026.

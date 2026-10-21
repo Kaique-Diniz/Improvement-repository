@@ -1,9 +1,12 @@
 # Fase 4 — proposta de arquitetura e decisões operacionais
 
-Status: **proposta para aprovação, sem motor geral implementado ou regra real
-ativada**. A autorização atual exige apresentar arquitetura/modelo/decisões antes
-de implementar componentes. A Fase 3 foi encerrada tecnicamente, com ressalvas;
-não houve homologação para produção.
+Status atual: **arquitetura aprovada para o incremento 4.1**, implementado conforme
+[contratos, schemas, persistência e proteção das aprovações](INCREMENTO_4_1_PLANOS_E_APROVACOES.md).
+O texto abaixo preserva a proposta original e o roteiro futuro. Não há motor
+geral de avaliação implementado nem regra real ativada. A aprovação posterior
+corrige D02: exclusões/bloqueios de unidade prevalecem, mas permissão genérica
+de unidade não libera boleto inelegível. Não houve autorização para 4.2 ou Fase 5.
+A Fase 3 está tecnicamente encerrada com ressalvas, sem homologação para produção.
 
 ## 1. Base preservada e preparação do Git
 
@@ -141,7 +144,7 @@ da seção anterior já são requisitos obrigatórios e não estão em votação
 | ID | Decisão | Proposta inicial | Impacto |
 |---|---|---|---|
 | D01 | Sentido da prioridade | Número maior vence entre decisões terminais do mesmo escopo; ordem do JSON não decide | Evita dependência da ordem de cadastro |
-| D02 | Unidade versus boleto | Resolver decisões de unidade primeiro; decisão terminal de unidade governa todos os seus boletos; regra individual não a reverte | Garante exclusão da unidade inteira; inclusão em unidade também exige aprovação expressa da cláusula |
+| D02 | Unidade versus boleto | Aprovação posterior: exclusão/bloqueio de unidade prevalece; permissão da unidade não libera boleto individualmente inelegível | Políticas registradas em 4.1; avaliação futura em 4.2 |
 | D03 | Empate incompatível | Bloquear escopo para revisão; nenhuma precedência implícita entre incluir/excluir/adiar | Não escolhe resultado financeiro arbitrariamente |
 | D04 | Sem regra ou condição indeterminada | Resultado pendente e impedimento de inclusão no escopo; nunca incluir por padrão | Exige cobertura explícita da régua e fatos suficientes |
 | D05 | Ação alertar | Acumular avisos sem decidir inclusão; desempate de regras com a mesma ação preserva todas as justificativas | Alerta sozinho não libera cobrança |

@@ -29,8 +29,10 @@ Fase 3 tecnicamente encerrada pelo responsável, com 458 testes aprovados, 884
 boletos reconciliados e 132 correspondências financeiras. As ressalvas e os
 bloqueios operacionais de lote/unidade/cadastro continuam obrigatórios; não há
 homologação para produção. Ver [aceite técnico](docs/ACEITE_TECNICO_FASE3.md).
-Próximo incremento: propor arquitetura, modelo de regras e decisões operacionais
-da Fase 4 para aprovação antes de implementar seus componentes. Sem Fase 5.
+O incremento 4.1 da Fase 4 foi aprovado e implementado: contratos, schemas e
+persistência de planos/aprovações, sem avaliação de boletos. Consulte o
+[relatório do incremento](docs/INCREMENTO_4_1_PLANOS_E_APROVACOES.md).
+Não avançar a 4.2 automaticamente; sem Fase 5 e sem homologação para produção.
 
 **Primeira tarefa:** desenvolver somente a Fase 1. Não pedir numa única execução: leitor de centenas de layouts + frontend + regra complexa + implantação.  
 **Segunda:** reconhecimento (Fase 2) usando PDFs sintéticos e reais previamente sanitizados/autorizados.  

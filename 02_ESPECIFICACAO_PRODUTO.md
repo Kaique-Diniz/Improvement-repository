@@ -33,6 +33,14 @@ Campos ausentes não são inferidos: competência pode permanecer ausente no can
 Não transformar valores monetários por float binário; usar Decimal/centavos. Preservar dados brutos e referência de origem para fins de auditoria.
 
 ## 5. Regras de cobrança
+Atualização aprovada para 4.1: exclusões/bloqueios de unidade prevalecem sobre os
+boletos correspondentes; permissões genéricas da unidade não liberam boletos
+individualmente inelegíveis. Prioridade não supera bloqueio crítico ou integridade
+documental. A ativação de configuração exige aprovação autorizada da versão/hash,
+não apenas um campo JSON. Os contratos e a persistência estão em
+[Incremento 4.1](docs/INCREMENTO_4_1_PLANOS_E_APROVACOES.md); avaliação futura depende
+do incremento 4.2 e da aprovação das regras aplicáveis.
+
 Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance (boleto, unidade, condomínio), ação (incluir, excluir, adiar, alerta, bloquear) e prioridade. Regras especiais por unidade não se limitam às políticas comuns. A contagem deve especificar se é `> N` ou `>= N` dias conforme condomínio.
 
 ### Caso inicial TREE MORUMBI (conforme histórico da conversa, sujeito a fixture de aceite)
