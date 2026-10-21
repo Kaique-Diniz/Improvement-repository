@@ -1,18 +1,23 @@
 import argparse
+from datetime import date
 import json
 from pathlib import Path
 import sys
 
 from pydantic import ValidationError
 
+from conversor.adapters.document_probe import SondadorLocal
 from conversor.adapters.json_repository import RepositorioJSON, ler_json_bytes
+from conversor.adapters.signature_repository import AssinaturasJSON
 from conversor.application.configuration import COLECOES, Configuracao
 from conversor.application.ports import ErroAplicacao
+from conversor.application.recognition import ReconhecerDocumento
+from conversor.domain.base import validar_data
 from conversor.domain.catalog import Catalogo
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Conversor de Inadimplência — fundação, sem conversão nesta fase")
+    parser = argparse.ArgumentParser(description="Conversor de Inadimplência — configuração e reconhecimento")
     parser.add_argument("--dados", type=Path, required=True, help="Diretório local protegido; nunca comitar")
     comandos = parser.add_subparsers(dest="comando", required=True)
     comandos.add_parser("init", help="Inicializar catálogo vazio, sem sobrescrever existente")
@@ -27,13 +32,28 @@ def main(argv=None) -> int:
     excluir = comandos.add_parser("excluir", help="Excluir registro não referenciado/não imutável")
     excluir.add_argument("colecao", choices=COLECOES)
     excluir.add_argument("id")
+    reconhecer = comandos.add_parser("reconhecer", help="Reconhecer sem extrair boletos ou aplicar cobrança")
+    reconhecer.add_argument("arquivo", type=Path)
+    reconhecer.add_argument("--arquivo-id", required=True, help="ID opaco, sem dados pessoais")
+    reconhecer.add_argument("--assinaturas", type=Path, required=True)
+    reconhecer.add_argument("--data-ref", required=True, help="Data ISO explícita: AAAA-MM-DD")
     for comando in (importar, gravar, excluir):
         comando.add_argument("--revisao", type=int, required=True)
     args = parser.parse_args(argv)
     try:
         repo = RepositorioJSON(args.dados)
         servico = Configuracao(repo)
-        if args.comando == "init":
+        if args.comando == "reconhecer":
+            try:
+                validar_data(args.data_ref)
+                data_ref = date.fromisoformat(args.data_ref)
+            except ValueError:
+                raise ErroAplicacao("DATA_REF_INVALIDA") from None
+            documento = SondadorLocal().sondar_arquivo(args.arquivo, arquivo_id=args.arquivo_id)
+            resultado = ReconhecerDocumento(repo, AssinaturasJSON(args.assinaturas)).executar(documento, data_ref=data_ref)
+            print(resultado.model_dump_json())
+            return 3 if resultado.bloqueante else 0
+        elif args.comando == "init":
             estado = servico.inicializar()
         elif args.comando == "validar":
             estado = repo.carregar()

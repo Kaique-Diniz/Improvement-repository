@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "versao": "sintetica-1",
+  "status": "rascunho",
+  "layouts": [
+    {
+      "id": "assinatura_habita_sintetica", "versao": "1", "formato_id": "fmt_habita_sintetico_v1",
+      "minimo_pontos": 4,
+      "marcadores": [
+        {"id": "titulo", "texto": "Inadimplência Atualizada"},
+        {"id": "bloco", "texto": "Bloco:"},
+        {"id": "unidade", "texto": "Unidade:"},
+        {"id": "total_unidade", "texto": "Total da Unidade:"}
+      ]
+    },
+    {
+      "id": "assinatura_fl_sintetica", "versao": "1", "formato_id": "fmt_fl_sintetico_v1",
+      "minimo_pontos": 4,
+      "marcadores": [
+        {"id": "titulo", "texto": "Inadimplência com composição"},
+        {"id": "vencimento", "texto": "Venc."},
+        {"id": "competencia", "texto": "Comp."},
+        {"id": "saldo", "texto": "Saldo"}
+      ]
+    }
+  ],
+  "administradoras": [
+    {"administradora_id": "adm_habita_sintetica", "identificadores": [
+      {"id": "adm_codigo", "rotulo": "Código Administradora", "valor": "ADM-SYN-H"}]},
+    {"administradora_id": "adm_fl_sintetica", "identificadores": [
+      {"id": "adm_codigo", "rotulo": "Código Administradora", "valor": "ADM-SYN-F"}]}
+  ],
+  "condominios": [
+    {"condominio_id": "cond_tree_sintetico", "identificadores": [
+      {"id": "cond_codigo", "rotulo": "Código Condomínio", "valor": "SYN-TREE"}]},
+    {"condominio_id": "cond_plaza_sintetico", "identificadores": [
+      {"id": "cond_codigo", "rotulo": "Código Condomínio", "valor": "SYN-PLAZA"}]},
+    {"condominio_id": "cond_outro_sintetico", "identificadores": [
+      {"id": "cond_codigo", "rotulo": "Código Condomínio", "valor": "SYN-OUTRO"}]}
+  ]
+}

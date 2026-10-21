@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "conversor-inadimplencia"
-version = "0.1.0"
-description = "Fundação do Conversor Inteligente de Inadimplência — Fase 1"
+version = "0.2.0"
+description = "Conversor Inteligente de Inadimplência — fundação e reconhecimento"
 requires-python = ">=3.12"
-dependencies = ["pydantic==2.13.4", "filelock==3.20.0"]
+dependencies = ["pydantic==2.13.4", "filelock==3.20.0", "pypdf==6.21.1", "openpyxl==3.1.5", "defusedxml==0.7.1"]
 
 [project.optional-dependencies]
 test = ["pytest==8.4.2"]
