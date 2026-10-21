@@ -10,6 +10,11 @@ O pacote, gabaritos e resultados permanecem ignorados pelo Git. Consulte
 As instruções abaixo continuam necessárias para a homologação futura com
 amostras representativas sanitizadas. Nenhum leitor está aprovado para produção.
 
+A integração posterior da Fase 3 acrescenta o contrato comum dos leitores e uma
+validação privada fora de Git, com manifesto/hash e comparação canônica. Consulte
+[LEITORES_FASE3.md](../../../docs/LEITORES_FASE3.md). Não colocar documentos reais
+nesta pasta: o caminho privado externo ainda deve ser confirmado/autorizado.
+
 Esta pasta é reservada a material previamente sanitizado e autorizado. O `.gitignore`
 local ignora tudo, exceto esta documentação e o manifesto **de exemplo**. Não force
 commit de PDFs, gabaritos de clientes, cadastros, senhas ou dados originais.

@@ -2,6 +2,7 @@
 
 **Status:** Fases 1 e 2 implementadas. Laboratório adicional de extração, regras e Excel testado com o pacote sintético fornecido; nenhum formato real homologado.
 **Última fase concluída:** Fase 2. As Fases 3–5 têm implementações parciais de laboratório; a próxima fase pendente é a Fase 3. Consulte a [matriz de progresso e cobertura dos 275 testes](docs/DIAGNOSTICO_PROGRESSO.md).
+**Fase 3 em andamento:** leitores integrados ao contrato comum e validação privada preparada; **327 testes aprovados**. O aceite com fontes reais permanece pendente. Veja [implementação, checklist e publicação](docs/LEITORES_FASE3.md).
 **Atualização:** 21/10/2026.
 **Idioma do projeto:** português brasileiro.
 
