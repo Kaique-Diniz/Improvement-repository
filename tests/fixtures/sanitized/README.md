@@ -1,4 +1,14 @@
-# Recepção de amostras sanitizadas (nenhuma amostra real recebida)
+# Recepção de amostras sanitizadas e laboratório sintético
+
+Em 21/10/2026 foi recebido o pacote **100% sintético**, recriado do zero,
+`Homologacao_Sanitizada_Conversor/`. Ele está disponível localmente nesta pasta,
+com os nove arquivos originais preservados; não é amostra representativa real.
+O pacote, gabaritos e resultados permanecem ignorados pelo Git. Consulte
+[o relatório do laboratório](../../../docs/RELATORIO_PACOTE_SINTETICO.md) e execute
+`python -m pytest -q tests/homologacao/pacote_suite.py` após instalar o projeto.
+
+As instruções abaixo continuam necessárias para a homologação futura com
+amostras representativas sanitizadas. Nenhum leitor está aprovado para produção.
 
 Esta pasta é reservada a material previamente sanitizado e autorizado. O `.gitignore`
 local ignora tudo, exceto esta documentação e o manifesto **de exemplo**. Não force
@@ -49,7 +59,7 @@ quebras de página. Não rasterize o PDF durante a anonimização: isso mudaria 
 do documento. Dados pessoais e credenciais devem ser removidos de texto, metadados,
 anexos e camadas ocultas, preservando a estrutura relevante. Não envie régua bruta.
 
-## Complementos para homologar leitores na Fase 3 (não implementados nesta fase)
+## Complementos para homologar leitores operacionais na Fase 3
 
 - Preserve pelo menos duas páginas adjacentes com um boleto continuado e outro
   boleto distinto. Para Habita, inclua também variações de bloco/DEP/unidade; para
@@ -67,7 +77,8 @@ anexos e camadas ocultas, preservando a estrutura relevante. Não envie régua b
 Os JSONs `resultados/*.canonico.obtido.json` serão produzidos pelos futuros leitores;
 não são gerados pelo reconhecimento. O comparador já valida o contrato canônico e
 detecta campos divergentes, somas inválidas, origem ausente e duplicação de boleto.
-Isso prepara os testes sem afirmar que os extratores foram implementados.
+Isso prepara os testes operacionais. Os leitores adicionados no laboratório
+implementam apenas as gramáticas do pacote sintético, ainda não homologadas.
 
 ## Comparação local, sem imprimir conteúdo dos documentos
 

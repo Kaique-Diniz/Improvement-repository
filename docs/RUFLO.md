@@ -18,3 +18,8 @@ usar a sintaxe de variável do shell correspondente ou o cache padrão gravável
 Não é necessário inicializar agentes nem instalar Claude Code para executar os
 testes Python. Não enviar dados cadastrais, régua bruta ou credenciais à memória
 do Ruflo. Mudanças em arquivos auxiliares gerados pelo próprio Ruflo ficam locais.
+
+No laboratório do pacote sintético, Ruflo também foi usado para registrar a tarefa
+de testes (`task-1792588750647-k6yscg`). O acompanhamento contém apenas descrição
+genérica do desenvolvimento; arquivos-fonte, valores e cadastros não são enviados.
+O resultado verificável continua sendo a suíte pytest e o relatório do laboratório.

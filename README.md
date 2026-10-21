@@ -1,7 +1,7 @@
 # Dossiê de transferência ao Codex — Conversor Inteligente de Inadimplência
 
-**Status:** Fases 1 e 2 implementadas e testadas com sintéticos. Homologação com amostras sanitizadas pendente; nenhum formato real homologado.
-**Atualização:** 20/10/2026.  
+**Status:** Fases 1 e 2 implementadas. Laboratório adicional de extração, regras e Excel testado com o pacote sintético fornecido; nenhum formato real homologado.
+**Atualização:** 21/10/2026.
 **Idioma do projeto:** português brasileiro.
 
 ## Objetivo
@@ -83,8 +83,9 @@ referências, vigências, aprovações e relações. A validação de prontidão
 
 O contrato de saída tem 30 posições, CPF em branco com alerta quando ausente ou
 inválido e linhas cadastrais com Y:AD vazias. Preserva o espaço final físico da
-coluna AA por configuração até homologação. Nenhum arquivo XLSX é gerado nesta fase.
-Nenhum código aplica a régua, reconhece PDFs ou enriquece com Cadastro Geral.
+coluna AA por configuração até homologação. A entrega original da Fase 1 não gera
+XLSX, aplica régua, reconhece PDFs ou enriquece com Cadastro Geral; os acréscimos
+posteriores estão descritos nas seções abaixo.
 Retenção, ACL, aprovação real e importação no sistema final permanecem pendentes.
 
 As etapas seguintes exigem aprovação explícita após revisão de cada entrega.
@@ -132,4 +133,39 @@ nunca trechos brutos, nomes de arquivos/pessoas ou valores financeiros extraído
 A pasta `tests/fixtures/sanitized/` está preparada e ignora amostras locais no Git.
 O comparador de contrato canônico prepara a validação dos futuros leitores sem
 implementá-los nesta fase. Amostras representativas e gabaritos revisados são
-necessários antes de homologar Habita/TREE ou FL/Plaza. A Fase 3 não foi iniciada.
+necessários antes de homologar Habita/TREE ou FL/Plaza. O laboratório abaixo não
+aprova as fases operacionais seguintes nem altera os bloqueios de reconhecimento.
+
+## Laboratório do pacote sintético fornecido
+
+O pacote está em `tests/fixtures/sanitized/Homologacao_Sanitizada_Conversor/`,
+ignorado pelo Git e preservado integralmente. Não acompanha um clone novo;
+reponha a cópia autorizada nesse caminho para executar a integração. A suíte
+regular gera seus próprios PDFs sintéticos pequenos e não depende do anexo.
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m pytest -q tests/homologacao/pacote_suite.py
+.venv/bin/python -m conversor.laboratorio \
+  --pacote tests/fixtures/sanitized/Homologacao_Sanitizada_Conversor \
+  --saida dados/homologacao_pacote_nova_execucao
+```
+
+Use um diretório de saída novo ou vazio a cada execução. O laboratório escreve
+dois XLSX com 30 colunas, os modelos antes/depois do Cadastro, decisões, ocorrências,
+hashes de preservação das fixtures e relatórios JSON/Markdown. O terminal mostra
+somente agregados. A configuração é `config_exemplos/laboratorio_pacote.json`.
+
+Status do comando: **0** sem diferenças de conteúdo; **1** diferenças no Excel;
+**2** bloqueios, diferenças financeiras/de controle ou fixtures alteradas. Neste
+pacote o resultado esperado é **1**: valores e decisões conferem, mas há **17 células
+de contato divergentes**. Quatro datas equivalentes têm representação diferente
+(data nativa versus texto ISO) e são listadas separadamente. Testes verdes verificam
+também a detecção dessas divergências; não significam equivalência integral ao Excel.
+
+As duas políticas confirmadas pelo usuário — cadastro por unidade com boleto
+adiado e prioridade do Cadastro em titular divergente com alerta/auditoria — valem
+**somente neste laboratório**. Não existem OCR, LLM ou Ruflo no cálculo financeiro.
+O Ruflo é utilizado apenas para acompanhamento local do trabalho.
+
+Veja o [relatório verificável e próximos ajustes](docs/RELATORIO_PACOTE_SINTETICO.md).
