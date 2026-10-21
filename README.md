@@ -1,6 +1,6 @@
 # Dossiê de transferência ao Codex — Conversor Inteligente de Inadimplência
 
-**Status:** Fase 1 implementada: domínio, contratos, persistência JSON, schemas, CLI e testes sintéticos.
+**Status:** Fases 1 e 2 implementadas e testadas com sintéticos. Homologação com amostras sanitizadas pendente; nenhum formato real homologado.
 **Atualização:** 20/10/2026.  
 **Idioma do projeto:** português brasileiro.
 
@@ -87,4 +87,49 @@ coluna AA por configuração até homologação. Nenhum arquivo XLSX é gerado n
 Nenhum código aplica a régua, reconhece PDFs ou enriquece com Cadastro Geral.
 Retenção, ACL, aprovação real e importação no sistema final permanecem pendentes.
 
-As etapas seguintes exigem aprovação explícita após revisão desta entrega.
+As etapas seguintes exigem aprovação explícita após revisão de cada entrega.
+
+## Fase 2 — reconhecimento automático
+
+O comando `reconhecer` detecta PDF com texto, PDF sem texto/rasterizado/misto,
+XLSX e CSV UTF-8. Classifica assinaturas e identifica administradora/condomínio
+por campos explícitos. Não extrai boletos, não aplica régua e não gera Excel.
+Desconhecidos, ambiguidades e configurações não homologadas bloqueiam o avanço.
+
+Após instalar/atualizar o ambiente pelos comandos acima, crie a demonstração:
+
+```bash
+.venv/bin/python examples/fase2/gerar_demo.py --saida dados/demo_fase2
+.venv/bin/python -m conversor.cli --dados dados/demo_fase2/repositorio init
+.venv/bin/python -m conversor.cli --dados dados/demo_fase2/repositorio importar dados/demo_fase2/catalogo.json --revisao 1
+.venv/bin/python -m conversor.cli --dados dados/demo_fase2/repositorio reconhecer dados/demo_fase2/habita_tree.pdf --arquivo-id fonte_sintetica --assinaturas dados/demo_fase2/assinaturas.json --data-ref 2026-10-21
+```
+
+A demonstração retorna **status 3**, resultado bloqueante com
+`FORMATO_NAO_HOMOLOGADO` e `ASSINATURAS_NAO_HOMOLOGADAS`. Esse é o comportamento
+esperado: os exemplos são rascunhos e não podem aprovar formatos reais.
+O gerador cria arquivos novos sem sobrescrever diretório já utilizado; use outro
+diretório para uma nova demonstração. A data é ilustrativa e sempre deve ser
+fornecida explicitamente. A suíte testa caminhos positivos com aprovações artificiais
+restritas a fixtures temporárias; não existe etapa de confirmação interativa.
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m conversor.schemas --check
+.venv/bin/python -m conversor.recognition_schemas --check
+```
+
+O reconhecimento retorna status 0 quando apto para próxima etapa, 3 quando bloqueado
+e 2 para erros de configuração/acesso. O JSON público contém IDs opacos, hashes,
+versões, cobertura das assinaturas, localização de evidências e códigos de bloqueio;
+nunca trechos brutos, nomes de arquivos/pessoas ou valores financeiros extraídos.
+`pronto_para_proxima_etapa` é prontidão de configuração/reconhecimento, não de cobrança.
+
+- [Arquitetura, decisões e limites da Fase 2](docs/RECONHECIMENTO_FASE2.md).
+- [Arquivos sanitizados necessários e como comparar gabaritos](tests/fixtures/sanitized/README.md).
+- [Assinaturas sintéticas Habita e FL, não homologadas](examples/fase2/assinaturas.sinteticas.json).
+
+A pasta `tests/fixtures/sanitized/` está preparada e ignora amostras locais no Git.
+O comparador de contrato canônico prepara a validação dos futuros leitores sem
+implementá-los nesta fase. Amostras representativas e gabaritos revisados são
+necessários antes de homologar Habita/TREE ou FL/Plaza. A Fase 3 não foi iniciada.
