@@ -1,0 +1,1091 @@
+{
+  "$defs": {
+    "Apontamento": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo_original": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Codigo Original",
+          "type": "string"
+        },
+        "namespace_formato": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Namespace Formato",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        }
+      },
+      "required": [
+        "codigo_original",
+        "namespace_formato",
+        "origem"
+      ],
+      "title": "Apontamento",
+      "type": "object"
+    },
+    "Boleto": {
+      "additionalProperties": false,
+      "properties": {
+        "apontamentos": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Apontamento"
+          },
+          "title": "Apontamentos",
+          "type": "array"
+        },
+        "competencia": {
+          "anyOf": [
+            {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Competencia"
+        },
+        "composicao": {
+          "$ref": "#/$defs/Composicao"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "correcao": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correcao"
+        },
+        "emissao": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Emissao"
+        },
+        "emissao_original": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Emissao Original"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "juros": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Juros"
+        },
+        "multa": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Multa"
+        },
+        "origens": {
+          "items": {
+            "$ref": "#/$defs/Origem"
+          },
+          "minItems": 1,
+          "title": "Origens",
+          "type": "array"
+        },
+        "saldo_acumulado": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Saldo Acumulado"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        },
+        "vencimento": {
+          "format": "date",
+          "title": "Vencimento",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "condominio_id",
+        "unidade_id",
+        "identificador",
+        "vencimento",
+        "composicao",
+        "origens"
+      ],
+      "title": "Boleto",
+      "type": "object"
+    },
+    "CoberturaApontamentos": {
+      "additionalProperties": false,
+      "description": "Evidência explícita de completude de um campo/namespace, não um default.",
+      "properties": {
+        "boleto_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Boleto Id",
+          "type": "string"
+        },
+        "namespace": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Namespace",
+          "type": "string"
+        },
+        "origens": {
+          "items": {
+            "$ref": "#/$defs/Origem"
+          },
+          "minItems": 1,
+          "title": "Origens",
+          "type": "array"
+        }
+      },
+      "required": [
+        "boleto_id",
+        "namespace",
+        "origens"
+      ],
+      "title": "CoberturaApontamentos",
+      "type": "object"
+    },
+    "Composicao": {
+      "additionalProperties": false,
+      "properties": {
+        "itens": {
+          "items": {
+            "$ref": "#/$defs/ItemComposicao"
+          },
+          "minItems": 1,
+          "title": "Itens",
+          "type": "array"
+        },
+        "total_original": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Total Original"
+        }
+      },
+      "required": [
+        "itens",
+        "total_original"
+      ],
+      "title": "Composicao",
+      "type": "object"
+    },
+    "Contato": {
+      "additionalProperties": false,
+      "properties": {
+        "emails": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Emails",
+          "type": "array"
+        },
+        "endereco": {
+          "$ref": "#/$defs/Endereco"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "telefones": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Telefone"
+          },
+          "maxItems": 5,
+          "title": "Telefones",
+          "type": "array"
+        }
+      },
+      "title": "Contato",
+      "type": "object"
+    },
+    "Documento": {
+      "additionalProperties": false,
+      "description": "Valor bruto textual; a validade fiscal é avaliada sem apagar evidências inválidas.",
+      "properties": {
+        "tipo": {
+          "enum": [
+            "cpf",
+            "cnpj",
+            "outro"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "description": "CPF/CNPJ bruto como texto, preservando zeros iniciais.",
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "Documento",
+      "type": "object"
+    },
+    "Endereco": {
+      "additionalProperties": false,
+      "properties": {
+        "bairro": {
+          "default": "",
+          "title": "Bairro",
+          "type": "string"
+        },
+        "cep": {
+          "default": "",
+          "pattern": "^(\\d{8})?$",
+          "title": "Cep",
+          "type": "string"
+        },
+        "cidade": {
+          "default": "",
+          "title": "Cidade",
+          "type": "string"
+        },
+        "complemento": {
+          "default": "",
+          "title": "Complemento",
+          "type": "string"
+        },
+        "logradouro": {
+          "default": "",
+          "title": "Logradouro",
+          "type": "string"
+        },
+        "numero": {
+          "default": "",
+          "title": "Numero",
+          "type": "string"
+        },
+        "uf": {
+          "default": "",
+          "pattern": "^([A-Z]{2})?$",
+          "title": "Uf",
+          "type": "string"
+        }
+      },
+      "title": "Endereco",
+      "type": "object"
+    },
+    "EvidenciaDocumento": {
+      "additionalProperties": false,
+      "properties": {
+        "documento": {
+          "$ref": "#/$defs/Documento"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "titular_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Titular Id"
+        }
+      },
+      "required": [
+        "documento",
+        "origem"
+      ],
+      "title": "EvidenciaDocumento",
+      "type": "object"
+    },
+    "FatoEvidenciado": {
+      "additionalProperties": false,
+      "properties": {
+        "boleto_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Boleto Id"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "confirmacao": {
+          "enum": [
+            "comprovado",
+            "nao_confirmado"
+          ],
+          "title": "Confirmacao",
+          "type": "string"
+        },
+        "fato_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Fato Id",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origens": {
+          "items": {
+            "$ref": "#/$defs/Origem"
+          },
+          "minItems": 1,
+          "title": "Origens",
+          "type": "array"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        },
+        "valor": {
+          "discriminator": {
+            "mapping": {
+              "booleano": "#/$defs/ValorBooleano",
+              "data": "#/$defs/ValorData",
+              "dinheiro": "#/$defs/ValorDinheiro",
+              "inteiro": "#/$defs/ValorInteiro",
+              "texto": "#/$defs/ValorTexto"
+            },
+            "propertyName": "tipo"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ValorTexto"
+            },
+            {
+              "$ref": "#/$defs/ValorInteiro"
+            },
+            {
+              "$ref": "#/$defs/ValorDinheiro"
+            },
+            {
+              "$ref": "#/$defs/ValorBooleano"
+            },
+            {
+              "$ref": "#/$defs/ValorData"
+            }
+          ],
+          "title": "Valor"
+        },
+        "vigente_ate": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigente Ate"
+        },
+        "vigente_de": {
+          "format": "date",
+          "title": "Vigente De",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "fato_id",
+        "condominio_id",
+        "unidade_id",
+        "valor",
+        "vigente_de",
+        "confirmacao",
+        "origens"
+      ],
+      "title": "FatoEvidenciado",
+      "type": "object"
+    },
+    "Gravidade": {
+      "enum": [
+        "informativo",
+        "alerta",
+        "critico"
+      ],
+      "title": "Gravidade",
+      "type": "string"
+    },
+    "ItemComposicao": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "descricao_original": {
+          "default": "",
+          "title": "Descricao Original",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "valor": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "title": "Valor"
+        }
+      },
+      "required": [
+        "codigo",
+        "valor",
+        "origem"
+      ],
+      "title": "ItemComposicao",
+      "type": "object"
+    },
+    "LoteCanonico": {
+      "additionalProperties": false,
+      "properties": {
+        "boletos": {
+          "items": {
+            "$ref": "#/$defs/Boleto"
+          },
+          "title": "Boletos",
+          "type": "array"
+        },
+        "pessoas": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Pessoa"
+          },
+          "title": "Pessoas",
+          "type": "array"
+        },
+        "ressalvas": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RessalvaLeitura"
+          },
+          "title": "Ressalvas",
+          "type": "array"
+        },
+        "unidades": {
+          "items": {
+            "$ref": "#/$defs/Unidade"
+          },
+          "title": "Unidades",
+          "type": "array"
+        }
+      },
+      "required": [
+        "unidades",
+        "boletos"
+      ],
+      "title": "LoteCanonico",
+      "type": "object"
+    },
+    "Ocorrencia": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "escopo": {
+          "enum": [
+            "registro",
+            "arquivo",
+            "processamento"
+          ],
+          "title": "Escopo",
+          "type": "string"
+        },
+        "evidencias_documentais": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenciaDocumento"
+          },
+          "title": "Evidencias Documentais",
+          "type": "array"
+        },
+        "gravidade": {
+          "$ref": "#/$defs/Gravidade"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "processamento_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Processamento Id",
+          "type": "string"
+        },
+        "registro_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registro Id"
+        }
+      },
+      "required": [
+        "id",
+        "processamento_id",
+        "codigo",
+        "gravidade",
+        "escopo"
+      ],
+      "title": "Ocorrencia",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "Pessoa": {
+      "additionalProperties": false,
+      "properties": {
+        "contato": {
+          "$ref": "#/$defs/Contato"
+        },
+        "documento": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Documento"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "documento_origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "evidencias_documentais": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenciaDocumento"
+          },
+          "title": "Evidencias Documentais",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome": {
+          "title": "Nome",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "relacao_unidade": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Relacao Unidade",
+          "type": "string"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "unidade_id",
+        "nome",
+        "relacao_unidade",
+        "origem"
+      ],
+      "title": "Pessoa",
+      "type": "object"
+    },
+    "RessalvaLeitura": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "gravidade": {
+          "$ref": "#/$defs/Gravidade",
+          "default": "alerta"
+        },
+        "origens": {
+          "items": {
+            "$ref": "#/$defs/Origem"
+          },
+          "minItems": 1,
+          "title": "Origens",
+          "type": "array"
+        },
+        "registro_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registro Id"
+        },
+        "valores_originais": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Valores Originais",
+          "type": "array"
+        }
+      },
+      "required": [
+        "codigo",
+        "origens"
+      ],
+      "title": "RessalvaLeitura",
+      "type": "object"
+    },
+    "Telefone": {
+      "additionalProperties": false,
+      "properties": {
+        "ddd": {
+          "pattern": "^\\d{2}$",
+          "title": "Ddd",
+          "type": "string"
+        },
+        "numero": {
+          "pattern": "^\\d{8,9}$",
+          "title": "Numero",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ddd",
+        "numero"
+      ],
+      "title": "Telefone",
+      "type": "object"
+    },
+    "Unidade": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "bloco_original": {
+          "title": "Bloco Original",
+          "type": "string"
+        },
+        "chave_normalizada": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Chave Normalizada",
+          "type": "string"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "normalizador_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Normalizador Versao",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "unidade_original": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Unidade Original",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "condominio_id",
+        "administradora_id",
+        "bloco_original",
+        "unidade_original",
+        "chave_normalizada",
+        "normalizador_versao",
+        "origem"
+      ],
+      "title": "Unidade",
+      "type": "object"
+    },
+    "ValorBooleano": {
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "booleano",
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "title": "Valor",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "ValorBooleano",
+      "type": "object"
+    },
+    "ValorData": {
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "data",
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "format": "date",
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "ValorData",
+      "type": "object"
+    },
+    "ValorDinheiro": {
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "dinheiro",
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "pattern": "^-?(0|[1-9][0-9]*)\\.[0-9]{2}$",
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "ValorDinheiro",
+      "type": "object"
+    },
+    "ValorInteiro": {
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "inteiro",
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "title": "Valor",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "ValorInteiro",
+      "type": "object"
+    },
+    "ValorTexto": {
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "const": "texto",
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "ValorTexto",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:simulacao:1.0:entrada",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "coberturas_apontamentos": {
+      "items": {
+        "$ref": "#/$defs/CoberturaApontamentos"
+      },
+      "title": "Coberturas Apontamentos",
+      "type": "array"
+    },
+    "fatos": {
+      "items": {
+        "$ref": "#/$defs/FatoEvidenciado"
+      },
+      "title": "Fatos",
+      "type": "array"
+    },
+    "lote": {
+      "$ref": "#/$defs/LoteCanonico"
+    },
+    "ocorrencias_anteriores": {
+      "items": {
+        "$ref": "#/$defs/Ocorrencia"
+      },
+      "title": "Ocorrencias Anteriores",
+      "type": "array"
+    }
+  },
+  "required": [
+    "lote",
+    "fatos",
+    "ocorrencias_anteriores",
+    "coberturas_apontamentos"
+  ],
+  "title": "EntradaSimulacao",
+  "type": "object"
+}

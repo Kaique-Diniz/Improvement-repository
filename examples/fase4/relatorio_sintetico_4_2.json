@@ -1,0 +1,1196 @@
+{
+  "schema_version": "1.0",
+  "motor_versao": "4.2.0",
+  "modo": "somente_simulacao",
+  "autoriza_cobranca": false,
+  "permite_exportacao_operacional": false,
+  "solicitacao": {
+    "processamento_id": "demo_4_2_sintetico",
+    "condominio_id": "cond_demo_sintetico",
+    "plano_id": "plano_demo",
+    "plano_versao": "1.0.0",
+    "plano_hash": "0e010c35dd1f3a8cace21e0da6bf7fd142aa9a439a014805841d776a2ec830c3",
+    "ambiente": "sintetico",
+    "data_ref": "2026-02-20"
+  },
+  "prova_plano": {
+    "revisao_repositorio": 4,
+    "hash_estado": "8823001fddb6ecc4ef61e9b86c20a614fc043ef45c486cae086dd69c646c6b86",
+    "aprovacao_sequencia": 3,
+    "aprovacao_hash": "f6a9f6b543a1998a879cde412559a61c21d57c7530055f74bbb52adf53d21e6b",
+    "ativacao_sequencia": 4,
+    "ativacao_hash": "d8a5ab6f967b6c4d0ae9a77a3c21747fecae9ac58d66c15bf699bad37036229b"
+  },
+  "hash_entrada": "d0383a7ab746b0dd500f02a1caf8955bd04c564c0e69c9fe88f86925306746b4",
+  "unidades": [
+    {
+      "unidade_id": "unidade_demo_1",
+      "situacao": "elegivel_na_simulacao",
+      "motivo_codigo": "RESUMO_DOS_BOLETOS",
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_1",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "falso",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": false
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_1"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_1",
+                "sha256": "c3006d1331950885992488af1c455ac12c200d4b3857ad599d8a9e4885da9d2e",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "boletos_ids": [
+        "boleto_demo_1"
+      ],
+      "origens": [
+        {
+          "arquivo_id": "canonico_sintetico_1",
+          "sha256": "69a9f71d8d5976acfc809a1096850de8d5fac729854a98d736fdc8defde1eb37",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "unidade_id": "unidade_demo_2",
+      "situacao": "excluido",
+      "motivo_codigo": "RESUMO_DOS_BOLETOS",
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_2",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "verdadeiro",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": true
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_2"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_2",
+                "sha256": "8c2d7f567b98b3156f8b5b85ac9d41dc3d5283ab25b0555cecb114b0ced5de93",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "boletos_ids": [
+        "boleto_demo_2"
+      ],
+      "origens": [
+        {
+          "arquivo_id": "canonico_sintetico_2",
+          "sha256": "a354beb7df5ec26e8ee2c205f99a931db57cffb838919fb1d7b9df3c0cbe942f",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "unidade_id": "unidade_demo_3",
+      "situacao": "pendente_revisao",
+      "motivo_codigo": "RESUMO_DOS_BOLETOS",
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_3",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "falso",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": false
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_3"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_3",
+                "sha256": "19bfe9daefa02a61219b04c38e858621718a82506316c9e19d0ebb160aad8cd5",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "boletos_ids": [
+        "boleto_demo_3"
+      ],
+      "origens": [
+        {
+          "arquivo_id": "canonico_sintetico_3",
+          "sha256": "5a7bc4e6d1bed1bce01182edb1bcb1e8ba4e0bef6419acd44a8ad5353ca9f352",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "unidade_id": "unidade_demo_4",
+      "situacao": "bloqueado",
+      "motivo_codigo": "RESUMO_DOS_BOLETOS",
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_4",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "falso",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": false
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_4"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_4",
+                "sha256": "8ea5f64e130dff6e51b9a7496c638cf797fab79030ecb220b12c7cde5e85c272",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "boletos_ids": [
+        "boleto_demo_4"
+      ],
+      "origens": [
+        {
+          "arquivo_id": "canonico_sintetico_4",
+          "sha256": "489ae17dada4862539cc1ea86ea5c5d3abe32718b7a91c0121a3c91de5e35561",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    }
+  ],
+  "boletos": [
+    {
+      "unidade_id": "unidade_demo_1",
+      "boleto_id": "boleto_demo_1",
+      "situacao": "elegivel_na_simulacao",
+      "motivo_codigo": "REGRA_INDIVIDUAL_SATISFEITA",
+      "motivo_regras": "REGRA_INDIVIDUAL_SATISFEITA",
+      "revisao_humana": false,
+      "regras_decisivas": [
+        "permissao_boleto"
+      ],
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_1",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "falso",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": false
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_1"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_1",
+                "sha256": "c3006d1331950885992488af1c455ac12c200d4b3857ad599d8a9e4885da9d2e",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        },
+        {
+          "regra_id": "permissao_boleto",
+          "plano_versao": "1.0.0",
+          "prioridade": 99,
+          "alvo": "boleto",
+          "unidade_id": "unidade_demo_1",
+          "boleto_id": "boleto_demo_1",
+          "acao": "incluir",
+          "motivo_codigo": "PERMISSAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "permissao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "verdadeiro",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": "boleto_demo_1",
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": true
+              }
+            ],
+            "fatos_ids": [
+              "permissao_didatica_1"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_permissao_didatica_1",
+                "sha256": "8fe35081a6dfdb2b44201707a9fa391125e5accfbc109ea8ece0aabb4bd772ec",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "ocorrencias_preservadas": [],
+      "origens": [
+        {
+          "arquivo_id": "evidencia_permissao_didatica_1",
+          "sha256": "8fe35081a6dfdb2b44201707a9fa391125e5accfbc109ea8ece0aabb4bd772ec",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "canonico_sintetico_1",
+          "sha256": "69a9f71d8d5976acfc809a1096850de8d5fac729854a98d736fdc8defde1eb37",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "evidencia_restricao_didatica_1",
+          "sha256": "c3006d1331950885992488af1c455ac12c200d4b3857ad599d8a9e4885da9d2e",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "unidade_id": "unidade_demo_2",
+      "boleto_id": "boleto_demo_2",
+      "situacao": "excluido",
+      "motivo_codigo": "EXCLUSAO_TERMINAL_DA_UNIDADE",
+      "motivo_regras": "EXCLUSAO_TERMINAL_DA_UNIDADE",
+      "revisao_humana": false,
+      "regras_decisivas": [
+        "exclusao_unidade"
+      ],
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_2",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "verdadeiro",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": true
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_2"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_2",
+                "sha256": "8c2d7f567b98b3156f8b5b85ac9d41dc3d5283ab25b0555cecb114b0ced5de93",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        },
+        {
+          "regra_id": "permissao_boleto",
+          "plano_versao": "1.0.0",
+          "prioridade": 99,
+          "alvo": "boleto",
+          "unidade_id": "unidade_demo_2",
+          "boleto_id": "boleto_demo_2",
+          "acao": "incluir",
+          "motivo_codigo": "PERMISSAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "permissao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "verdadeiro",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": "boleto_demo_2",
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": true
+              }
+            ],
+            "fatos_ids": [
+              "permissao_didatica_2"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_permissao_didatica_2",
+                "sha256": "adb09029d95e070a0d240cde13b20e69d89dbdfdd54e946c88b97da038964c98",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "ocorrencias_preservadas": [],
+      "origens": [
+        {
+          "arquivo_id": "evidencia_permissao_didatica_2",
+          "sha256": "adb09029d95e070a0d240cde13b20e69d89dbdfdd54e946c88b97da038964c98",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "canonico_sintetico_2",
+          "sha256": "a354beb7df5ec26e8ee2c205f99a931db57cffb838919fb1d7b9df3c0cbe942f",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "evidencia_restricao_didatica_2",
+          "sha256": "8c2d7f567b98b3156f8b5b85ac9d41dc3d5283ab25b0555cecb114b0ced5de93",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "unidade_id": "unidade_demo_3",
+      "boleto_id": "boleto_demo_3",
+      "situacao": "pendente_revisao",
+      "motivo_codigo": "CONDICAO_INDETERMINADA",
+      "motivo_regras": "CONDICAO_INDETERMINADA",
+      "revisao_humana": true,
+      "regras_decisivas": [
+        "permissao_boleto"
+      ],
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_3",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "falso",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": false
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_3"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_3",
+                "sha256": "19bfe9daefa02a61219b04c38e858621718a82506316c9e19d0ebb160aad8cd5",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        },
+        {
+          "regra_id": "permissao_boleto",
+          "plano_versao": "1.0.0",
+          "prioridade": 99,
+          "alvo": "boleto",
+          "unidade_id": "unidade_demo_3",
+          "boleto_id": "boleto_demo_3",
+          "acao": "incluir",
+          "motivo_codigo": "PERMISSAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "permissao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "indeterminado",
+            "motivo_codigo": "FATO_AUSENTE_OU_FORA_VIGENCIA",
+            "boleto_id": "boleto_demo_3",
+            "observados": [],
+            "fatos_ids": [],
+            "origens": [],
+            "filhos": []
+          }
+        }
+      ],
+      "ocorrencias_preservadas": [],
+      "origens": [
+        {
+          "arquivo_id": "canonico_sintetico_3",
+          "sha256": "5a7bc4e6d1bed1bce01182edb1bcb1e8ba4e0bef6419acd44a8ad5353ca9f352",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "evidencia_restricao_didatica_3",
+          "sha256": "19bfe9daefa02a61219b04c38e858621718a82506316c9e19d0ebb160aad8cd5",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "unidade_id": "unidade_demo_4",
+      "boleto_id": "boleto_demo_4",
+      "situacao": "bloqueado",
+      "motivo_codigo": "BLOQUEIO_CRITICO_PRESERVADO",
+      "motivo_regras": "REGRA_INDIVIDUAL_SATISFEITA",
+      "revisao_humana": true,
+      "regras_decisivas": [
+        "permissao_boleto"
+      ],
+      "avaliacoes": [
+        {
+          "regra_id": "exclusao_unidade",
+          "plano_versao": "1.0.0",
+          "prioridade": 1,
+          "alvo": "unidade",
+          "unidade_id": "unidade_demo_4",
+          "boleto_id": null,
+          "acao": "excluir",
+          "motivo_codigo": "RESTRICAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "restricao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "falso",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": null,
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": false
+              }
+            ],
+            "fatos_ids": [
+              "restricao_didatica_4"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_restricao_didatica_4",
+                "sha256": "8ea5f64e130dff6e51b9a7496c638cf797fab79030ecb220b12c7cde5e85c272",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        },
+        {
+          "regra_id": "permissao_boleto",
+          "plano_versao": "1.0.0",
+          "prioridade": 99,
+          "alvo": "boleto",
+          "unidade_id": "unidade_demo_4",
+          "boleto_id": "boleto_demo_4",
+          "acao": "incluir",
+          "motivo_codigo": "PERMISSAO_SINTETICA",
+          "fonte_regra": {
+            "arquivo_id": "requisito_didatico",
+            "sha256": "235256d0abe505b522305d9d52738174f9808bde5fc4d2abdaa42f7d981a5420",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "condicao": {
+            "tipo": "fato",
+            "fato_id": "permissao_didatica",
+            "operador": "eq",
+            "valor": {
+              "tipo": "booleano",
+              "valor": true
+            }
+          },
+          "passo": {
+            "caminho": "raiz",
+            "tipo": "fato",
+            "resultado": "verdadeiro",
+            "motivo_codigo": "FATO_COMPROVADO",
+            "boleto_id": "boleto_demo_4",
+            "observados": [
+              {
+                "tipo": "booleano",
+                "valor": true
+              }
+            ],
+            "fatos_ids": [
+              "permissao_didatica_4"
+            ],
+            "origens": [
+              {
+                "arquivo_id": "evidencia_permissao_didatica_4",
+                "sha256": "33b3468a009655b6b0271b6f3cfd52de2eb7c33f71df40c80242cbf02c784e2a",
+                "leitor_versao": "fixture_demonstracao4.2",
+                "pagina": 1,
+                "linha": 1,
+                "identificador": "linha_1",
+                "data_fonte": null,
+                "continuacao_de": null
+              }
+            ],
+            "filhos": []
+          }
+        }
+      ],
+      "ocorrencias_preservadas": [
+        {
+          "id": "critico_sintetico",
+          "processamento_id": "leitura_sintetica",
+          "codigo": "PENDENCIA_SINTETICA",
+          "gravidade": "critico",
+          "escopo": "registro",
+          "registro_id": "unidade_demo_4",
+          "origem": {
+            "arquivo_id": "canonico_sintetico_4",
+            "sha256": "489ae17dada4862539cc1ea86ea5c5d3abe32718b7a91c0121a3c91de5e35561",
+            "leitor_versao": "fixture_demonstracao4.2",
+            "pagina": 1,
+            "linha": 1,
+            "identificador": "linha_1",
+            "data_fonte": null,
+            "continuacao_de": null
+          },
+          "evidencias_documentais": []
+        }
+      ],
+      "origens": [
+        {
+          "arquivo_id": "evidencia_permissao_didatica_4",
+          "sha256": "33b3468a009655b6b0271b6f3cfd52de2eb7c33f71df40c80242cbf02c784e2a",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "evidencia_restricao_didatica_4",
+          "sha256": "8ea5f64e130dff6e51b9a7496c638cf797fab79030ecb220b12c7cde5e85c272",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        },
+        {
+          "arquivo_id": "canonico_sintetico_4",
+          "sha256": "489ae17dada4862539cc1ea86ea5c5d3abe32718b7a91c0121a3c91de5e35561",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    }
+  ],
+  "ocorrencias_anteriores": [
+    {
+      "id": "critico_sintetico",
+      "processamento_id": "leitura_sintetica",
+      "codigo": "PENDENCIA_SINTETICA",
+      "gravidade": "critico",
+      "escopo": "registro",
+      "registro_id": "unidade_demo_4",
+      "origem": {
+        "arquivo_id": "canonico_sintetico_4",
+        "sha256": "489ae17dada4862539cc1ea86ea5c5d3abe32718b7a91c0121a3c91de5e35561",
+        "leitor_versao": "fixture_demonstracao4.2",
+        "pagina": 1,
+        "linha": 1,
+        "identificador": "linha_1",
+        "data_fonte": null,
+        "continuacao_de": null
+      },
+      "evidencias_documentais": []
+    }
+  ],
+  "ressalvas_origem": [],
+  "fatos_recebidos": [
+    {
+      "id": "permissao_didatica_1",
+      "fato_id": "permissao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_1",
+      "boleto_id": "boleto_demo_1",
+      "valor": {
+        "tipo": "booleano",
+        "valor": true
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_permissao_didatica_1",
+          "sha256": "8fe35081a6dfdb2b44201707a9fa391125e5accfbc109ea8ece0aabb4bd772ec",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "id": "permissao_didatica_2",
+      "fato_id": "permissao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_2",
+      "boleto_id": "boleto_demo_2",
+      "valor": {
+        "tipo": "booleano",
+        "valor": true
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_permissao_didatica_2",
+          "sha256": "adb09029d95e070a0d240cde13b20e69d89dbdfdd54e946c88b97da038964c98",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "id": "permissao_didatica_4",
+      "fato_id": "permissao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_4",
+      "boleto_id": "boleto_demo_4",
+      "valor": {
+        "tipo": "booleano",
+        "valor": true
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_permissao_didatica_4",
+          "sha256": "33b3468a009655b6b0271b6f3cfd52de2eb7c33f71df40c80242cbf02c784e2a",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "id": "restricao_didatica_1",
+      "fato_id": "restricao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_1",
+      "boleto_id": null,
+      "valor": {
+        "tipo": "booleano",
+        "valor": false
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_restricao_didatica_1",
+          "sha256": "c3006d1331950885992488af1c455ac12c200d4b3857ad599d8a9e4885da9d2e",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "id": "restricao_didatica_2",
+      "fato_id": "restricao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_2",
+      "boleto_id": null,
+      "valor": {
+        "tipo": "booleano",
+        "valor": true
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_restricao_didatica_2",
+          "sha256": "8c2d7f567b98b3156f8b5b85ac9d41dc3d5283ab25b0555cecb114b0ced5de93",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "id": "restricao_didatica_3",
+      "fato_id": "restricao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_3",
+      "boleto_id": null,
+      "valor": {
+        "tipo": "booleano",
+        "valor": false
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_restricao_didatica_3",
+          "sha256": "19bfe9daefa02a61219b04c38e858621718a82506316c9e19d0ebb160aad8cd5",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    },
+    {
+      "id": "restricao_didatica_4",
+      "fato_id": "restricao_didatica",
+      "condominio_id": "cond_demo_sintetico",
+      "unidade_id": "unidade_demo_4",
+      "boleto_id": null,
+      "valor": {
+        "tipo": "booleano",
+        "valor": false
+      },
+      "vigente_de": "2026-01-01",
+      "vigente_ate": "2027-01-01",
+      "confirmacao": "comprovado",
+      "origens": [
+        {
+          "arquivo_id": "evidencia_restricao_didatica_4",
+          "sha256": "8ea5f64e130dff6e51b9a7496c638cf797fab79030ecb220b12c7cde5e85c272",
+          "leitor_versao": "fixture_demonstracao4.2",
+          "pagina": 1,
+          "linha": 1,
+          "identificador": "linha_1",
+          "data_fonte": null,
+          "continuacao_de": null
+        }
+      ]
+    }
+  ],
+  "coberturas_recebidas": []
+}
