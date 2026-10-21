@@ -1,5 +1,11 @@
 # Laboratório do pacote fornecido — 21/10/2026
 
+**Revisão posterior à aprovação da etapa sintética:** as 21 células foram
+conferidas individualmente. Resultado: 17 inconsistências do gabarito pendentes
+e quatro diferenças de representação de datas esclarecidas; nenhum erro de
+extração/normalização comprovado. Não foram alterados leitores ou regras.
+Veja [a análise por célula, evidências e novos testes](REVISAO_DIVERGENCIAS_SINTETICAS.md).
+
 O pacote `Homologacao_Sanitizada_Conversor` foi instalado em
 `tests/fixtures/sanitized/Homologacao_Sanitizada_Conversor/`. Foram lidos o README,
 `esperado/resultado_esperado.json` e `documentacao/PROMPT_PARA_CODEX.md`. O prompt
@@ -125,6 +131,8 @@ explicitamente solicitada, sem liberar o fluxo operacional.
 # 222 aprovados, incluindo os 46 novos testes independentes do anexo
 .venv/bin/python -m pytest -q tests/homologacao/pacote_suite.py
 # 25 aprovados, incluindo detecção das divergências existentes
+.venv/bin/python -m pytest -q tests/homologacao/revisao_suite.py
+# 28 aprovados na revisão individual posterior
 .venv/bin/python -m conversor.schemas --check
 .venv/bin/python -m conversor.recognition_schemas --check
 ```

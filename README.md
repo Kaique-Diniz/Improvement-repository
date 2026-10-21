@@ -169,3 +169,9 @@ adiado e prioridade do Cadastro em titular divergente com alerta/auditoria — v
 O Ruflo é utilizado apenas para acompanhamento local do trabalho.
 
 Veja o [relatório verificável e próximos ajustes](docs/RELATORIO_PACOTE_SINTETICO.md).
+
+A [revisão individual das 21 células](docs/REVISAO_DIVERGENCIAS_SINTETICAS.md)
+confirmou 17 inconsistências do gabarito e quatro datas equivalentes em tipos
+diferentes, sem falhas comprovadas de extração/normalização. Para executar a
+regressão da revisão: `python -m pytest -q tests/homologacao/revisao_suite.py`.
+O [envio ao GitHub está preparado](docs/ENVIO_GITHUB.md), sem publicação nesta etapa.
