@@ -1,6 +1,7 @@
 # Dossiê de transferência ao Codex — Conversor Inteligente de Inadimplência
 
 **Status:** Fases 1 e 2 implementadas. Laboratório adicional de extração, regras e Excel testado com o pacote sintético fornecido; nenhum formato real homologado.
+**Última fase concluída:** Fase 2. As Fases 3–5 têm implementações parciais de laboratório; a próxima fase pendente é a Fase 3. Consulte a [matriz de progresso e cobertura dos 275 testes](docs/DIAGNOSTICO_PROGRESSO.md).
 **Atualização:** 21/10/2026.
 **Idioma do projeto:** português brasileiro.
 
@@ -174,4 +175,5 @@ A [revisão individual das 21 células](docs/REVISAO_DIVERGENCIAS_SINTETICAS.md)
 confirmou 17 inconsistências do gabarito e quatro datas equivalentes em tipos
 diferentes, sem falhas comprovadas de extração/normalização. Para executar a
 regressão da revisão: `python -m pytest -q tests/homologacao/revisao_suite.py`.
-O [envio ao GitHub está preparado](docs/ENVIO_GITHUB.md), sem publicação nesta etapa.
+A [preparação para revisão no GitHub](docs/ENVIO_GITHUB.md) registra a branch,
+o escopo autorizado de publicação e o bloqueio de acesso à API de Pull Requests.
