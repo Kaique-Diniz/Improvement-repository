@@ -2,13 +2,12 @@ from datetime import date
 from decimal import Decimal
 from hashlib import sha256
 import json
-import os
 from pathlib import Path
-import tempfile
 
 from pydantic import ValidationError
 
 from conversor.adapters.document_probe import SondadorLocal
+from conversor.adapters.private_json import escrever_json
 from conversor.application.enrichment import complementar_cadastro
 from conversor.application.ports import ErroAplicacao, Estado
 from conversor.application.recognition import ReconhecerDocumento
@@ -45,20 +44,6 @@ def ler_json_decimal(caminho):
         return json.loads(conteudo, parse_float=Decimal, object_pairs_hook=pares, parse_constant=constante)
     except (ValueError, UnicodeError):
         raise ErroLeitura("JSON_INVALIDO") from None
-
-
-def escrever_json(caminho, dados):
-    conteudo = (json.dumps(dados, ensure_ascii=False, sort_keys=True, indent=2, allow_nan=False) + "\n").encode()
-    temporario = None
-    try:
-        with tempfile.NamedTemporaryFile(dir=caminho.parent, prefix=".json-", delete=False) as arq:
-            temporario = Path(arq.name)
-            arq.write(conteudo)
-            arq.flush()
-            os.fsync(arq.fileno())
-        os.replace(temporario, caminho)
-    finally:
-        if temporario is not None: temporario.unlink(missing_ok=True)
 
 
 def hashes_pacote(pacote):
