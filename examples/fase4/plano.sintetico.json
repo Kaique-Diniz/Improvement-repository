@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0",
+  "id": "plano_sintetico_v1",
+  "condominio_id": "cond_sintetico",
+  "versao": "1.0.0",
+  "natureza": "sintetico",
+  "vigente_de": "2026-01-01",
+  "vigente_ate": "2027-01-01",
+  "fontes": [
+    {
+      "arquivo_id": "requisito_sintetico",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_versao": "exemplo_4.1",
+      "pagina": 1,
+      "linha": 1,
+      "identificador": "requisito_1",
+      "data_fonte": null,
+      "continuacao_de": null
+    }
+  ],
+  "fatos": [],
+  "politicas": {
+    "prioridade": "maior_numero",
+    "restricao_unidade": "excluir_ou_bloquear_prevalece",
+    "permissao_unidade": "nao_libera_boleto_inelegivel",
+    "empate_incompativel": "revisao_humana",
+    "lacuna": "sem_inclusao_presumida",
+    "bloqueios_criticos": "imutaveis_e_superiores"
+  },
+  "regras": [
+    {
+      "id": "prazo_didatico",
+      "prioridade": 10,
+      "alvo": "boleto",
+      "quando": {
+        "tipo": "dias_atraso",
+        "operador": "gt",
+        "valor": 37
+      },
+      "acao": "incluir",
+      "motivo_codigo": "EXEMPLO_NAO_OPERACIONAL",
+      "fonte_id": "requisito_1"
+    }
+  ]
+}

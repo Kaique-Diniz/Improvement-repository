@@ -1,0 +1,89 @@
+{
+  "$defs": {
+    "ConcessaoOperador": {
+      "additionalProperties": false,
+      "properties": {
+        "acoes": {
+          "items": {
+            "enum": [
+              "criar",
+              "submeter",
+              "rejeitar",
+              "aprovar",
+              "ativar",
+              "revogar"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Acoes",
+          "type": "array"
+        },
+        "ambientes": {
+          "items": {
+            "enum": [
+              "sintetico",
+              "privado"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Ambientes",
+          "type": "array"
+        },
+        "condominio_ids": {
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Condominio Ids",
+          "type": "array"
+        },
+        "credencial_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Credencial Sha256",
+          "type": "string"
+        },
+        "responsavel_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Responsavel Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "responsavel_id",
+        "credencial_sha256",
+        "acoes",
+        "condominio_ids",
+        "ambientes"
+      ],
+      "title": "ConcessaoOperador",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:regras:1.0:autoridade",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "concessoes": {
+      "items": {
+        "$ref": "#/$defs/ConcessaoOperador"
+      },
+      "minItems": 1,
+      "title": "Concessoes",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "concessoes"
+  ],
+  "title": "RegistroAutoridade",
+  "type": "object"
+}
