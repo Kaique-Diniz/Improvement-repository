@@ -1,0 +1,467 @@
+{
+  "$defs": {
+    "Contato": {
+      "additionalProperties": false,
+      "properties": {
+        "emails": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Emails",
+          "type": "array"
+        },
+        "endereco": {
+          "$ref": "#/$defs/Endereco"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "telefones": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Telefone"
+          },
+          "maxItems": 5,
+          "title": "Telefones",
+          "type": "array"
+        }
+      },
+      "title": "Contato",
+      "type": "object"
+    },
+    "DividaExportacao": {
+      "additionalProperties": false,
+      "properties": {
+        "contrato": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Contrato",
+          "type": "string"
+        },
+        "nome_divida": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Nome Divida",
+          "type": "string"
+        },
+        "parcela": {
+          "minimum": 1,
+          "title": "Parcela",
+          "type": "integer"
+        },
+        "produto": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Produto",
+          "type": "string"
+        },
+        "valor": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+              "type": "string"
+            }
+          ],
+          "gt": 0,
+          "title": "Valor"
+        },
+        "vencimento": {
+          "format": "date",
+          "title": "Vencimento",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contrato",
+        "produto",
+        "nome_divida",
+        "parcela",
+        "vencimento",
+        "valor"
+      ],
+      "title": "DividaExportacao",
+      "type": "object"
+    },
+    "Documento": {
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "enum": [
+            "cpf",
+            "cnpj",
+            "outro"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "Documento",
+      "type": "object"
+    },
+    "Endereco": {
+      "additionalProperties": false,
+      "properties": {
+        "bairro": {
+          "default": "",
+          "title": "Bairro",
+          "type": "string"
+        },
+        "cep": {
+          "default": "",
+          "pattern": "^(\\d{8})?$",
+          "title": "Cep",
+          "type": "string"
+        },
+        "cidade": {
+          "default": "",
+          "title": "Cidade",
+          "type": "string"
+        },
+        "complemento": {
+          "default": "",
+          "title": "Complemento",
+          "type": "string"
+        },
+        "logradouro": {
+          "default": "",
+          "title": "Logradouro",
+          "type": "string"
+        },
+        "numero": {
+          "default": "",
+          "title": "Numero",
+          "type": "string"
+        },
+        "uf": {
+          "default": "",
+          "pattern": "^([A-Z]{2})?$",
+          "title": "Uf",
+          "type": "string"
+        }
+      },
+      "title": "Endereco",
+      "type": "object"
+    },
+    "Gravidade": {
+      "enum": [
+        "informativo",
+        "alerta",
+        "critico"
+      ],
+      "title": "Gravidade",
+      "type": "string"
+    },
+    "Ocorrencia": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "escopo": {
+          "enum": [
+            "registro",
+            "arquivo",
+            "processamento"
+          ],
+          "title": "Escopo",
+          "type": "string"
+        },
+        "gravidade": {
+          "$ref": "#/$defs/Gravidade"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "processamento_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Processamento Id",
+          "type": "string"
+        },
+        "registro_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registro Id"
+        }
+      },
+      "required": [
+        "id",
+        "processamento_id",
+        "codigo",
+        "gravidade",
+        "escopo"
+      ],
+      "title": "Ocorrencia",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "Pessoa": {
+      "additionalProperties": false,
+      "properties": {
+        "contato": {
+          "$ref": "#/$defs/Contato"
+        },
+        "documento": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Documento"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome": {
+          "title": "Nome",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "relacao_unidade": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Relacao Unidade",
+          "type": "string"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "unidade_id",
+        "nome",
+        "relacao_unidade",
+        "origem"
+      ],
+      "title": "Pessoa",
+      "type": "object"
+    },
+    "Telefone": {
+      "additionalProperties": false,
+      "properties": {
+        "ddd": {
+          "pattern": "^\\d{2}$",
+          "title": "Ddd",
+          "type": "string"
+        },
+        "numero": {
+          "pattern": "^\\d{8,9}$",
+          "title": "Numero",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ddd",
+        "numero"
+      ],
+      "title": "Telefone",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:1.0:linha_exportacao",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "DTO para futuro escritor XLSX; não decide elegibilidade financeira.",
+  "properties": {
+    "cedente": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Cedente",
+      "type": "string"
+    },
+    "divida": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DividaExportacao"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "nm_cedente_cedente": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Nm Cedente Cedente",
+      "type": "string"
+    },
+    "ocorrencias": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Ocorrencia"
+      },
+      "title": "Ocorrencias",
+      "type": "array"
+    },
+    "pessoa": {
+      "$ref": "#/$defs/Pessoa"
+    },
+    "processamento_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Processamento Id",
+      "type": "string"
+    },
+    "registro_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Registro Id",
+      "type": "string"
+    },
+    "tipo": {
+      "enum": [
+        "cadastral",
+        "divida"
+      ],
+      "title": "Tipo",
+      "type": "string"
+    }
+  },
+  "required": [
+    "processamento_id",
+    "registro_id",
+    "tipo",
+    "nm_cedente_cedente",
+    "cedente",
+    "pessoa"
+  ],
+  "title": "LinhaExportacao",
+  "type": "object"
+}

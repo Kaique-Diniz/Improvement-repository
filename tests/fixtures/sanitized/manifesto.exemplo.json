@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "casos": [
+    {
+      "id": "habita_tree_sanitizado",
+      "arquivo": "habita_tree_sanitizado.pdf",
+      "data_ref": "2026-10-21",
+      "reconhecimento_esperado": "habita_tree.reconhecimento.esperado.json",
+      "canonico_esperado": "habita_tree.canonico.esperado.json",
+      "canonico_obtido": "resultados/habita_tree.canonico.obtido.json"
+    },
+    {
+      "id": "fl_plaza_sanitizado",
+      "arquivo": "fl_plaza_sanitizado.pdf",
+      "data_ref": "2026-10-21",
+      "reconhecimento_esperado": "fl_plaza.reconhecimento.esperado.json",
+      "canonico_esperado": "fl_plaza.canonico.esperado.json",
+      "canonico_obtido": "resultados/fl_plaza.canonico.obtido.json"
+    }
+  ]
+}

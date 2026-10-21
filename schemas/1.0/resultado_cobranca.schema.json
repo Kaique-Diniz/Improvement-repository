@@ -1,0 +1,247 @@
+{
+  "$defs": {
+    "Gravidade": {
+      "enum": [
+        "informativo",
+        "alerta",
+        "critico"
+      ],
+      "title": "Gravidade",
+      "type": "string"
+    },
+    "Ocorrencia": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "escopo": {
+          "enum": [
+            "registro",
+            "arquivo",
+            "processamento"
+          ],
+          "title": "Escopo",
+          "type": "string"
+        },
+        "gravidade": {
+          "$ref": "#/$defs/Gravidade"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "processamento_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Processamento Id",
+          "type": "string"
+        },
+        "registro_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registro Id"
+        }
+      },
+      "required": [
+        "id",
+        "processamento_id",
+        "codigo",
+        "gravidade",
+        "escopo"
+      ],
+      "title": "Ocorrencia",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:1.0:resultado_cobranca",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acao": {
+      "enum": [
+        "incluir",
+        "excluir",
+        "adiar",
+        "alertar",
+        "bloquear",
+        "pendente"
+      ],
+      "title": "Acao",
+      "type": "string"
+    },
+    "boleto_id": {
+      "anyOf": [
+        {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Boleto Id"
+    },
+    "motivo_codigo": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Motivo Codigo",
+      "type": "string"
+    },
+    "ocorrencias": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Ocorrencia"
+      },
+      "title": "Ocorrencias",
+      "type": "array"
+    },
+    "origens": {
+      "items": {
+        "$ref": "#/$defs/Origem"
+      },
+      "minItems": 1,
+      "title": "Origens",
+      "type": "array"
+    },
+    "processamento_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Processamento Id",
+      "type": "string"
+    },
+    "regra_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Regra Id",
+      "type": "string"
+    },
+    "regra_versao": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Regra Versao",
+      "type": "string"
+    },
+    "unidade_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Unidade Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "processamento_id",
+    "unidade_id",
+    "acao",
+    "regra_id",
+    "regra_versao",
+    "motivo_codigo",
+    "origens"
+  ],
+  "title": "ResultadoCobranca",
+  "type": "object"
+}

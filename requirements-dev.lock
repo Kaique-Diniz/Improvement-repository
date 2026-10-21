@@ -1,0 +1,18 @@
+# Ambiente reproduzível de desenvolvimento e testes (Python >=3.12).
+# Gerado a partir da instalação validada; atualizar conscientemente com os testes.
+annotated-types==0.8.0
+defusedxml==0.7.1
+et-xmlfile==2.0.0
+filelock==3.20.0
+iniconfig==2.3.1
+packaging==26.3
+openpyxl==3.1.5
+pluggy==1.7.0
+pydantic==2.13.4
+pydantic-core==2.46.4
+pypdf==6.21.1
+Pygments==2.21.0
+pytest==8.4.2
+setuptools==80.9.0
+typing-inspection==0.4.4
+typing-extensions==4.16.0

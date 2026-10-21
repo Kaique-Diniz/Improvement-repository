@@ -1,0 +1,5 @@
+# Recepção local de amostras autorizadas: nada pessoal é versionado.
+*
+!.gitignore
+!README.md
+!manifesto.exemplo.json

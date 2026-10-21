@@ -1,0 +1,353 @@
+{
+  "$defs": {
+    "EvidenciaReconhecimento": {
+      "additionalProperties": false,
+      "properties": {
+        "entidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Entidade Id",
+          "type": "string"
+        },
+        "grupo": {
+          "enum": [
+            "layout",
+            "administradora",
+            "condominio"
+          ],
+          "title": "Grupo",
+          "type": "string"
+        },
+        "localizador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Localizador",
+          "type": "string"
+        },
+        "marcador_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Marcador Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "grupo",
+        "entidade_id",
+        "marcador_id",
+        "localizador"
+      ],
+      "title": "EvidenciaReconhecimento",
+      "type": "object"
+    },
+    "Motivo": {
+      "enum": [
+        "TIPO_NAO_SUPORTADO",
+        "DOCUMENTO_INVALIDO",
+        "DOCUMENTO_PROTEGIDO",
+        "LIMITE_EXCEDIDO",
+        "SONDA_INCOMPLETA",
+        "PDF_SEM_TEXTO",
+        "PDF_MISTO",
+        "ARQUIVO_VAZIO",
+        "CSV_INVALIDO",
+        "FORMATO_DESCONHECIDO",
+        "FORMATO_AMBIGUO",
+        "FORMATO_NAO_HOMOLOGADO",
+        "ASSINATURAS_NAO_HOMOLOGADAS",
+        "ADMINISTRADORA_DESCONHECIDA",
+        "ADMINISTRADORA_AMBIGUA",
+        "CONDOMINIO_DESCONHECIDO",
+        "CONDOMINIO_AMBIGUO",
+        "VINCULO_INCOMPATIVEL",
+        "FORMATO_INCOMPATIVEL",
+        "ENTIDADE_INATIVA",
+        "PERFIL_NAO_APROVADO",
+        "REGRA_NAO_APROVADA",
+        "REGRA_FORA_DA_VIGENCIA"
+      ],
+      "title": "Motivo",
+      "type": "string"
+    },
+    "PontuacaoFormato": {
+      "additionalProperties": false,
+      "properties": {
+        "assinatura_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Assinatura Id",
+          "type": "string"
+        },
+        "assinatura_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Assinatura Versao",
+          "type": "string"
+        },
+        "cobertura_percentual": {
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Cobertura Percentual",
+          "type": "integer"
+        },
+        "elegivel": {
+          "title": "Elegivel",
+          "type": "boolean"
+        },
+        "formato_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Formato Id",
+          "type": "string"
+        },
+        "maximo": {
+          "minimum": 1,
+          "title": "Maximo",
+          "type": "integer"
+        },
+        "pontos": {
+          "minimum": 0,
+          "title": "Pontos",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "formato_id",
+        "assinatura_id",
+        "assinatura_versao",
+        "pontos",
+        "maximo",
+        "cobertura_percentual",
+        "elegivel"
+      ],
+      "title": "PontuacaoFormato",
+      "type": "object"
+    },
+    "ReferenciasVersoes": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "formato_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Formato Id",
+          "type": "string"
+        },
+        "perfil_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Perfil Id",
+          "type": "string"
+        },
+        "regra_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Regra Id",
+          "type": "string"
+        },
+        "template_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Template Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "administradora_id",
+        "formato_id",
+        "perfil_id",
+        "regra_id",
+        "template_id"
+      ],
+      "title": "ReferenciasVersoes",
+      "type": "object"
+    },
+    "SelecaoReconhecimento": {
+      "additionalProperties": false,
+      "properties": {
+        "assinatura_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Assinatura Id",
+          "type": "string"
+        },
+        "assinatura_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Assinatura Versao",
+          "type": "string"
+        },
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "versoes": {
+          "$ref": "#/$defs/ReferenciasVersoes"
+        }
+      },
+      "required": [
+        "condominio_id",
+        "assinatura_id",
+        "assinatura_versao",
+        "versoes"
+      ],
+      "title": "SelecaoReconhecimento",
+      "type": "object"
+    },
+    "TipoDocumento": {
+      "enum": [
+        "pdf_texto",
+        "pdf_imagem",
+        "pdf_misto",
+        "xlsx",
+        "csv",
+        "desconhecido"
+      ],
+      "title": "TipoDocumento",
+      "type": "string"
+    }
+  },
+  "$id": "urn:conversor:reconhecimento:1.0:resultado",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "administradora_candidatos": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Administradora Candidatos",
+      "type": "array"
+    },
+    "arquivo_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Arquivo Hash",
+      "type": "string"
+    },
+    "arquivo_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Arquivo Id",
+      "type": "string"
+    },
+    "assinaturas_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Assinaturas Hash",
+      "type": "string"
+    },
+    "assinaturas_versao": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Assinaturas Versao",
+      "type": "string"
+    },
+    "bloqueante": {
+      "default": false,
+      "title": "Bloqueante",
+      "type": "boolean"
+    },
+    "bloqueios": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Motivo"
+      },
+      "title": "Bloqueios",
+      "type": "array"
+    },
+    "catalogo_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Catalogo Hash",
+      "type": "string"
+    },
+    "catalogo_revisao": {
+      "minimum": 0,
+      "title": "Catalogo Revisao",
+      "type": "integer"
+    },
+    "condominio_candidatos": {
+      "default": [],
+      "items": {
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+        "type": "string"
+      },
+      "title": "Condominio Candidatos",
+      "type": "array"
+    },
+    "data_ref": {
+      "format": "date",
+      "title": "Data Ref",
+      "type": "string"
+    },
+    "estado": {
+      "enum": [
+        "conhecido_validado",
+        "desconhecido",
+        "ambiguo"
+      ],
+      "title": "Estado",
+      "type": "string"
+    },
+    "evidencias": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/EvidenciaReconhecimento"
+      },
+      "title": "Evidencias",
+      "type": "array"
+    },
+    "motor_versao": {
+      "const": "1.0.0",
+      "default": "1.0.0",
+      "title": "Motor Versao",
+      "type": "string"
+    },
+    "pontuacoes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PontuacaoFormato"
+      },
+      "title": "Pontuacoes",
+      "type": "array"
+    },
+    "pronto_para_proxima_etapa": {
+      "default": false,
+      "title": "Pronto Para Proxima Etapa",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "selecao": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SelecaoReconhecimento"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "sondador_versao": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Sondador Versao",
+      "type": "string"
+    },
+    "tipo": {
+      "$ref": "#/$defs/TipoDocumento"
+    }
+  },
+  "required": [
+    "sondador_versao",
+    "arquivo_id",
+    "arquivo_hash",
+    "catalogo_hash",
+    "assinaturas_hash",
+    "catalogo_revisao",
+    "assinaturas_versao",
+    "data_ref",
+    "tipo",
+    "estado"
+  ],
+  "title": "ResultadoReconhecimento",
+  "type": "object"
+}

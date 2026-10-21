@@ -1,0 +1,38 @@
+{
+  "$id": "urn:conversor:1.0:manifesto",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "arquivos": {
+      "additionalProperties": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Arquivos",
+      "type": "object"
+    },
+    "geracao": {
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Geracao",
+      "type": "string"
+    },
+    "revisao": {
+      "minimum": 1,
+      "title": "Revisao",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "geracao",
+    "revisao",
+    "arquivos"
+  ],
+  "title": "Manifesto",
+  "type": "object"
+}

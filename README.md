@@ -1,7 +1,8 @@
 # Dossiê de transferência ao Codex — Conversor Inteligente de Inadimplência
 
-**Status:** especificação para desenvolvimento incremental, sem software implementado.  
-**Atualização:** 20/10/2026.  
+**Status:** Fases 1 e 2 implementadas. Laboratório adicional de extração, regras e Excel testado com o pacote sintético fornecido; nenhum formato real homologado.
+**Última fase concluída:** Fase 2. As Fases 3–5 têm implementações parciais de laboratório; a próxima fase pendente é a Fase 3. Consulte a [matriz de progresso e cobertura dos 275 testes](docs/DIAGNOSTICO_PROGRESSO.md).
+**Atualização:** 21/10/2026.
 **Idioma do projeto:** português brasileiro.
 
 ## Objetivo
@@ -29,3 +30,150 @@ Converter relatórios de inadimplência (PDF, XLSX e arquivos complementares) de
 6. Revise testes e entregas de cada fase antes de pedir a próxima.
 
 Este pacote substitui a necessidade de colar o histórico integral de conversa no prompt. O PDF com a conversa do Claude é uma referência adicional, não a fonte normativa quando divergir destas decisões posteriores.
+
+## Executar a Fase 1 localmente
+
+Requer Python 3.12 ou superior. Na raiz do checkout, em Linux/macOS:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements-dev.lock
+.venv/bin/python -m pip install --no-deps --no-build-isolation --editable .
+.venv/bin/python -m pytest -q
+.venv/bin/python -m conversor.schemas --check
+```
+
+No PowerShell/Windows, crie o venv com `py -3.12 -m venv .venv` e substitua
+`.venv/bin/python` por `.venv\Scripts\python.exe` nos comandos. Os testes desta
+entrega foram executados em Linux/Python 3.12; Windows ainda não foi homologado.
+
+Exemplo local, sem dados pessoais e sem qualquer conversão/cobrança:
+
+```bash
+.venv/bin/python -m conversor.cli --dados ./dados/demo init
+.venv/bin/python -m conversor.cli --dados ./dados/demo importar examples/fase1/catalogo.sintetico.json --revisao 1
+.venv/bin/python -m conversor.cli --dados ./dados/demo validar
+.venv/bin/python -m conversor.cli --dados ./dados/demo listar condominios
+```
+
+`init` cria a revisão 1; importação acima cria a revisão 2. Repetir `init` retorna
+`CONFLITO_DE_REVISAO`, sem sobrescrever arquivos. Para atualizar um registro, usar
+`gravar <colecao> <arquivo.json> --revisao <revisao-atual>`; para remover um registro
+sem referências, `excluir <colecao> <id> --revisao <revisao-atual>`. Veja `--help`.
+Relações novas e circulares devem entrar em conjunto por `importar`, em catálogo
+completo consistente. A CLI retorna status 0 em sucesso e 2 em erros de domínio/I/O,
+sem imprimir dados pessoais. Consultas Python retornam objetos tipados via
+`Configuracao`, sem expô-los automaticamente no terminal.
+
+Use o diretório `dados/` (ignorado pelo Git) ou um local privado fora do checkout.
+Não force commit de fontes reais. O exemplo em `examples/fase1/` é inteiramente
+sintético e todas as regras/perfis/formatos estão em rascunho. Os exemplos originais
+em `config_exemplos/` foram preservados como material conceitual não operacional;
+não são importados nem aprovados automaticamente.
+
+## Arquitetura, contratos e limites
+
+- [Arquitetura e funcionamento do JSON](docs/ARQUITETURA_FASE1.md).
+- [Decisões técnicas, testes e pontos de homologação](docs/DECISOES_E_HOMOLOGACAO.md).
+- [Apoio local com Ruflo](docs/RUFLO.md).
+- [JSON Schemas versionados](schemas/1.0/). Regenerar com `python -m conversor.schemas`.
+
+Os JSON Schemas descrevem a estrutura; os modelos Python também validam somatórios,
+referências, vigências, aprovações e relações. A validação de prontidão do catálogo
+é feita com `validar`, não só com validação estrutural de JSON Schema.
+
+O contrato de saída tem 30 posições, CPF em branco com alerta quando ausente ou
+inválido e linhas cadastrais com Y:AD vazias. Preserva o espaço final físico da
+coluna AA por configuração até homologação. A entrega original da Fase 1 não gera
+XLSX, aplica régua, reconhece PDFs ou enriquece com Cadastro Geral; os acréscimos
+posteriores estão descritos nas seções abaixo.
+Retenção, ACL, aprovação real e importação no sistema final permanecem pendentes.
+
+As etapas seguintes exigem aprovação explícita após revisão de cada entrega.
+
+## Fase 2 — reconhecimento automático
+
+O comando `reconhecer` detecta PDF com texto, PDF sem texto/rasterizado/misto,
+XLSX e CSV UTF-8. Classifica assinaturas e identifica administradora/condomínio
+por campos explícitos. Não extrai boletos, não aplica régua e não gera Excel.
+Desconhecidos, ambiguidades e configurações não homologadas bloqueiam o avanço.
+
+Após instalar/atualizar o ambiente pelos comandos acima, crie a demonstração:
+
+```bash
+.venv/bin/python examples/fase2/gerar_demo.py --saida dados/demo_fase2
+.venv/bin/python -m conversor.cli --dados dados/demo_fase2/repositorio init
+.venv/bin/python -m conversor.cli --dados dados/demo_fase2/repositorio importar dados/demo_fase2/catalogo.json --revisao 1
+.venv/bin/python -m conversor.cli --dados dados/demo_fase2/repositorio reconhecer dados/demo_fase2/habita_tree.pdf --arquivo-id fonte_sintetica --assinaturas dados/demo_fase2/assinaturas.json --data-ref 2026-10-21
+```
+
+A demonstração retorna **status 3**, resultado bloqueante com
+`FORMATO_NAO_HOMOLOGADO` e `ASSINATURAS_NAO_HOMOLOGADAS`. Esse é o comportamento
+esperado: os exemplos são rascunhos e não podem aprovar formatos reais.
+O gerador cria arquivos novos sem sobrescrever diretório já utilizado; use outro
+diretório para uma nova demonstração. A data é ilustrativa e sempre deve ser
+fornecida explicitamente. A suíte testa caminhos positivos com aprovações artificiais
+restritas a fixtures temporárias; não existe etapa de confirmação interativa.
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m conversor.schemas --check
+.venv/bin/python -m conversor.recognition_schemas --check
+```
+
+O reconhecimento retorna status 0 quando apto para próxima etapa, 3 quando bloqueado
+e 2 para erros de configuração/acesso. O JSON público contém IDs opacos, hashes,
+versões, cobertura das assinaturas, localização de evidências e códigos de bloqueio;
+nunca trechos brutos, nomes de arquivos/pessoas ou valores financeiros extraídos.
+`pronto_para_proxima_etapa` é prontidão de configuração/reconhecimento, não de cobrança.
+
+- [Arquitetura, decisões e limites da Fase 2](docs/RECONHECIMENTO_FASE2.md).
+- [Arquivos sanitizados necessários e como comparar gabaritos](tests/fixtures/sanitized/README.md).
+- [Assinaturas sintéticas Habita e FL, não homologadas](examples/fase2/assinaturas.sinteticas.json).
+
+A pasta `tests/fixtures/sanitized/` está preparada e ignora amostras locais no Git.
+O comparador de contrato canônico prepara a validação dos futuros leitores sem
+implementá-los nesta fase. Amostras representativas e gabaritos revisados são
+necessários antes de homologar Habita/TREE ou FL/Plaza. O laboratório abaixo não
+aprova as fases operacionais seguintes nem altera os bloqueios de reconhecimento.
+
+## Laboratório do pacote sintético fornecido
+
+O pacote está em `tests/fixtures/sanitized/Homologacao_Sanitizada_Conversor/`,
+ignorado pelo Git e preservado integralmente. Não acompanha um clone novo;
+reponha a cópia autorizada nesse caminho para executar a integração. A suíte
+regular gera seus próprios PDFs sintéticos pequenos e não depende do anexo.
+
+```bash
+.venv/bin/python -m pytest -q
+.venv/bin/python -m pytest -q tests/homologacao/pacote_suite.py
+.venv/bin/python -m conversor.laboratorio \
+  --pacote tests/fixtures/sanitized/Homologacao_Sanitizada_Conversor \
+  --saida dados/homologacao_pacote_nova_execucao
+```
+
+Use um diretório de saída novo ou vazio a cada execução. O laboratório escreve
+dois XLSX com 30 colunas, os modelos antes/depois do Cadastro, decisões, ocorrências,
+hashes de preservação das fixtures e relatórios JSON/Markdown. O terminal mostra
+somente agregados. A configuração é `config_exemplos/laboratorio_pacote.json`.
+
+Status do comando: **0** sem diferenças de conteúdo; **1** diferenças no Excel;
+**2** bloqueios, diferenças financeiras/de controle ou fixtures alteradas. Neste
+pacote o resultado esperado é **1**: valores e decisões conferem, mas há **17 células
+de contato divergentes**. Quatro datas equivalentes têm representação diferente
+(data nativa versus texto ISO) e são listadas separadamente. Testes verdes verificam
+também a detecção dessas divergências; não significam equivalência integral ao Excel.
+
+As duas políticas confirmadas pelo usuário — cadastro por unidade com boleto
+adiado e prioridade do Cadastro em titular divergente com alerta/auditoria — valem
+**somente neste laboratório**. Não existem OCR, LLM ou Ruflo no cálculo financeiro.
+O Ruflo é utilizado apenas para acompanhamento local do trabalho.
+
+Veja o [relatório verificável e próximos ajustes](docs/RELATORIO_PACOTE_SINTETICO.md).
+
+A [revisão individual das 21 células](docs/REVISAO_DIVERGENCIAS_SINTETICAS.md)
+confirmou 17 inconsistências do gabarito e quatro datas equivalentes em tipos
+diferentes, sem falhas comprovadas de extração/normalização. Para executar a
+regressão da revisão: `python -m pytest -q tests/homologacao/revisao_suite.py`.
+A [preparação para revisão no GitHub](docs/ENVIO_GITHUB.md) registra a branch,
+o escopo autorizado de publicação e o bloqueio de acesso à API de Pull Requests.

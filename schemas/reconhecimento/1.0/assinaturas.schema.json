@@ -1,0 +1,262 @@
+{
+  "$defs": {
+    "Aprovacao": {
+      "additionalProperties": false,
+      "properties": {
+        "em": {
+          "format": "date-time",
+          "title": "Em",
+          "type": "string"
+        },
+        "evidencia_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Evidencia Id",
+          "type": "string"
+        },
+        "responsavel_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Responsavel Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "responsavel_id",
+        "evidencia_id",
+        "em"
+      ],
+      "title": "Aprovacao",
+      "type": "object"
+    },
+    "AssinaturaLayout": {
+      "additionalProperties": false,
+      "properties": {
+        "formato_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Formato Id",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "marcadores": {
+          "items": {
+            "$ref": "#/$defs/MarcadorLayout"
+          },
+          "maxItems": 50,
+          "minItems": 2,
+          "title": "Marcadores",
+          "type": "array"
+        },
+        "minimo_pontos": {
+          "minimum": 2,
+          "title": "Minimo Pontos",
+          "type": "integer"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "versao",
+        "formato_id",
+        "marcadores",
+        "minimo_pontos"
+      ],
+      "title": "AssinaturaLayout",
+      "type": "object"
+    },
+    "IdentidadeAdministradora": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "identificadores": {
+          "items": {
+            "$ref": "#/$defs/IdentificadorForte"
+          },
+          "minItems": 1,
+          "title": "Identificadores",
+          "type": "array"
+        }
+      },
+      "required": [
+        "administradora_id",
+        "identificadores"
+      ],
+      "title": "IdentidadeAdministradora",
+      "type": "object"
+    },
+    "IdentidadeCondominio": {
+      "additionalProperties": false,
+      "properties": {
+        "condominio_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Condominio Id",
+          "type": "string"
+        },
+        "identificadores": {
+          "items": {
+            "$ref": "#/$defs/IdentificadorForte"
+          },
+          "minItems": 1,
+          "title": "Identificadores",
+          "type": "array"
+        }
+      },
+      "required": [
+        "condominio_id",
+        "identificadores"
+      ],
+      "title": "IdentidadeCondominio",
+      "type": "object"
+    },
+    "IdentificadorForte": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "rotulo": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Rotulo",
+          "type": "string"
+        },
+        "tipo": {
+          "default": "codigo",
+          "enum": [
+            "codigo",
+            "texto",
+            "cnpj"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "rotulo",
+        "valor"
+      ],
+      "title": "IdentificadorForte",
+      "type": "object"
+    },
+    "MarcadorLayout": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "obrigatorio": {
+          "default": true,
+          "title": "Obrigatorio",
+          "type": "boolean"
+        },
+        "peso": {
+          "default": 1,
+          "maximum": 100,
+          "minimum": 1,
+          "title": "Peso",
+          "type": "integer"
+        },
+        "texto": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Texto",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "texto"
+      ],
+      "title": "MarcadorLayout",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:reconhecimento:1.0:assinaturas",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "administradoras": {
+      "items": {
+        "$ref": "#/$defs/IdentidadeAdministradora"
+      },
+      "title": "Administradoras",
+      "type": "array"
+    },
+    "aprovacao": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Aprovacao"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "condominios": {
+      "items": {
+        "$ref": "#/$defs/IdentidadeCondominio"
+      },
+      "title": "Condominios",
+      "type": "array"
+    },
+    "layouts": {
+      "items": {
+        "$ref": "#/$defs/AssinaturaLayout"
+      },
+      "title": "Layouts",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "status": {
+      "default": "rascunho",
+      "enum": [
+        "rascunho",
+        "homologado"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "versao": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Versao",
+      "type": "string"
+    }
+  },
+  "required": [
+    "versao",
+    "layouts",
+    "administradoras",
+    "condominios"
+  ],
+  "title": "CatalogoAssinaturas",
+  "type": "object"
+}
