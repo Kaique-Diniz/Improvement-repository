@@ -1,0 +1,43 @@
+{
+  "escopo": "somente_testes_sinteticos",
+  "versao": "pacote-laboratorio-1",
+  "politica_cadastro_fl_confirmada": "unidades_com_boleto_adiado",
+  "politica_titular_fl_confirmada": "cadastro_confirmado_no_laboratorio",
+  "endereco_perfil_didatico": {
+    "logradouro": "Rua Exemplo", "numero": "10", "cep": "00000000",
+    "bairro": "Bairro Ficticio", "cidade": "Sao Paulo", "uf": "SP"
+  },
+  "casos": [
+    {
+      "familia": "habita",
+      "formato_id": "habita_composicao_sintetico_v1",
+      "arquivo": "habita/habita_tree_sintetico.pdf",
+      "referencia_excel": "habita/habita_saida_esperada_SINTETICA.xlsx",
+      "condominio_id": "cond_tree_laboratorio",
+      "administradora_id": "adm_habita_laboratorio",
+      "codigo_condominio_leitor": "9001",
+      "marcadores": ["Inadimplencia Atualizada", "Bloco:", "Unidade:", "Total da Unidade:"],
+      "perfil_saida": {
+        "codificador": "habita_bloco_unidade", "nome_cedente": "HABITACIONAL_2",
+        "produto": "HABITACIONAL_2", "sufixo_cedente": "-TREE MORUMBI", "parcela": 1
+      }
+    },
+    {
+      "familia": "fl",
+      "formato_id": "fl_composicao_sintetico_v1",
+      "arquivo": "fl/fl_plaza_inadimplencia_sintetica.pdf",
+      "cadastro": "fl/fl_plaza_cadastro_geral_sintetico.pdf",
+      "resumo": "fl/fl_blocos_resumo_sintetico.xlsx",
+      "referencia_excel": "fl/fl_saida_esperada_SINTETICA.xlsx",
+      "condominio_id": "cond_plaza_laboratorio",
+      "administradora_id": "adm_fl_laboratorio",
+      "codigo_condominio_leitor": "PLAZA MAYOR IPIRANGA",
+      "marcadores": ["Inadimplencia com composicao", "Venc.", "Comp.", "Saldo"],
+      "perfil_saida": {
+        "codificador": "fl_torre_unidade", "nome_cedente": "FL - PLAZA MAYOR",
+        "produto": "FL - PLAZA MAYOR", "parcela": 1,
+        "torres": {"A": "1", "B": "2", "G": "7"}
+      }
+    }
+  ]
+}
