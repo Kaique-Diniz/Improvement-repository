@@ -1,5 +1,10 @@
 # Incremento 4.1 — contratos, schemas e repositório
 
+**Aceite posterior do responsável:** incremento 4.1 aprovado tecnicamente com
+595 testes. Este documento preserva o registro daquela entrega. O 4.2 foi depois
+autorizado e está [implementado para revisão](INCREMENTO_4_2_AVALIADOR_DETERMINISTICO.md),
+sem autorização de avançar a 4.3 e sem homologação para produção.
+
 Implementação limitada ao incremento autorizado. Não existe avaliador geral,
 seleção de boletos, simulação financeira real ou exportação operacional nesta
 entrega. A Fase 3 está tecnicamente encerrada, com ressalvas e todos os bloqueios

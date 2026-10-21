@@ -1,11 +1,12 @@
 # Fase 4 — proposta de arquitetura e decisões operacionais
 
-Status atual: **arquitetura aprovada para o incremento 4.1**, implementado conforme
-[contratos, schemas, persistência e proteção das aprovações](INCREMENTO_4_1_PLANOS_E_APROVACOES.md).
-O texto abaixo preserva a proposta original e o roteiro futuro. Não há motor
-geral de avaliação implementado nem regra real ativada. A aprovação posterior
+Status atual: **4.1 aprovado tecnicamente; 4.2 implementado para revisão**, conforme
+[contratos e persistência](INCREMENTO_4_1_PLANOS_E_APROVACOES.md) e
+[avaliador somente de simulação](INCREMENTO_4_2_AVALIADOR_DETERMINISTICO.md).
+O texto abaixo preserva a proposta original e o roteiro futuro. Não há regra
+real ativada ou resultado operacional autorizado. A aprovação posterior
 corrige D02: exclusões/bloqueios de unidade prevalecem, mas permissão genérica
-de unidade não libera boleto inelegível. Não houve autorização para 4.2 ou Fase 5.
+de unidade não libera boleto inelegível. Não houve autorização para 4.3 ou Fase 5.
 A Fase 3 está tecnicamente encerrada com ressalvas, sem homologação para produção.
 
 ## 1. Base preservada e preparação do Git

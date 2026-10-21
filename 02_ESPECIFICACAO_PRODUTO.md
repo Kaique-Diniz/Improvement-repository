@@ -38,8 +38,11 @@ boletos correspondentes; permissões genéricas da unidade não liberam boletos
 individualmente inelegíveis. Prioridade não supera bloqueio crítico ou integridade
 documental. A ativação de configuração exige aprovação autorizada da versão/hash,
 não apenas um campo JSON. Os contratos e a persistência estão em
-[Incremento 4.1](docs/INCREMENTO_4_1_PLANOS_E_APROVACOES.md); avaliação futura depende
-do incremento 4.2 e da aprovação das regras aplicáveis.
+[Incremento 4.1](docs/INCREMENTO_4_1_PLANOS_E_APROVACOES.md). O
+[incremento 4.2](docs/INCREMENTO_4_2_AVALIADOR_DETERMINISTICO.md) implementa avaliação
+somente de simulação, com plano/versão/hash/aprovação/vigência verificados e todos
+os bloqueios críticos preservados. Não autoriza cobrança nem exportação. Regras
+operacionais específicas continuam dependendo de aprovação própria.
 
 Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance (boleto, unidade, condomínio), ação (incluir, excluir, adiar, alerta, bloquear) e prioridade. Regras especiais por unidade não se limitam às políticas comuns. A contagem deve especificar se é `> N` ou `>= N` dias conforme condomínio.
 
