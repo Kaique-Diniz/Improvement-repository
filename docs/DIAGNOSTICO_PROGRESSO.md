@@ -1,5 +1,11 @@
 # Diagnóstico de progresso por fase — 21/10/2026
 
+**Estado posterior autorizado:** Fase 3 encerrada tecnicamente pelo responsável,
+com 458 testes, 884 boletos reconciliados e 132 correspondências financeiras.
+Ressalvas/bloqueios continuam obrigatórios; sem homologação para produção. A
+Fase 4 está em preparação, com [proposta para aprovação](ARQUITETURA_MOTOR_FASE4.md).
+O inventário de 275/432 testes abaixo é histórico, anterior ao aceite final.
+
 **Atualização posterior, Fase 3:** a branch `feature/fase-3-leitores`, criada de
 `main` em `410f7d6`, integra os leitores ao contrato comum e prepara a validação
 privada. São 432 testes no conjunto atualizado; os 275 abaixo são o inventário
