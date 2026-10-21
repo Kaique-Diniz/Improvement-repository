@@ -8,6 +8,7 @@ from conversor.readers.contracts import FonteProtegida, RepositorioFontes
 from conversor.readers.operational import ContextosCatalogo, RegistroLeitores
 from conversor.readers.text_support import ErroLeitura, id_estavel
 from .ports import Repositorio
+from .recognition_ports import RepositorioAssinaturas
 from .recognition import _hash
 
 
@@ -27,8 +28,9 @@ def resultado_leitura(lote: LoteCanonico, *, processamento_id: str) -> LeituraCa
 
 
 class LerDocumento:
-    def __init__(self, repositorio: Repositorio, fontes: RepositorioFontes):
+    def __init__(self, repositorio: Repositorio, fontes: RepositorioFontes, assinaturas: RepositorioAssinaturas):
         self.repositorio, self.fontes = repositorio, fontes
+        self.assinaturas = assinaturas
 
     def executar(self, fonte: FonteProtegida, reconhecimento: ResultadoReconhecimento, *, processamento_id: str):
         r = ResultadoReconhecimento.model_validate(reconhecimento.model_dump())
@@ -41,6 +43,9 @@ class LerDocumento:
         estado = self.repositorio.carregar()
         if estado.revisao != r.catalogo_revisao or _hash(estado.catalogo) != r.catalogo_hash:
             raise ErroLeitura("CATALOGO_DIFERE_DO_RECONHECIMENTO")
+        assinaturas = self.assinaturas.carregar()
+        if _hash(assinaturas) != r.assinaturas_hash or assinaturas.versao != r.assinaturas_versao:
+            raise ErroLeitura("ASSINATURAS_DIFEREM_DO_RECONHECIMENTO")
         formato = next((f for f in estado.catalogo.formatos if f.id == r.selecao.versoes.formato_id), None)
         if formato is None or formato.status != "validado":
             raise ErroLeitura("FORMATO_NAO_HOMOLOGADO")

@@ -105,28 +105,30 @@ def reconhecer_artificial(catalogo, fonte, conteudo):
         def carregar(self): return assinaturas
     r = ReconhecerDocumento(Repo(), Assinaturas()).executar(SondadorLocal().sondar(conteudo, arquivo_id=fonte.arquivo_id), data_ref=date(2026, 10, 20))
     assert r.pronto_para_proxima_etapa
-    return Repo(), r
+    return Repo(), Assinaturas(), r
 
 
 def test_caso_de_uso_com_reconhecimento_e_contrato_comum(catalogo_leitura, memoria_fontes, fonte):
-    repo, r = reconhecer_artificial(catalogo_leitura, fonte("habita"), memoria_fontes.ler(fonte("habita")))
-    resultado = LerDocumento(repo, memoria_fontes).executar(fonte("habita"), r, processamento_id="exec")
+    repo, assinaturas, r = reconhecer_artificial(catalogo_leitura, fonte("habita"), memoria_fontes.ler(fonte("habita")))
+    resultado = LerDocumento(repo, memoria_fontes, assinaturas).executar(fonte("habita"), r, processamento_id="exec")
     assert resultado.lote.boletos[0].composicao.total_original == Decimal("120.00")
 
 
 @pytest.mark.parametrize("falha,codigo", [("bloqueado", "RECONHECIMENTO_BLOQUEIA_LEITURA"),
     ("tipo", "TIPO_NAO_SUPORTADO_PELO_LEITOR"),
     ("arquivo", "FONTE_DIFERE_DO_RECONHECIMENTO"), ("hash", "FONTE_DIFERE_DO_RECONHECIMENTO"),
-    ("revisao", "CATALOGO_DIFERE_DO_RECONHECIMENTO"), ("catalogo", "CATALOGO_DIFERE_DO_RECONHECIMENTO")])
+    ("revisao", "CATALOGO_DIFERE_DO_RECONHECIMENTO"), ("catalogo", "CATALOGO_DIFERE_DO_RECONHECIMENTO"),
+    ("assinaturas", "ASSINATURAS_DIFEREM_DO_RECONHECIMENTO"), ("versao_assinaturas", "ASSINATURAS_DIFEREM_DO_RECONHECIMENTO")])
 def test_reconhecimento_obsoleto_ou_bloqueado_nao_avanca(catalogo_leitura, memoria_fontes, fonte, falha, codigo):
-    repo, r = reconhecer_artificial(catalogo_leitura, fonte("habita"), memoria_fontes.ler(fonte("habita")))
+    repo, assinaturas, r = reconhecer_artificial(catalogo_leitura, fonte("habita"), memoria_fontes.ler(fonte("habita")))
     mudanca = {"bloqueado": {"bloqueios": ["REGRA_NAO_APROVADA"], "bloqueante": True, "pronto_para_proxima_etapa": False},
         "tipo": {"tipo": "xlsx"},
         "arquivo": {"arquivo_id": "outra_fonte"}, "hash": {"arquivo_hash": "1" * 64},
-        "revisao": {"catalogo_revisao": 2}, "catalogo": {"catalogo_hash": "2" * 64}}[falha]
+        "revisao": {"catalogo_revisao": 2}, "catalogo": {"catalogo_hash": "2" * 64},
+        "assinaturas": {"assinaturas_hash": "3" * 64}, "versao_assinaturas": {"assinaturas_versao": "outra"}}[falha]
     r = ResultadoReconhecimento.model_validate(r.model_dump() | mudanca)
     with pytest.raises(ErroLeitura, match=codigo):
-        LerDocumento(repo, memoria_fontes).executar(fonte("habita"), r, processamento_id="exec")
+        LerDocumento(repo, memoria_fontes, assinaturas).executar(fonte("habita"), r, processamento_id="exec")
 
 
 def test_contexto_preserva_administradora_historica(catalogo_leitura, fonte):

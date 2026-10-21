@@ -2,7 +2,7 @@
 
 **Atualização posterior, Fase 3:** a branch `feature/fase-3-leitores`, criada de
 `main` em `410f7d6`, integra os leitores ao contrato comum e prepara a validação
-privada. São 327 testes no conjunto atualizado; os 275 abaixo são o inventário
+privada. São 329 testes no conjunto atualizado; os 275 abaixo são o inventário
 histórico anterior. O aceite com amostras reais continua pendente. Consulte
 [LEITORES_FASE3.md](LEITORES_FASE3.md) para a implementação atual e os bloqueios.
 

@@ -44,8 +44,10 @@ de `leitor_id`: diferentes IDs de catálogo não exigem duplicação de parser. 
 ou leitor não registrado gera erro explícito, sem importação dinâmica/fallback.
 
 `LerDocumento` exige resultado apto da Fase 2, hash/ID do arquivo correspondentes
-e o mesmo hash/revisão do catálogo. Preserva todos os bloqueios já produzidos pelo
-reconhecimento, inclusive perfil/regra pendentes, sem avaliar ou aprovar regras.
+e o mesmo hash/revisão do catálogo. Também confere o hash/versão das assinaturas
+atuais, evitando reutilizar uma seleção após alteração ou revogação de assinatura.
+Preserva todos os bloqueios do reconhecimento, inclusive perfil/regra pendentes,
+sem avaliar ou aprovar regras.
 O contexto considera a administradora vigente na data de referência e verifica
 as associações de condomínio/formato. O adapter confere a assinatura estrutural,
 o SHA-256 e a proveniência de unidades, pessoas e todos os componentes financeiros.
@@ -164,14 +166,14 @@ provisória do laboratório passa a ser regra operacional nesta entrega.
 
 ```bash
 .venv/bin/python -m pytest -q
-# 267 testes regulares aprovados: 222 anteriores + 45 da Fase 3
+# 269 testes regulares aprovados: 222 anteriores + 47 da Fase 3
 .venv/bin/python -m pytest -q tests/homologacao/pacote_suite.py tests/homologacao/revisao_suite.py tests/homologacao/leitores_fase3_suite.py
 # 60 aprovados: 53 anteriores + 7 do contrato comum com o pacote sintético
 .venv/bin/python -m conversor.schemas --check
 .venv/bin/python -m conversor.recognition_schemas --check
 ```
 
-Total: **327 testes aprovados**, sem pular casos por falta de amostras reais.
+Total: **329 testes aprovados**, sem pular casos por falta de amostras reais.
 Os testes regulares geram documentos sintéticos pequenos. As integrações explícitas
 dependem do pacote sintético local e não são teste real disfarçado.
 
