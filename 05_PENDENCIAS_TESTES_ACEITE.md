@@ -1,5 +1,14 @@
 # 05 — Pendências, decisões e plano de testes
 
+**Situação mais recente — 4.3B.2A:** integração exclusivamente sintética,
+persistência auditável, **1.111 testes aprovados** (1.027 anteriores + 84 novos)
+e oito conferências de schemas. Planos não aprovados/ativos ou inválidos são
+recusados; reprodução histórica não concede autorização atual. Confira
+[evidências e atos humanos para o 4.3B.2B](docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md).
+Atestos, prioridades/vigências e aprovações reais continuam pendentes. Sem
+simulação privada real, liberação de críticos ou Fase 5. Os estágios abaixo
+são históricos; não substituem essa delimitação mais recente.
+
 **Situação atual — 4.3B.1:** implementado exclusivamente com dados sintéticos,
 com **1.027 testes aprovados** (943 anteriores + 84 novos), sete conferências de
 schemas e nenhuma execução sobre dados privados. Cinco condições TREE reutilizam

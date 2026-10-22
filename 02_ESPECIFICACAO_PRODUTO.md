@@ -86,6 +86,12 @@ essas condições somente em plano demonstrativo sintético, reutilizando o moto
 estruturadas, sem antecipar o exportador da Fase 5. Datas/prioridades das fixtures
 não constituem decisões para planos reais.
 
+O [incremento 4.3B.2A](docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md) integra
+essas decisões sintéticas com preparação reconciliada, fonte/versão da régua,
+controles de aprovação e persistência auditável. Modo e data são obrigatórios;
+o ato autenticado de operador é distinto das aprovações e não emite atesto humano.
+Não habilita dados reais, XLSX ou autorização operacional.
+
 - Para TREE, o prazo extrajudicial de 30 dias está confirmado: selecionar cotas com atraso **estritamente superior a 30 dias corridos**, a partir do dia 31, em relação à data explícita. O prazo sozinho não supera centavo, A, AJ, J ou bloqueios; não há prazo universal para todos os condomínios.
 - Quando existir na régua a condição de R$ 0,01, comparar exatamente o campo **Valor identificado e validado na fonte**. Excluir **somente a cota correspondente e seus componentes**, independentemente do vencimento, sem afetar automaticamente outras cotas da unidade. Documentar Valor → cota/componentes/campo canônico antes de ativar; não presumir componente, saldo ou total.
 - Associação à garantidora não altera isoladamente a elegibilidade; não implementar exclusão autônoma nem duplicar a regra monetária.

@@ -1,5 +1,15 @@
 # 01 — Plano do projeto e fases
 
+## Situação atual — incremento 4.3B.2A
+
+Integrados, somente com sintéticos, preparação reconciliada 4.3A, controles de
+aprovação 4.1, motor 4.2, projeção A/B 4.3B.1 e persistência assinada/idempotente.
+**1.111 testes e oito verificações de schemas aprovados.** Consulte o
+[relatório técnico e atos humanos pendentes](docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md).
+Sem atestos humanos novos, aprovação/ativação real, simulação com documentos
+privados ou XLSX. Bloqueios obrigatórios preservados. 4.3B.2B e Fase 5 não
+iniciados. Os marcos anteriores abaixo permanecem como histórico.
+
 ## Situação posterior — incremento 4.3B.1
 
 Implementação autorizada exclusivamente com dados sintéticos: cinco condições

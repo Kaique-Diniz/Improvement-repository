@@ -1,0 +1,52 @@
+{
+  "$id": "urn:conversor:ensaio-integrado-sintetico:1.0:regua",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "condominio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Id",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "natureza": {
+      "const": "sintetico",
+      "title": "Natureza",
+      "type": "string"
+    },
+    "regra_ids": {
+      "items": {
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Regra Ids",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "versao": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Versao",
+      "type": "string"
+    }
+  },
+  "required": [
+    "natureza",
+    "id",
+    "versao",
+    "condominio_id",
+    "regra_ids"
+  ],
+  "title": "DocumentoReguaSintetica",
+  "type": "object"
+}

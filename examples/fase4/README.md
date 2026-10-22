@@ -1,5 +1,22 @@
 # Propostas e contratos históricos da Fase 4
 
+## Integração sintética completa — 4.3B.2A
+
+O [relatório de integração](../../docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md)
+documenta a demonstração com seis cotas e modos A/B, incluindo inventário,
+aprovação sintética explícita, processamento, persistência, retry e reprodução.
+As fontes são geradas do zero em temporários; não há entrada de arquivo real,
+atesto humano ou XLSX. A demonstração pode ser repetida pela raiz do checkout:
+
+```bash
+.venv/bin/python -m pytest -q tests/integrated_processing/test_pipeline.py -k demonstracao_completa
+```
+
+Os eventos de aprovação necessários ao teste são somente de planos inventados,
+em autoridade temporária. O orquestrador não cria aprovações/ativações. A versão
+da régua é comprovada no JSON sintético inventariado; não copiar essas fontes,
+prioridades ou vigências para planos reais.
+
 ## Exemplo exclusivamente sintético — 4.3B.1
 
 [`tree_43b1.sintetico.json`](tree_43b1.sintetico.json) demonstra as cinco condições

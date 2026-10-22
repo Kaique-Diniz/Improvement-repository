@@ -1,5 +1,15 @@
 # Prontidão documental para revisão do incremento 4.3B
 
+## Situação posterior — 4.3B.2A exclusivamente sintético
+
+O [relatório do incremento integrado](INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md)
+registra integração entre inventário, aprovação, motor, A/B e persistência,
+com 1.111 testes e oito verificações de schemas aprovados. Não houve atestos
+humanos, planos reais aprovados/ativados, simulação sobre documentos privados
+ou liberação de bloqueios. O 4.3B.2B depende dos atos humanos listados no relatório
+e de nova autorização. Fase 5 não iniciada; sem homologação de produção.
+As declarações preparatórias abaixo preservam seu contexto histórico.
+
 ## Atualização posterior — implementação sintética 4.3B.1
 
 O responsável autorizou exclusivamente o incremento técnico sintético 4.3B.1,

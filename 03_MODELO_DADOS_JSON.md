@@ -69,6 +69,15 @@ Ela não aprova planos nem modifica as interfaces JSON/PostgreSQL implementadas.
 
 ## Documentos e auditoria (atualização geral de 21/10/2026)
 
+Extensão **4.3B.2A**: `PedidoProcessamentoIntegrado`, `ExecucaoIntegradaSintetica`
+e `ReciboProcessamentoSintetico` ligam preparação/inventário, plano/versionamento,
+fonte/versão da régua, data/modo explícitos e ato autenticado do operador.
+Persistência idempotente/assinada somente de ensaios sintéticos, sem alterar
+`Processamento` ou pacotes históricos 1.0/1.1. Cinco schemas em
+`schemas/ensaio-integrado-sintetico/1.0/`; casos de uso dependem de portas,
+permitindo outro backend. A restrição de identidade do 4.3B.1 é reutilizada.
+Veja [arquitetura e reprodução](docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md).
+
 Extensão posterior **4.3B.1**, sem migração de contratos históricos:
 `SolicitacaoProcessamentoSintetico` exige ambiente sintético e modo A/B explícito;
 `ProjecaoProcessamentoSintetico` associa modo, versão da projeção, relatório do

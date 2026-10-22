@@ -1,0 +1,138 @@
+{
+  "$defs": {
+    "ReferenciaReguaSintetica": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "versao",
+        "sha256"
+      ],
+      "title": "ReferenciaReguaSintetica",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:ensaio-integrado-sintetico:1.0:pedido",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "administradora_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Administradora Id",
+      "type": "string"
+    },
+    "ambiente": {
+      "const": "sintetico",
+      "title": "Ambiente",
+      "type": "string"
+    },
+    "condominio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Id",
+      "type": "string"
+    },
+    "data_ref": {
+      "format": "date",
+      "title": "Data Ref",
+      "type": "string"
+    },
+    "em": {
+      "format": "date-time",
+      "title": "Em",
+      "type": "string"
+    },
+    "evidencia_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Evidencia Id",
+      "type": "string"
+    },
+    "fundamento": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Fundamento",
+      "type": "string"
+    },
+    "modo_cadastro": {
+      "enum": [
+        "A",
+        "B"
+      ],
+      "title": "Modo Cadastro",
+      "type": "string"
+    },
+    "operador_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Operador Id",
+      "type": "string"
+    },
+    "plano_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plano Hash",
+      "type": "string"
+    },
+    "plano_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Plano Id",
+      "type": "string"
+    },
+    "plano_versao": {
+      "title": "Plano Versao",
+      "type": "string"
+    },
+    "preparacao_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Preparacao Hash",
+      "type": "string"
+    },
+    "preparacao_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Preparacao Id",
+      "type": "string"
+    },
+    "processamento_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Processamento Id",
+      "type": "string"
+    },
+    "regua": {
+      "$ref": "#/$defs/ReferenciaReguaSintetica"
+    }
+  },
+  "required": [
+    "processamento_id",
+    "condominio_id",
+    "plano_id",
+    "plano_versao",
+    "plano_hash",
+    "ambiente",
+    "data_ref",
+    "modo_cadastro",
+    "preparacao_id",
+    "preparacao_hash",
+    "administradora_id",
+    "regua",
+    "operador_id",
+    "em",
+    "fundamento",
+    "evidencia_id"
+  ],
+  "title": "PedidoProcessamentoIntegrado",
+  "type": "object"
+}
