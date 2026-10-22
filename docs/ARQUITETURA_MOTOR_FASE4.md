@@ -190,6 +190,13 @@ artificial com 132 linhas. Nenhuma cobrança real será exportada nesta fase.
 
 ## 7. Incrementos após aprovação
 
+Atualização autorizada após o aceite do 4.2: o próximo escopo foi dividido em
+**4.3A — preparação** e **4.3B — homologação das regras reais**, esta última ainda
+sem autorização. O [relatório 4.3A](INCREMENTO_4_3A_PREPARACAO_HOMOLOGACAO.md)
+detalha a infraestrutura, a matriz não executável e os critérios para a próxima
+decisão. A tabela abaixo preserva a proposta original, sem autorizar o antigo
+4.4 ou a Fase 5 por mudança de numeração.
+
 | Incremento | Implementação prevista | Verificação |
 |---|---|---|
 | 4.1 | Modelos/schemas, portas e JSON de planos/eventos; fixtures sintéticas | Tipos, versões, referências, vigências, hash/aprovação, imutabilidade, atomicidade e concorrência |

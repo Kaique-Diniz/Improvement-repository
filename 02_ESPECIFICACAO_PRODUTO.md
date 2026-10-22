@@ -44,7 +44,19 @@ somente de simulação, com plano/versão/hash/aprovação/vigência verificados
 os bloqueios críticos preservados. Não autoriza cobrança nem exportação. Regras
 operacionais específicas continuam dependendo de aprovação própria.
 
+O [incremento 4.3A](docs/INCREMENTO_4_3A_PREPARACAO_HOMOLOGACAO.md) prepara
+inventários revisados, catálogos completos de impedimentos, armazenamento privado
+assinado, reprodução histórica e comparação diagnóstica. A ausência/carga parcial
+de fonte ou bloqueio impede simular pelo fluxo privado. Um candidato ainda não
+atestado não é pacote autorizado; a revisão técnica do inventário não aprova
+regras financeiras. Replay histórico não equivale à validade administrativa atual.
+
 Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance (boleto, unidade, condomínio), ação (incluir, excluir, adiar, alerta, bloquear) e prioridade. Regras especiais por unidade não se limitam às políticas comuns. A contagem deve especificar se é `> N` ou `>= N` dias conforme condomínio.
+
+Os casos iniciais abaixo são material de levantamento histórico, não planos reais
+aprovados/ativados. No 4.3A, os oito itens da matriz preliminar continuam sujeitos
+à confirmação de semântica, escopo, ação, prioridade, vigência e evidência própria;
+nenhuma observação administrativa ou credencial pode virar condição financeira.
 
 ### Caso inicial TREE MORUMBI (conforme histórico da conversa, sujeito a fixture de aceite)
 - Cobrança extra de boletos com **mais de 30 dias** de vencimento à data de referência.
