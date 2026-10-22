@@ -1,0 +1,484 @@
+{
+  "$defs": {
+    "Documento": {
+      "additionalProperties": false,
+      "description": "Valor bruto textual; a validade fiscal é avaliada sem apagar evidências inválidas.",
+      "properties": {
+        "tipo": {
+          "enum": [
+            "cpf",
+            "cnpj",
+            "outro"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "description": "CPF/CNPJ bruto como texto, preservando zeros iniciais.",
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "Documento",
+      "type": "object"
+    },
+    "EvidenciaDocumento": {
+      "additionalProperties": false,
+      "properties": {
+        "documento": {
+          "$ref": "#/$defs/Documento"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "titular_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Titular Id"
+        }
+      },
+      "required": [
+        "documento",
+        "origem"
+      ],
+      "title": "EvidenciaDocumento",
+      "type": "object"
+    },
+    "FonteHistorico": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo": {
+          "$ref": "#/$defs/FontePrivada"
+        },
+        "estrutura": {
+          "enum": [
+            "lista_ocorrencias",
+            "casos_documentais"
+          ],
+          "title": "Estrutura",
+          "type": "string"
+        },
+        "namespace": {
+          "enum": [
+            "operacional",
+            "documental"
+          ],
+          "title": "Namespace",
+          "type": "string"
+        },
+        "produtor_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Produtor Id",
+          "type": "string"
+        },
+        "produtor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Produtor Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo",
+        "namespace",
+        "produtor_id",
+        "produtor_versao",
+        "estrutura"
+      ],
+      "title": "FonteHistorico",
+      "type": "object"
+    },
+    "FontePrivada": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "caminho": {
+          "minLength": 1,
+          "title": "Caminho",
+          "type": "string"
+        },
+        "papel": {
+          "enum": [
+            "inadimplencia",
+            "cadastro",
+            "referencia",
+            "requisitos",
+            "evidencia"
+          ],
+          "title": "Papel",
+          "type": "string"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        },
+        "tamanho": {
+          "minimum": 1,
+          "title": "Tamanho",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "caminho",
+        "sha256",
+        "tamanho",
+        "papel"
+      ],
+      "title": "FontePrivada",
+      "type": "object"
+    },
+    "Gravidade": {
+      "enum": [
+        "informativo",
+        "alerta",
+        "critico"
+      ],
+      "title": "Gravidade",
+      "type": "string"
+    },
+    "LocalizacaoHistorica": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "arquivo_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Arquivo Sha256",
+          "type": "string"
+        },
+        "namespace": {
+          "enum": [
+            "operacional",
+            "documental"
+          ],
+          "title": "Namespace",
+          "type": "string"
+        },
+        "ponteiro_json": {
+          "pattern": "^/(?:[^~/]|~[01])+(?:/(?:[^~/]|~[01])+)*$",
+          "title": "Ponteiro Json",
+          "type": "string"
+        },
+        "produtor_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Produtor Id",
+          "type": "string"
+        },
+        "produtor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Produtor Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "arquivo_sha256",
+        "ponteiro_json",
+        "namespace",
+        "produtor_id",
+        "produtor_versao"
+      ],
+      "title": "LocalizacaoHistorica",
+      "type": "object"
+    },
+    "Ocorrencia": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "escopo": {
+          "enum": [
+            "registro",
+            "arquivo",
+            "processamento"
+          ],
+          "title": "Escopo",
+          "type": "string"
+        },
+        "evidencias_documentais": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenciaDocumento"
+          },
+          "title": "Evidencias Documentais",
+          "type": "array"
+        },
+        "gravidade": {
+          "$ref": "#/$defs/Gravidade"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "origem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Origem"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "processamento_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Processamento Id",
+          "type": "string"
+        },
+        "registro_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Registro Id"
+        }
+      },
+      "required": [
+        "id",
+        "processamento_id",
+        "codigo",
+        "gravidade",
+        "escopo"
+      ],
+      "title": "Ocorrencia",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "VinculoOcorrencia": {
+      "additionalProperties": false,
+      "properties": {
+        "hash_original": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash Original",
+          "type": "string"
+        },
+        "hash_registro_bruto": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hash Registro Bruto",
+          "type": "string"
+        },
+        "id_interno": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id Interno",
+          "type": "string"
+        },
+        "id_legado": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id Legado",
+          "type": "string"
+        },
+        "localizacao": {
+          "$ref": "#/$defs/LocalizacaoHistorica"
+        },
+        "original": {
+          "$ref": "#/$defs/Ocorrencia"
+        }
+      },
+      "required": [
+        "id_interno",
+        "id_legado",
+        "hash_original",
+        "hash_registro_bruto",
+        "localizacao",
+        "original"
+      ],
+      "title": "VinculoOcorrencia",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:auditoria:1.0:reconciliacao",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiente": {
+      "enum": [
+        "sintetico",
+        "privado"
+      ],
+      "title": "Ambiente",
+      "type": "string"
+    },
+    "autoriza_cobranca": {
+      "const": false,
+      "default": false,
+      "title": "Autoriza Cobranca",
+      "type": "boolean"
+    },
+    "condominio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Id",
+      "type": "string"
+    },
+    "fontes": {
+      "items": {
+        "$ref": "#/$defs/FonteHistorico"
+      },
+      "minItems": 1,
+      "title": "Fontes",
+      "type": "array"
+    },
+    "id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "identificacao_versao": {
+      "const": "ocorrencia-importada-1.0",
+      "default": "ocorrencia-importada-1.0",
+      "title": "Identificacao Versao",
+      "type": "string"
+    },
+    "modo": {
+      "const": "reconciliacao_tecnica_sem_decisao",
+      "default": "reconciliacao_tecnica_sem_decisao",
+      "title": "Modo",
+      "type": "string"
+    },
+    "permite_exportacao_operacional": {
+      "const": false,
+      "default": false,
+      "title": "Permite Exportacao Operacional",
+      "type": "boolean"
+    },
+    "registros": {
+      "items": {
+        "$ref": "#/$defs/VinculoOcorrencia"
+      },
+      "title": "Registros",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "condominio_id",
+    "ambiente",
+    "fontes",
+    "registros"
+  ],
+  "title": "ReconciliacaoOcorrencias",
+  "type": "object"
+}

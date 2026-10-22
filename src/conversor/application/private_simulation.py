@@ -21,7 +21,7 @@ def hash_implementacao():
     digest.update(platform.python_version().encode())
     for pacote in ('pydantic', 'openpyxl'):
         digest.update((pacote + ':' + version(pacote)).encode())
-    for nome in ('domain.base', 'domain.canonical', 'domain.documents', 'domain.billing_rules',
+    for nome in ('domain.base', 'domain.canonical', 'domain.documents', 'domain.audit_identity', 'domain.billing_rules',
                  'domain.billing_lifecycle', 'domain.billing_evaluation', 'domain.private_simulation',
                  'application.documents', 'application.billing_evaluation', 'application.simulation_inventory',
                  'application.private_simulation', 'rules.conditions', 'rules.engine'):

@@ -35,7 +35,7 @@ def origens_do_modelo(modelo):
     return tuple(mapa[k] for k in sorted(mapa))
 
 
-def inventariar(entrada, catalogos):
+def inventariar(entrada, catalogos, reconciliacao=None):
     """Candidato para revisão humana; gerar este DTO NÃO atesta completude."""
     entrada = normalizar_entrada(entrada)
     registros, ausencias, origens = [], [], {}
@@ -65,12 +65,20 @@ def inventariar(entrada, catalogos):
                 faltas(obj.model_dump(mode='json'), id_)
             for origem in origens_do_modelo(obj):
                 origens[hash_modelo(origem)] = origem
-    return InventarioEntrada(hash_entrada=hash_modelo(entrada),
+    inventario = InventarioEntrada(hash_entrada=hash_modelo(entrada),
         registros=tuple(sorted(registros, key=lambda r: (r.tipo, r.id, r.sha256))),
         apontamentos=sum(len(b.apontamentos) for b in entrada.lote.boletos),
         itens_composicao=sum(len(b.composicao.itens) for b in entrada.lote.boletos),
         origens=tuple(origens[k] for k in sorted(origens)),
         campos_ausentes=tuple(sorted(ausencias, key=lambda a: (a.registro_id, a.campo))))
+    if reconciliacao is None:
+        return inventario
+    from conversor.domain.audit_identity import InventarioReconciliado, origem_historico
+    for fonte in reconciliacao.fontes:
+        origem = origem_historico(fonte)
+        origens[hash_modelo(origem)] = origem
+    return InventarioReconciliado(**(inventario.model_dump() | {
+        'origens': tuple(origens[k] for k in sorted(origens)), 'reconciliacao_hash': hash_modelo(reconciliacao)}))
 
 
 def conferir_pacote(pacote):
@@ -94,7 +102,15 @@ def conferir_pacote(pacote):
         if boleto is None or not {(o.arquivo_id, o.sha256) for o in cobertura.origens} <= {
                 (o.arquivo_id, o.sha256) for o in boleto.origens}:
             raise ErroAplicacao('COBERTURA_FORA_DO_BOLETO')
-    if inventariar(entrada, pacote.catalogos) != pacote.inventario:
+    reconciliacao = getattr(pacote, 'reconciliacao', None)
+    if reconciliacao is not None:
+        from conversor.domain.audit_identity import ReconciliacaoOcorrencias
+        reconciliacao = ReconciliacaoOcorrencias.model_validate(reconciliacao.model_dump(warnings=False))
+        if (reconciliacao.condominio_id, reconciliacao.ambiente) != (pacote.condominio_id, pacote.ambiente):
+            raise ErroAplicacao('RECONCILIACAO_DE_OUTRO_CONTEXTO')
+        if reconciliacao.ocorrencias() != entrada.ocorrencias_anteriores:
+            raise ErroAplicacao('ENTRADA_OMITE_OU_ALTERA_OCORRENCIAS_RECONCILIADAS')
+    if inventariar(entrada, pacote.catalogos, reconciliacao) != pacote.inventario:
         raise ErroAplicacao('INVENTARIO_INCOMPLETO_OU_DIVERGENTE')
     esperadas = {o.id: o for o in entrada.ocorrencias_anteriores}
     carregadas = {}

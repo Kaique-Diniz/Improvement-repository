@@ -14,6 +14,8 @@ from conversor.domain.base import Id
 from conversor.domain.billing_rules import Ambiente, ErroPlano, bytes_canonicos, hash_modelo
 from conversor.domain.private_simulation import ExecucaoPrivada, PacotePrivado, ReciboPrivado
 from conversor.domain.simulation_comparison import ComparacaoPrivada
+from conversor.domain.audit_identity import (PacoteReconciliado, ReconciliacaoOcorrencias, ReciboReconciliacao,
+    PreparacaoTecnica, ReciboPreparacaoTecnica)
 from .billing_authority import ler_protegido, sem_links
 from .json_repository import _gravar, _sincronizar_diretorio, ler_json_bytes
 
@@ -104,7 +106,7 @@ class RepositorioSimulacoesJSON:
         nome = tipo + '-' + id_ + '.json'
         return sem_links(self.raiz / nome), sem_links(self.ancoras / nome)
 
-    def _guardar(self, tipo, objeto, credencial):
+    def _guardar(self, tipo, objeto, credencial, modelo_recibo=ReciboPrivado):
         self.autoridade.conferir_protecao()
         conferir_local_privado(self.raiz)
         conferir_local_privado(self.ancoras)
@@ -121,7 +123,7 @@ class RepositorioSimulacoesJSON:
             dados = dict(schema_version='1.0', repositorio_id=self.id, raiz_hash=self.raiz_hash, tipo=tipo,
                 id=objeto.id, condominio_id=objeto.condominio_id, ambiente=self.ambiente,
                 sha256=sha256(conteudo).hexdigest(), responsavel_id=ator, politica_autorizacao_hash=politica)
-            recibo = ReciboPrivado(**dados, assinatura=self.autoridade.assinar(dados, dominio='artefato-privado-1.0'))
+            recibo = modelo_recibo(**dados, assinatura=self.autoridade.assinar(dados, dominio='artefato-privado-1.0'))
             # Um órfão sem recibo nunca pode ser lido. Repetição explícita após falha pode substituí-lo.
             temporario = self.raiz / ('.' + uuid4().hex + '.tmp')
             temp_recibo = self.ancoras / ('.' + uuid4().hex + '.tmp')
@@ -136,12 +138,12 @@ class RepositorioSimulacoesJSON:
                 temporario.unlink(missing_ok=True)
                 temp_recibo.unlink(missing_ok=True)
 
-    def _ler(self, tipo, id_, modelo):
+    def _ler(self, tipo, id_, modelo, modelo_recibo=ReciboPrivado):
         self.autoridade.conferir_protecao()
         conferir_local_privado(self.raiz)
         conferir_local_privado(self.ancoras)
         destino, ancora = self._paths(tipo, id_)
-        recibo = ReciboPrivado.model_validate(ler_json_bytes(ler_protegido(ancora)))
+        recibo = modelo_recibo.model_validate(ler_json_bytes(ler_protegido(ancora)))
         self.autoridade.verificar(recibo.model_dump(mode='json', exclude={'assinatura'}), recibo.assinatura,
                                   dominio='artefato-privado-1.0')
         if (recibo.repositorio_id, recibo.raiz_hash, recibo.tipo, recibo.id, recibo.ambiente) != (
@@ -152,16 +154,21 @@ class RepositorioSimulacoesJSON:
         conteudo = ler_protegido(destino)
         if sha256(conteudo).hexdigest() != recibo.sha256:
             raise ErroAplicacao('ARTEFATO_PRIVADO_ADULTERADO')
-        objeto = modelo.model_validate(ler_json_bytes(conteudo))
+        dados = ler_json_bytes(conteudo)
+        if tipo == 'pacote':
+            modelo = _modelo_pacote(dados)
+        objeto = modelo.model_validate(dados)
         if (objeto.id, objeto.condominio_id, objeto.ambiente) != (id_, recibo.condominio_id, self.ambiente):
             raise ErroAplicacao('IDENTIDADE_PRIVADA_DIVERGENTE')
         return objeto
 
     @seguro
     def gravar_pacote(self, pacote, *, credencial):
-        pacote = PacotePrivado.model_validate(pacote.model_dump(warnings=False))
+        dados = pacote.model_dump(warnings=False)
+        pacote = _modelo_pacote(dados).model_validate(dados)
         conferir_pacote(pacote)
         conferir_fontes(pacote)
+        _conferir_historico_pacote(pacote)
         self._guardar('pacote', pacote, credencial)
 
     @seguro
@@ -169,6 +176,7 @@ class RepositorioSimulacoesJSON:
         pacote = self._ler('pacote', id_, PacotePrivado)
         conferir_pacote(pacote)
         conferir_fontes(pacote)
+        _conferir_historico_pacote(pacote)
         return pacote
 
     @seguro
@@ -197,3 +205,51 @@ class RepositorioSimulacoesJSON:
     @seguro
     def carregar_comparacao(self, id_):
         return self._ler('comparacao', id_, ComparacaoPrivada)
+
+    @seguro
+    def gravar_reconciliacao(self, reconciliacao, *, credencial):
+        from .audit_history import conferir_reconciliacao
+        reconciliacao = ReconciliacaoOcorrencias.model_validate(reconciliacao.model_dump(warnings=False))
+        conferir_reconciliacao(reconciliacao)
+        self._guardar('reconciliacao', reconciliacao, credencial, ReciboReconciliacao)
+
+    @seguro
+    def carregar_reconciliacao(self, id_):
+        from .audit_history import conferir_reconciliacao
+        reconciliacao = self._ler('reconciliacao', id_, ReconciliacaoOcorrencias, ReciboReconciliacao)
+        conferir_reconciliacao(reconciliacao)
+        return reconciliacao
+
+    @seguro
+    def gravar_preparacao_tecnica(self, preparacao, *, credencial):
+        preparacao = PreparacaoTecnica.model_validate(preparacao.model_dump(warnings=False))
+        _conferir_preparacao_tecnica(preparacao)
+        self._guardar('preparacao_tecnica', preparacao, credencial, ReciboPreparacaoTecnica)
+
+    @seguro
+    def carregar_preparacao_tecnica(self, id_):
+        preparacao = self._ler('preparacao_tecnica', id_, PreparacaoTecnica, ReciboPreparacaoTecnica)
+        _conferir_preparacao_tecnica(preparacao)
+        return preparacao
+
+
+def _modelo_pacote(dados):
+    versao = dados.get('schema_version')
+    if versao == '1.0':
+        return PacotePrivado
+    if versao == '1.1':
+        return PacoteReconciliado
+    raise ErroAplicacao('SCHEMA_DE_PACOTE_PRIVADO_NAO_SUPORTADO')
+
+
+def _conferir_historico_pacote(pacote):
+    if isinstance(pacote, PacoteReconciliado):
+        from .audit_history import conferir_reconciliacao
+        conferir_reconciliacao(pacote.reconciliacao)
+
+
+def _conferir_preparacao_tecnica(preparacao):
+    from .audit_history import conferir_reconciliacao
+    conferir_pacote(preparacao.candidato)
+    conferir_fontes(preparacao.candidato)
+    conferir_reconciliacao(preparacao.candidato.reconciliacao)
