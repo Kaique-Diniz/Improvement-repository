@@ -50,7 +50,8 @@ O arquivo real possui **espaço final** no cabeçalho `NM_DIVIDA_CEDENTE ` da co
 - `VL_PARCELA`: número monetário com precisão de centavos, não string formatada com `R$`.
 - Em linha cadastral (sem dívida), **Y:AD** (`NM_CONTRATO_CEDENTE`, `PRODUTO_CEDENTE`, `NM_DIVIDA_CEDENTE`, `NU_PARCELA`, `VENCIMENTO`, `VL_PARCELA`) devem permanecer vazias.
 - Em linha com dívida, as 6 colunas finais devem refletir exatamente contrato, produto, competência, parcela, vencimento e valor elegíveis segundo perfil/regra.
-- Uma mesma unidade pode ter uma linha cadastral além de linhas com dívidas caso política/perfil/exemplo homologado assim estabeleça.
+- Cadastro antecipado é opção universal por processamento: A, apenas cotas elegíveis; B, também no máximo uma linha cadastral adicional por unidade com cotas não elegíveis, inclusive coexistindo com dívida elegível. Não há modo padrão escolhido. Unidade sem cota não elegível não ganha cadastro adicional por essa opção.
+- Nunca exportar cota não elegível como dívida, incluir todo o Cadastro Geral ou contornar bloqueios de lote/unidade/titular/documento com linha cadastral. Registrar modo A/B no histórico/auditoria; implementação operacional posterior, sem mudar as 30 colunas ou iniciar a Fase 5 nesta revisão documental.
 - Evitar fórmulas ou macros nos campos de dados; não alterar o template original em disco.
 
 ## Compatibilidade documental confirmada — easyCollector

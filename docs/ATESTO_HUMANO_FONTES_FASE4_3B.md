@@ -4,6 +4,25 @@ Preparação documental autorizada em 22/10/2026. **Todos os itens humanos estã
 pendentes.** A conferência automática, a assinatura técnica e o aceite técnico do
 4.3A não preenchem este checklist. Nenhuma regra real é aprovada por este documento.
 
+Os [esclarecimentos de negócio posteriores](ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md)
+permitem ao responsável pelo projeto acumular Administrador, Revisor e Operador
+na mesma identidade autorizada. Continuam obrigatórios registros independentes
+de cada ação, aprovação, atesto e decisão humana. Nenhuma caixa abaixo está
+preenchida pelo acúmulo de papéis ou pela definição dos requisitos.
+
+O [mapeamento técnico posterior TREE](MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md)
+conferiu Valor integral/componentes/encargos e A/AJ/J no PDF autorizado. É evidência
+para apoiar o responsável, não atesto: todos os itens humanos abaixo continuam
+pendentes e os bloqueios continuam obrigatórios.
+
+Evidência técnica adicional: os 769 campos TREE foram
+[conferidos exaustivamente](COBERTURA_APONTAMENTOS_FICHAS_TREE_4_3B.md), com 628
+vazios validados, 141 preenchidos e zero inconclusivos. Conferir privadamente a
+revisão 002 do dossiê 009, incluindo todos os cabeçalhos/continuidades; não marcar
+esta ficha por execução automática. O
+[resumo de atestos e decisões](RESUMO_ATESTOS_DECISOES_4_3B.md) organiza as fontes
+TREE/PLAZA e os atos que ainda precisam de manifestação humana.
+
 Usar uma ficha privada por fonte e uma conclusão por conjunto/condomínio. Fichas
 preenchidas, hashes reais, identificadores, nomes, documentos e evidências ficam
 exclusivamente no ambiente privado. Este arquivo é um modelo sem dados pessoais.
@@ -20,7 +39,7 @@ A ficha com os hashes completos já conferidos está em
 | Extração e auditoria | Versões registradas dos leitores, formato/versão identificado, inventário e reconciliação aplicáveis |
 | Completude | Páginas/abas esperadas, unidades, boletos, campos ausentes, continuidade e dossiês complementares |
 | Referência temporal | Data de referência exata do conjunto e datas/vigência das fontes e fatos quando comprovadas |
-| Responsável | Nome/identificador, função e competência para conferir essa fonte; ainda não designado neste modelo |
+| Responsável | Responsável pelo projeto acumula os três papéis; identificar privadamente a identidade autorizada e o papel em cada manifestação, sem dados pessoais neste modelo |
 | Evidência | ID e localização de relatório privado, páginas/linhas verificadas e fundamento da conclusão |
 | Resultado | Pendente, recusado ou conferido, com lacunas e bloqueios explicitados |
 | Registro | Data/hora com fuso, identificação do revisor e evidência de sua manifestação |
@@ -67,8 +86,15 @@ são pontos de confronto deste conjunto, não metas universais para outros perí
 - [ ] Conferir continuidade entre páginas sem omissão ou duplicação de lançamento.
 - [ ] Conferir origens dos valores, sinais, atualização monetária e apontamentos;
       não converter saldo acumulado em valor individual nem alterar composições.
-- [ ] Registrar os 141 apontamentos inventariados e suas origens, sem aprovar aqui
-      o significado de A, AJ ou J.
+- [ ] Documentar o campo literal `Valor` validado e sua associação à cota e aos
+      componentes, com página/linha e campo canônico comprovados. Centavo exclui
+      apenas essa cota/componentes, independentemente do vencimento; não aprovar
+      exclusão da unidade nem assumir componente/total como campo de comparação.
+- [ ] Conferir os 141 apontamentos inventariados e suas origens. Efeito de A/AJ/J
+      confirmado pelo negócio: qualquer um exclui só a cota inteira/componentes,
+      independentemente do vencimento, sem afetar outras cotas. Validar campo
+      próprio, namespace e associação à cota; não tratar letras em legendas,
+      observações ou descrições como gatilhos. Preservar todas as evidências.
 - [ ] Confirmar as 769 competências ausentes; manter nulo, sem derivar do vencimento,
       emissão ou descrição. Necessidade posterior de competência exige fonte/critério aprovado.
 - [ ] Conferir a ocorrência crítica do subtotal Habita/VG e registrar que o lote
@@ -138,6 +164,9 @@ pelo hash e conteúdo, sem presumir equivalência pelo nome.
       a fonte ou a regra para obter coincidência com a referência.
 - [ ] Declarar o significado de agrupamentos e valores, data de referência e
       política de cadastro antecipado usada pelo autor da planilha, se comprovados.
+- [ ] Distinguir a política histórica da referência da nova escolha universal A/B;
+      modo não escolhido nesta ficha. Não exigir prazo judicial como filtro nem
+      alterar a referência para fazê-la concordar com os novos requisitos.
 - [ ] Preservar como evidências separadas as células que originaram os conflitos FL.
 - [ ] Conferir as 30 colunas na ordem original e o cabeçalho literal `CPF`, aceitando
       CPF/CNPJ válido como texto com zeros; não aprovar aqui a importação integral.
@@ -153,10 +182,16 @@ não comprova que sua versão atual foi disponibilizada e homologada neste conju
       responsável e localização privada do extrato autorizado.
 - [ ] Separar requisitos financeiros de acesso, credenciais e observações administrativas;
       não copiar a régua bruta para o Git nem interpretar seu texto automaticamente.
-- [ ] Vincular cada uma das oito propostas à evidência operacional revisada e à
-      resposta do responsável, mantendo prioridades e vigências ainda não aprovadas em aberto.
-- [ ] Identificar documentos de status jurídico/garantidora e sua vigência quando
-      necessários; marcador genérico, silêncio ou ausência de anotação não bastam.
+- [ ] Vincular as condições extrajudiciais aplicáveis à régua revisada e às respostas
+      do responsável; prioridades/vigências reais continuam pendentes. Preservar
+      os oito IDs históricos, registrando a retirada do filtro judicial e a
+      substituição do cadastro particular pela opção universal do processamento.
+- [ ] Validar documentalmente o reconhecimento de A/AJ/J no campo próprio TREE,
+      cujo efeito de exclusão da cota/componentes já foi confirmado pelo negócio.
+      Esta ficha não aprova tecnicamente planos nem atesta automaticamente fontes. Não exigir
+      documentos de garantidora/status jurídico como pré-requisitos autônomos do
+      seletor; não criar filtro judicial de 60/90 dias ou exclusão por garantidora.
+      Preservar evidências históricas e bloqueios críticos sem apagá-los.
 - [ ] Identificar eventual esclarecimento/retificação Habita/VG e provas de
       titularidade/documentos FL. Apenas disponibilizá-los não retira os bloqueios.
 
@@ -175,9 +210,12 @@ não comprova que sua versão atual foi disponibilizada e homologada neste conju
 Não há valores preenchidos/aprovados neste modelo. Os quatro indicadores do
 contrato só podem ser afirmativos depois da revisão humana que os fundamenta.
 O responsável efetivo do registro vem da credencial autorizada e da política
-auditável, não de um nome livre inserido no JSON. A identidade dessa pessoa e sua
-competência precisam ser definidas; o ator automático da assinatura técnica não
-é o aprovador humano.
+auditável, não de um nome livre inserido no JSON. O vínculo da identidade do
+responsável à política autorizada precisa ser registrado; o ator automático da
+assinatura técnica não é o aprovador humano. O responsável pelo projeto pode exercer os três papéis,
+mas deve registrar cada manifestação independente com fundamento e data/hora.
+O modo A/B futuro deve constar no histórico/auditoria do processamento; esta
+revisão não adiciona esse campo ao contrato histórico do atesto nem emite atestos.
 
 Registrar nova versão/ID do pacote conforme o fluxo existente, sem sobrescrever
 1.0 ou 1.1 anteriores. Qualquer mudança de fonte, inventário, evidência ou data de

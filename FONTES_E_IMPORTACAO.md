@@ -51,7 +51,15 @@ o procedimento público está no
 [checklist de atesto](docs/ATESTO_HUMANO_FONTES_FASE4_3B.md).
 
 Um extrato autorizado e aplicável da régua ainda precisa ser identificado e
-vinculado à revisão das oito propostas. Não foi obtido novo material de régua
+vinculado às condições aplicáveis da matriz revisada. Não foi obtido novo material de régua
 nesta tarefa. Informação de acesso, credencial ou nota administrativa não deve
 ser transcrita para condição financeira. Não houve atesto humano nem início do
 4.3B, simulação financeira real ou exportação operacional.
+
+Os [esclarecimentos posteriores do responsável](docs/ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md)
+definiram requisitos extrajudiciais, não atestaram estas fontes. Não exigir
+prazos judiciais de 60/90 ou garantidora como filtros adicionais do Excel. O
+campo `Valor` ainda exige mapeamento comprovado à cota/componentes para a regra
+do centavo; cadastro antecipado é opção universal A/B por processamento, sem
+trazer automaticamente todo o Cadastro Geral. Fonte vigente, atestos humanos,
+prioridades, vigências e aprovação formal dos planos continuam pendentes.

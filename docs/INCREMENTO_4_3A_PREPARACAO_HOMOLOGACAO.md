@@ -12,6 +12,17 @@ internos ao dossiê documental. A ressalva de identidade foi corrigida; não hou
 remoção de bloqueios ou aprovação de completude/regras reais. Os resultados abaixo
 registram a primeira preparação 005 e sua suíte de 830 testes.
 
+**Nota de histórico:** a matriz e as pendências de negócio deste relatório
+registram o levantamento original. Os
+[esclarecimentos posteriores do responsável](ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md)
+o superam quanto a centavo por unidade, filtro judicial e cadastro particular:
+centavo exclui apenas cota/componentes; não há filtro judicial; cadastro é opção
+universal A/B. Usar a [matriz revisada](MATRIZ_NEGOCIO_PRELIMINAR_8_REGRAS.md)
+para decisões atuais, sem reescrever artefatos ou reprodução histórica. A decisão
+TREE posterior confirmou A/AJ/J também como exclusões da cota/componentes,
+independentes do vencimento; uma condição basta. Validação documental dos campos,
+prioridades, vigências, aprovações técnicas/formais e atestos permanecem pendentes.
+
 ## Arquitetura e arquivos
 
 ```mermaid

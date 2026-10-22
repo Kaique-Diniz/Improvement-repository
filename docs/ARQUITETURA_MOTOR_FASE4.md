@@ -149,9 +149,9 @@ da seção anterior já são requisitos obrigatórios e não estão em votação
 | D03 | Empate incompatível | Bloquear escopo para revisão; nenhuma precedência implícita entre incluir/excluir/adiar | Não escolhe resultado financeiro arbitrariamente |
 | D04 | Sem regra ou condição indeterminada | Resultado pendente e impedimento de inclusão no escopo; nunca incluir por padrão | Exige cobertura explícita da régua e fatos suficientes |
 | D05 | Ação alertar | Acumular avisos sem decidir inclusão; desempate de regras com a mesma ação preserva todas as justificativas | Alerta sozinho não libera cobrança |
-| D06 | Prazos reais e ação judicial/garantidora | Confirmar por condomínio operador exato, dias, escopo, modalidade e efeito; sem padrão global 30/60 | Necessário antes das simulações financeiras reais |
-| D07 | Fontes jurídicas, garantidora e exceções | Usar apenas fatos comprovados, tipados e vigentes; definir responsável/fonte por condomínio | Fonte ausente ou conflitante permanece pendente |
-| D08 | Competência e cadastro antecipado | Manter competência ausente; não criar política geral de linha cadastral | Mapeamento eventual exige aprovação; materialização XLSX fica na Fase 5 |
+| D06 | Prazos extrajudiciais — requisito posteriormente definido | Quando a régua determinar 30: `>30` dias corridos e referência explícita; outros prazos só conforme plano aprovado. Judicial 60/90 não filtra Excel; não criar exclusão autônoma por garantidora | Vínculo à régua, prioridade, vigência e aprovação formal ainda pendentes |
+| D07 | Evidências e exceções | TREE: A/AJ/J confirmados como exclusões da cota/componentes, independentes do vencimento; uma condição basta, sem afetar outras cotas. Reconhecer apenas nos campos apropriados comprovados. Não exigir jurídico/garantidora como filtros autônomos | Validar campo/namespace e vínculo à cota; evidência ausente/conflitante exige revisão; preservar auditoria/bloqueios |
+| D08 | Competência e cadastro antecipado — requisito posteriormente definido | Manter competência ausente; cadastro é opção universal A/B por processamento, não regra particular do condomínio | Sem implementação nesta revisão; modo explícito em histórico/auditoria e projeção futura na Fase 5 |
 | D09 | Governança da aprovação | Eventos locais auditados com hash e evidência; revisão explícita de cada plano real, sem interpretar planilha automaticamente | Não supõe que o protótipo forneça controle de acesso de produção |
 
 Em D04, a lógica composta tem três valores: falso domina `todas`, verdadeiro
@@ -166,6 +166,13 @@ a Fase 4 não aprova automaticamente uma nova interpretação desses parâmetros
 Não foi fornecido nesta etapa um plano real estruturado e aprovado. A Régua bruta,
 que pode conter credenciais, permanece fora do repositório e deve ter caminho
 privado autorizado antes de qualquer inspeção; não é enviada a serviços externos.
+
+Os [esclarecimentos posteriores](ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md)
+substituem hipóteses de negócio desta arquitetura: centavo exclui só a cota e
+componentes após validar o campo Valor, não a unidade; cadastro universal A/B;
+sem filtro judicial/garantidora. A capacidade genérica de exclusão terminal de
+unidade permanece no motor para regras que venham a aprová-la, mas não expressa
+a nova regra do centavo. O exemplo sintético histórico da seção 2 não é plano real.
 
 ## 6. Saída auditável proposta
 

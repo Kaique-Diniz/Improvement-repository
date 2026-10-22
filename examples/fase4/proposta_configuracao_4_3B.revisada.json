@@ -1,0 +1,348 @@
+{
+  "versao_documental": "2.3",
+  "finalidade": "proposta_documental_nao_executavel",
+  "fonte_decisao": "ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_RESPONSAVEL",
+  "autoriza_implementacao": false,
+  "autoriza_ativacao": false,
+  "autoriza_simulacao_real": false,
+  "autoriza_exportacao_operacional": false,
+  "aprovacao_formal_plano": "pendente",
+  "atesto_humano_fontes": "pendente",
+  "homologado_producao": false,
+  "aviso": "Documento de proposta, nao aceito como plano pelos contratos 4.1/4.2. Nao importar automaticamente. Decisoes de negocio nao sao atos de aprovacao.",
+  "requisitos_gerais_definidos": {
+    "finalidade_selecao": "cotas_elegiveis_regua_extrajudicial",
+    "medidas_posteriores": "analise_no_CRM_easyCollector",
+    "usar_prazo_judicial_como_filtro_excel": false,
+    "exclusao_autonoma_por_garantidora": false,
+    "contagem_atraso": "dias_corridos",
+    "data_referencia_obrigatoria": true,
+    "prazo_padrao_todos_condominios": null,
+    "preservar_valores_e_competencias_ausentes": true,
+    "bloqueios_criticos_prevalecem": true,
+    "fatos_indeterminados": "revisao_sem_inclusao_presumida"
+  },
+  "mapeamento_centavo_pendente": {
+    "campo_literal_fonte": "Valor",
+    "campo_canonico_validado": "Boleto.composicao.total_original",
+    "origem_mapeamento_revisado": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+    "vinculo_cota_componentes_validado": true,
+    "nao_presumir": [
+      "componente",
+      "saldo_acumulado",
+      "total_agregado",
+      "valor_original"
+    ],
+    "exige_regua_aplicavel_revisada": true,
+    "papel_campo_Valor_confirmado_negocio": "valor_do_boleto",
+    "validacao_documental_real": "conferencia_tecnica_deste_PDF_sem_atesto_humano",
+    "distinguir_de": [
+      "componentes",
+      "multas",
+      "juros",
+      "saldos",
+      "totais"
+    ],
+    "estado": "mapeamento_tecnico_conferido_atesto_e_plano_pendentes"
+  },
+  "matriz_oito_ids": [
+    {
+      "id": "tree_centavo",
+      "condominio": "TREE_MORUMBI",
+      "situacao_negocio": "negocio_confirmado_mapeamento_tecnico_conferido_aprovacao_formal_pendente",
+      "condicao": {
+        "campo_fonte": "Valor",
+        "operador": "eq",
+        "valor_decimal_textual": "0.01",
+        "independe_vencimento": true
+      },
+      "escopo_negocio": "cota_e_seus_componentes",
+      "acao_proposta": "excluir_cota_sem_afetar_outras_cotas_da_unidade",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "aprovacao_formal": "pendente",
+      "vinculo_regua_revisado": null,
+      "fonte_decisao": "ATUALIZACAO_DECISOES_NEGOCIO_TREE_RESPONSAVEL",
+      "aprovacao_tecnica": "pendente",
+      "assinatura_plano": "nao_emitida",
+      "evidencia_tecnica": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+      "ficha_humana": "docs/fichas_tree_4_3B/tree_centavo.md",
+      "estado_ficha": "pronta_para_decisao_humana_nao_aprovada"
+    },
+    {
+      "id": "tree_apontamento_a",
+      "condominio": "TREE_MORUMBI",
+      "situacao_negocio": "negocio_confirmado_mapeamento_tecnico_conferido_aprovacao_formal_pendente",
+      "condicao": {
+        "apontamento": "A",
+        "significado": "exclusao_operacional_da_cota_e_componentes_confirmada",
+        "namespace": null,
+        "independe_vencimento": true,
+        "campo_fonte_validado": "codigo_entre_numero_boleto_e_vencimento",
+        "reconhecimento_somente_campo_proprio": true,
+        "ignorar_legendas_observacoes_descricoes": true,
+        "operador": "eq"
+      },
+      "escopo_negocio": "cota_e_seus_componentes",
+      "acao_proposta": "excluir_cota_sem_afetar_outras_cotas_da_unidade",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "aprovacao_formal": "pendente",
+      "vinculo_regua_revisado": null,
+      "fonte_decisao": "ATUALIZACAO_DECISOES_NEGOCIO_TREE_RESPONSAVEL",
+      "aprovacao_tecnica": "pendente",
+      "assinatura_plano": "nao_emitida",
+      "evidencia_tecnica": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+      "ficha_humana": "docs/fichas_tree_4_3B/tree_apontamento_a.md",
+      "estado_ficha": "pronta_para_decisao_humana_nao_aprovada"
+    },
+    {
+      "id": "tree_apontamento_aj",
+      "condominio": "TREE_MORUMBI",
+      "situacao_negocio": "negocio_confirmado_mapeamento_tecnico_conferido_aprovacao_formal_pendente",
+      "condicao": {
+        "apontamento": "AJ",
+        "significado": "exclusao_operacional_da_cota_e_componentes_confirmada",
+        "namespace": null,
+        "independe_vencimento": true,
+        "campo_fonte_validado": "codigo_entre_numero_boleto_e_vencimento",
+        "reconhecimento_somente_campo_proprio": true,
+        "ignorar_legendas_observacoes_descricoes": true,
+        "operador": "eq"
+      },
+      "escopo_negocio": "cota_e_seus_componentes",
+      "acao_proposta": "excluir_cota_sem_afetar_outras_cotas_da_unidade",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "aprovacao_formal": "pendente",
+      "vinculo_regua_revisado": null,
+      "fonte_decisao": "ATUALIZACAO_DECISOES_NEGOCIO_TREE_RESPONSAVEL",
+      "aprovacao_tecnica": "pendente",
+      "assinatura_plano": "nao_emitida",
+      "evidencia_tecnica": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+      "ficha_humana": "docs/fichas_tree_4_3B/tree_apontamento_aj.md",
+      "estado_ficha": "pronta_para_decisao_humana_nao_aprovada"
+    },
+    {
+      "id": "tree_apontamento_j",
+      "condominio": "TREE_MORUMBI",
+      "situacao_negocio": "negocio_confirmado_mapeamento_tecnico_conferido_aprovacao_formal_pendente",
+      "condicao": {
+        "apontamento": "J",
+        "significado": "exclusao_operacional_da_cota_e_componentes_confirmada",
+        "namespace": null,
+        "independe_vencimento": true,
+        "campo_fonte_validado": "codigo_entre_numero_boleto_e_vencimento",
+        "reconhecimento_somente_campo_proprio": true,
+        "ignorar_legendas_observacoes_descricoes": true,
+        "operador": "eq"
+      },
+      "escopo_negocio": "cota_e_seus_componentes",
+      "acao_proposta": "excluir_cota_sem_afetar_outras_cotas_da_unidade",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "aprovacao_formal": "pendente",
+      "vinculo_regua_revisado": null,
+      "fonte_decisao": "ATUALIZACAO_DECISOES_NEGOCIO_TREE_RESPONSAVEL",
+      "aprovacao_tecnica": "pendente",
+      "assinatura_plano": "nao_emitida",
+      "evidencia_tecnica": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+      "ficha_humana": "docs/fichas_tree_4_3B/tree_apontamento_j.md",
+      "estado_ficha": "pronta_para_decisao_humana_nao_aprovada"
+    },
+    {
+      "id": "tree_prazo_30",
+      "condominio": "TREE_MORUMBI",
+      "situacao_negocio": "decisao_negocio_confirmada_validacao_documental_e_aprovacao_formal_pendentes",
+      "condicao": {
+        "campo": "dias_atraso",
+        "operador": "gt",
+        "valor": 30,
+        "unidade": "dias_corridos",
+        "exige_regua_extrajudicial_30": true,
+        "prazo_tree_confirmado_negocio": true
+      },
+      "escopo_negocio": "cota",
+      "acao_proposta": "satisfazer_apenas_criterio_prazo_sem_superar_centavo_A_AJ_J_ou_bloqueios",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "aprovacao_formal": "pendente",
+      "vinculo_regua_revisado": null,
+      "fonte_decisao": "ATUALIZACAO_DECISOES_NEGOCIO_TREE_RESPONSAVEL",
+      "aprovacao_tecnica": "pendente",
+      "assinatura_plano": "nao_emitida",
+      "evidencia_tecnica": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+      "ficha_humana": "docs/fichas_tree_4_3B/tree_prazo_30.md",
+      "estado_ficha": "pronta_para_decisao_humana_nao_aprovada"
+    },
+    {
+      "id": "plaza_prazo_30",
+      "condominio": "PLAZA_MAYOR_IPIRANGA",
+      "situacao_negocio": "semantica_definida_vinculo_regua_pendente",
+      "condicao": {
+        "campo": "dias_atraso",
+        "operador": "gt",
+        "valor": 30,
+        "unidade": "dias_corridos",
+        "exige_regua_extrajudicial_30": true
+      },
+      "escopo_negocio": "cota",
+      "acao_proposta": "satisfazer_apenas_criterio_prazo_sem_superar_exclusoes_ou_bloqueios",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "aprovacao_formal": "pendente",
+      "vinculo_regua_revisado": null
+    },
+    {
+      "id": "plaza_juridico_60",
+      "condominio_historico": "PLAZA_MAYOR_IPIRANGA",
+      "situacao_negocio": "retirado_da_elegibilidade_excel",
+      "configurar_no_seletor": false,
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null,
+      "motivo": "Medidas posteriores cabem ao CRM; prazo judicial nao filtra selecao extrajudicial."
+    },
+    {
+      "id": "plaza_cadastro_antecipado",
+      "condominio_historico": "PLAZA_MAYOR_IPIRANGA",
+      "situacao_negocio": "substituido_por_opcao_universal_processamento",
+      "configurar_como_regra_financeira_condominio": false,
+      "politica_referenciada": "cadastro_antecipado_universal_A_B",
+      "prioridade": null,
+      "vigente_de": null,
+      "vigente_ate": null
+    }
+  ],
+  "cadastro_antecipado_universal_A_B": {
+    "situacao": "requisito_definido_implementacao_pendente",
+    "independente_administradora_condominio": true,
+    "selecao_obrigatoria_por_processamento": true,
+    "modo_padrao": null,
+    "modos": {
+      "A": "apenas_cotas_elegiveis",
+      "B": "cotas_elegiveis_e_linha_cadastral_para_unidade_com_cota_nao_elegivel"
+    },
+    "maximo_linhas_cadastrais_adicionais_por_unidade_no_modo_B": 1,
+    "permite_coexistencia_divida_e_cadastro": true,
+    "exportar_cota_nao_elegivel_como_divida": false,
+    "incluir_automaticamente_cadastro_geral_inteiro": false,
+    "elegibilidade_indeterminada": "revisao_nao_converter_em_cadastro_para_contornar_pendencia",
+    "campos_finais_vazios_linha_cadastral": [
+      "NM_CONTRATO_CEDENTE",
+      "PRODUTO_CEDENTE",
+      "NM_DIVIDA_CEDENTE",
+      "NU_PARCELA",
+      "VENCIMENTO",
+      "VL_PARCELA"
+    ],
+    "preservar_bloqueios": [
+      "lote",
+      "unidade",
+      "titularidade",
+      "documentos"
+    ],
+    "registrar_modo_no_historico_e_auditoria": true
+  },
+  "autoridade_proposta": {
+    "responsavel": "responsavel_pelo_projeto",
+    "identidade_autorizada_id": null,
+    "papeis_acumulaveis": [
+      "Administrador",
+      "Revisor",
+      "Operador"
+    ],
+    "registros_independentes": [
+      "acoes",
+      "aprovacoes",
+      "atestos_fontes",
+      "decisoes_humanas"
+    ],
+    "acumulo_aprova_automaticamente": false,
+    "acumulo_atesta_automaticamente": false
+  },
+  "processamento_futuro_nao_instanciado": {
+    "data_referencia": null,
+    "modo_cadastro_antecipado": null,
+    "registrar_no_historico_e_auditoria": [
+      "data_referencia",
+      "modo_cadastro_antecipado",
+      "versao_politica",
+      "plano_versao_hash",
+      "ator_papel_acao",
+      "fontes",
+      "bloqueios",
+      "decisoes_e_justificativas"
+    ]
+  },
+  "exportacao_preservada_como_requisito": {
+    "colunas": 30,
+    "ordem": "04_DICIONARIO_TEMPLATE.md",
+    "cabecalho_documento_literal": "CPF",
+    "documento": "CPF_ou_CNPJ_valido_como_texto_preservando_zeros",
+    "homologacao_integral_easyCollector": "pendente_fase_5"
+  },
+  "atualizacao_decisao_tree": {
+    "fonte": "ATUALIZACAO_DECISOES_NEGOCIO_TREE_RESPONSAVEL",
+    "situacao": "decisoes_negocio_confirmadas_sem_aprovacao_tecnica_assinatura_ou_ativacao",
+    "validacao_mapeamento_documentos_reais": "conferida_tecnicamente_no_PDF_autorizado_sem_atesto_humano",
+    "exclusoes": [
+      "tree_centavo",
+      "tree_apontamento_a",
+      "tree_apontamento_aj",
+      "tree_apontamento_j"
+    ],
+    "combinacao_exclusoes": "qualquer_uma_condicao_comprovada_basta",
+    "alcance": "cota_inteira_e_todos_componentes",
+    "independe_vencimento": true,
+    "outras_cotas_mesma_unidade": "avaliar_normalmente",
+    "preservar_todas_evidencias_na_auditoria": true,
+    "prazo_dias_corridos": 30,
+    "operador_prazo": "gt",
+    "primeiro_dia_atraso_que_satisfaz_prazo": 31,
+    "prazo_nao_supera_exclusoes": true,
+    "apontamentos_somente_campos_apropriados": true,
+    "nao_reconhecer_apontamentos_em": [
+      "legendas",
+      "observacoes",
+      "textos_descritivos"
+    ]
+  },
+  "evidencia_tecnica_mapeamento": {
+    "relatorio": "docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md",
+    "escopo": "PDF_TREE_autorizado_identificado_por_hash_no_dossie_privado",
+    "campo_original_integral": "Boleto.composicao.total_original",
+    "campo_original_componente": "Boleto.composicao.itens[].valor",
+    "predicado_existente": "valor_original",
+    "posicao_apontamento": "entre_numero_boleto_e_vencimento",
+    "namespace_canonico": "ContextoLeitura.formato_id",
+    "origem_apontamento": "primeira_linha_composicao_do_boleto",
+    "ausencia_exige_cobertura_explicita": true,
+    "regras_reais_executadas": false,
+    "atesto_humano_emitido": false,
+    "aprova_assina_ativa_plano": false,
+    "bloqueio_VG_preservado": true
+  },
+  "evidencia_tecnica_cobertura": {
+    "relatorio": "docs/COBERTURA_APONTAMENTOS_FICHAS_TREE_4_3B.md",
+    "natureza": "conferencia_tecnica_nao_atesto",
+    "boletos": 769,
+    "vazio_validado": 628,
+    "preenchido_validado": 141,
+    "inconclusivo": 0,
+    "cabecalhos_conferidos": 802,
+    "continuidades": 33,
+    "fonte_identificada_por_hash_no_dossie_privado": true,
+    "emite_cobertura_operacional": false,
+    "atesto_humano": false,
+    "aprova_assina_ativa_plano": false,
+    "inconclusao": "revisao_e_ocorrencia_critica_por_boleto_sem_divida_exportavel",
+    "decisoes_pendentes": "docs/RESUMO_ATESTOS_DECISOES_4_3B.md"
+  }
+}
