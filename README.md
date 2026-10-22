@@ -2,10 +2,42 @@
 
 **Status:** Fases 1 e 2 implementadas; Fase 3 tecnicamente encerrada por autorização do responsável, com ressalvas e bloqueios operacionais preservados. Sem homologação para produção.
 **Última fase concluída tecnicamente:** Fase 3 — Leitores. **458 testes aprovados**, 884 boletos reconciliados e 132 correspondências financeiras. Veja o [aceite técnico e decisão de encerramento](docs/ACEITE_TECNICO_FASE3.md).
-**Fase 4 — 4.3A e correção aceitos tecnicamente:** infraestrutura de preparação privada concluída com ressalvas operacionais preservadas. Nesta tarefa foi preparada somente a [documentação para revisão do 4.3B](docs/PRONTIDAO_DOCUMENTAL_FASE4_3B.md), com checklist por fonte, oito propostas de regra e perguntas ao negócio. Atestos humanos e aprovação dos planos reais continuam pendentes. Branch `feature/fase-4-motor-cobranca`; sem início efetivo do 4.3B ou da Fase 5.
+**Fase 4 — incremento 4.3B.1 implementado exclusivamente com dados sintéticos:** cinco condições TREE no motor existente e decisões universais A/B, sem XLSX operacional. Veja [implementação, testes e limites](docs/INCREMENTO_4_3B_1_TREE_SINTETICO.md). A preparação privada 4.3A foi aceita; a [revisão documental do 4.3B](docs/PRONTIDAO_DOCUMENTAL_FASE4_3B.md) permanece necessária. Atestos humanos e aprovação dos planos reais continuam pendentes. Branch `feature/fase-4-motor-cobranca`; sem início do 4.3B.2 ou da Fase 5.
 **Arquitetura da Fase 4:** [modelo JSON, decisões e incrementos](docs/ARQUITETURA_MOTOR_FASE4.md). O laboratório sintético anterior não constitui motor geral aprovado nem homologação do Excel.
 **Correção do 4.3A:** aprovada tecnicamente pelo responsável; colisões FL reconciliadas com mapa completo do legado e assinatura técnica privada. Bloqueios operacionais e atesto humano pendente preservados. Veja [causa comprovada, contratos e revalidação FL/Habita](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
-**Regressão atual:** 872 testes aprovados (830 anteriores + 42 da correção de auditoria), com schemas antigos preservados e schemas aditivos de auditoria/pacotes 1.1 sincronizados.
+**Regressão atual:** 1.027 testes aprovados (943 anteriores + 84 novos do 4.3B.1), com schemas históricos preservados e dois schemas aditivos. São 967 testes regulares e 60 explícitos; não representam homologação de planos reais.
+
+**Requisitos de negócio revisados, somente documentação:** consulte a
+[matriz atual dos oito IDs](docs/MATRIZ_NEGOCIO_PRELIMINAR_8_REGRAS.md), as
+[respostas Q01–Q26](docs/DECISOES_PENDENTES_HOMOLOGACAO_REGRAS.md) e a
+[proposta não executável](examples/fase4/proposta_configuracao_4_3B.revisada.json).
+Centavo exclui só cota/componentes; prazo de 30 é estrito em dias corridos;
+judicial/garantidora não criam filtros adicionais; cadastro universal A/B é
+escolha do processamento. A implementação sintética está no 4.3B.1; integração
+real, planos formais e atestos continuam pendentes. Exemplos históricos anteriores
+não representam essas novas decisões; veja
+[compatibilidade e limites](docs/ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md).
+
+**Decisão TREE confirmada:** centavo, A, AJ ou J excluem somente a cota inteira e
+componentes, independentemente do vencimento; outras cotas seguem avaliação
+normal. `Valor` é referência do boleto; validar seu mapeamento e os campos próprios
+dos apontamentos antes da configuração técnica. Dia 31 satisfaz o prazo TREE,
+sem anular exclusões/bloqueios. Atualização documental, sem plano aprovado,
+assinado ou ativado e sem execução de regras reais.
+
+**Validação técnica preparatória TREE:** o
+[mapeamento dos valores e apontamentos](docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md)
+foi conferido no PDF privado: original integral em `Boleto.composicao.total_original`,
+encargos separados e A/AJ/J associados por campo próprio ao boleto. Nenhuma regra
+real foi executada; bloqueio Habita/VG mantido. Novos testes usam somente dados
+inventados. Atestos, planos formais e autorização para o 4.3B.2 continuam pendentes;
+a autorização posterior do 4.3B.1 limita-se a testes sintéticos.
+
+**Apontamentos e fichas TREE:** [cobertura técnica exaustiva](docs/COBERTURA_APONTAMENTOS_FICHAS_TREE_4_3B.md)
+concluída nos 769 boletos: 628 campos vazios validados, 141 preenchidos, zero
+inconclusivos, incluindo 33 continuidades. Cinco fichas individuais e
+[resumo de atestos](docs/RESUMO_ATESTOS_DECISOES_4_3B.md) preparados para decisão;
+sem cobertura operacional emitida, atesto, assinatura ou ativação de plano real.
 **Correções dos layouts reais:** [resultado antes/depois, testes e pendências](docs/CORRECOES_LEITORES_REAIS_FASE3.md). Os bloqueios permanecem obrigatórios.
 **Atualização documental:** CPF/CNPJ válidos na coluna literal `CPF`, como texto; compatibilidade confirmada pelo responsável no CRM easyCollector. Conflitos documentais exigem revisão humana. Veja [contratos, auditoria e testes](docs/DOCUMENTOS_CPF_CNPJ.md). A homologação integral permanece pendente.
 **Atualização:** 22/10/2026 (America/Sao_Paulo).

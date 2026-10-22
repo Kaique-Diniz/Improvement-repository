@@ -1,0 +1,61 @@
+{
+  "$id": "urn:conversor:processamento-sintetico:1.0:solicitacao",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiente": {
+      "const": "sintetico",
+      "title": "Ambiente",
+      "type": "string"
+    },
+    "condominio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Id",
+      "type": "string"
+    },
+    "data_ref": {
+      "format": "date",
+      "title": "Data Ref",
+      "type": "string"
+    },
+    "modo_cadastro": {
+      "enum": [
+        "A",
+        "B"
+      ],
+      "title": "Modo Cadastro",
+      "type": "string"
+    },
+    "plano_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Plano Hash",
+      "type": "string"
+    },
+    "plano_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Plano Id",
+      "type": "string"
+    },
+    "plano_versao": {
+      "title": "Plano Versao",
+      "type": "string"
+    },
+    "processamento_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Processamento Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "processamento_id",
+    "condominio_id",
+    "plano_id",
+    "plano_versao",
+    "plano_hash",
+    "ambiente",
+    "data_ref",
+    "modo_cadastro"
+  ],
+  "title": "SolicitacaoProcessamentoSintetico",
+  "type": "object"
+}

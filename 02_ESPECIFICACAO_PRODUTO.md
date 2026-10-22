@@ -3,13 +3,19 @@
 ## 1. Problema
 Administradoras fornecem relatórios heterogêneos. Uma conversão ingênua poderia confundir saldos acumulados com valor do boleto, duplicar lançamentos entre páginas, associar unidade a bloco errado ou descumprir exceções da régua.
 
+O conversor seleciona cotas elegíveis pela régua **extrajudicial**, organiza os
+dados e gera Excel para importação no easyCollector. A análise posterior das
+medidas de cobrança cabe ao CRM. Prazos judiciais não são filtros adicionais
+de seleção. Requisitos revistos em 22/10/2026, somente na documentação; veja
+[decisões e limites](docs/ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md).
+
 ## 2. Entidades e cardinalidades
 - **Administradora (1:N Condomínios):** um condomínio pertence a exatamente uma administradora ativa em cada instante. Planejar histórico de mudanças de administradora sem violar associação única atual.
 - **Formato (reutilizável):** assinatura de um layout e versão; poderá ter muitas administradoras relacionadas e vários condomínios compatíveis.
-- **Condomínio:** unidade lógica de configuração: administradora atual, código interno, cedente, endereço, política de cadastro antecipado, formatos aceitos, regra e template de exportação.
+- **Condomínio:** unidade lógica de configuração: administradora atual, código interno, cedente, endereço, formatos aceitos, regra e template de exportação. Cadastro antecipado é opção universal do processamento, não política exclusiva do condomínio.
 - **Régua/Regra:** a planilha geral é fonte textual; uma regra estruturada, versionada e **aprovada** governa o processamento. Não aplicar interpretação livre automaticamente em produção.
 - **Template:** saída com 30 colunas fixas, independentemente da administradora de origem.
-- **Processamento:** arquivo(s), versões de configuração, data de referência, alertas, resultados e trilha de auditoria.
+- **Processamento:** arquivo(s), versões de configuração, data de referência explícita, modo A/B de cadastro antecipado, alertas, resultados e trilha de auditoria. Registro do novo modo é requisito para implementação posterior.
 
 ## 3. Reconhecimento automático
 1. Detectar tipo (PDF com texto, PDF escaneado, XLSX, CSV quando suportado).
@@ -64,29 +70,43 @@ expressa das condições, ações, prioridades e vigências antes dos planos rea
 
 Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance (boleto, unidade, condomínio), ação (incluir, excluir, adiar, alerta, bloquear) e prioridade. Regras especiais por unidade não se limitam às políticas comuns. A contagem deve especificar se é `> N` ou `>= N` dias conforme condomínio.
 
-Os casos iniciais abaixo são material de levantamento histórico, não planos reais
-aprovados/ativados. No 4.3A, os oito itens da matriz preliminar continuam sujeitos
-à confirmação de semântica, escopo, ação, prioridade, vigência e evidência própria;
-nenhuma observação administrativa ou credencial pode virar condição financeira.
+Os casos abaixo incorporam os esclarecimentos do responsável na preparação do
+4.3B. Requisito definido não é aprovação formal de plano. Prioridades, vigências,
+vínculo à régua e atestos continuam pendentes. A atualização específica TREE
+confirma A/AJ/J como exclusões da cota e componentes, sem aprovação técnica ou ativação.
+Nenhuma observação administrativa ou credencial pode virar condição financeira.
+As oito entradas históricas e seus novos estados estão na
+[matriz revisada](docs/MATRIZ_NEGOCIO_PRELIMINAR_8_REGRAS.md).
 
-### Caso inicial TREE MORUMBI (conforme histórico da conversa, sujeito a fixture de aceite)
-- Cobrança extra de boletos com **mais de 30 dias** de vencimento à data de referência.
-- Se a unidade contém qualquer boleto de R$ 0,01, **excluir a unidade inteira** da importação, inclusive boletos de valor maior.
-- Se a unidade possui qualquer boleto com apontamento A, AJ ou J, **excluir a unidade inteira**.
+### TREE MORUMBI — requisitos e pendências atuais
+
+O [incremento técnico 4.3B.1](docs/INCREMENTO_4_3B_1_TREE_SINTETICO.md) implementa
+essas condições somente em plano demonstrativo sintético, reutilizando o motor
+4.2, sem ativar planos reais. O modo universal A/B é projetado como decisões
+estruturadas, sem antecipar o exportador da Fase 5. Datas/prioridades das fixtures
+não constituem decisões para planos reais.
+
+- Para TREE, o prazo extrajudicial de 30 dias está confirmado: selecionar cotas com atraso **estritamente superior a 30 dias corridos**, a partir do dia 31, em relação à data explícita. O prazo sozinho não supera centavo, A, AJ, J ou bloqueios; não há prazo universal para todos os condomínios.
+- Quando existir na régua a condição de R$ 0,01, comparar exatamente o campo **Valor identificado e validado na fonte**. Excluir **somente a cota correspondente e seus componentes**, independentemente do vencimento, sem afetar automaticamente outras cotas da unidade. Documentar Valor → cota/componentes/campo canônico antes de ativar; não presumir componente, saldo ou total.
+- Associação à garantidora não altera isoladamente a elegibilidade; não implementar exclusão autônoma nem duplicar a regra monetária.
+- **A, AJ ou J**, comprovado em campo apropriado do relatório e associado à cota, exclui **a cota inteira e todos os componentes**, independentemente do vencimento. Uma única condição, inclusive o centavo, basta; outras cotas da unidade seguem avaliação normal. Não reconhecer apontamentos por letras em legendas, observações ou descrições nem apagar evidências da auditoria. Efeito/escopo confirmados pelo negócio; validar campo/namespace e associação nos documentos antes da configuração técnica.
+- Campo **Valor confirmado como referência do valor do boleto**. O mapeamento técnico no PDF autorizado foi conferido na preparação posterior, distinguindo componentes, original integral, multas, juros, atualização e totais. Isso não altera valores nem aprova planos; novas fontes/layouts precisam de validação própria e atesto.
+- Validação técnica preparatória posterior: no PDF autorizado, `Valor` por componente mapeia para `composicao.itens[].valor`; o original **integral** da cota é `Boleto.composicao.total_original`, conferido com fechamento explícito quando presente. A/AJ/J estão entre número e vencimento e usam namespace do formato do contexto. Ver [evidências e limites](docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md). Essa conferência técnica não é atesto nem aprovação do plano; fontes/layouts distintos exigem nova validação. Encargos/total atualizado não substituem o original.
 - O dado financeiro de exportação é o valor original totalizado do boleto (composição), sem adicionar multa/juros/correção, salvo outra regra aprovada.
 - No histórico da conversa, uma contagem duplicada em `BLDEP-UNI0040` foi causada por boleto dividido entre páginas; o boleto é único.
 - Registro de unidade específica em outro jurídico deve existir no perfil mesmo que não esteja presente no PDF do período, desde que confirmado na régua.
 
-### Caso inicial PLAZA MAYOR IPIRANGA
-- Régua geral de 20/10/2026: cobrança extra 30 dias; judicial 60 dias. **Prazo judicial não significa exclusão automática**; modalidade e ação devem ser especificadas/validadas.
+### PLAZA MAYOR IPIRANGA — requisitos e pendências atuais
+- Aplicar prazo extrajudicial de 30 dias quando previsto na régua aprovada: `> 30` dias corridos, por cota, com referência explícita. **Não usar prazos judiciais de 60 ou 90 dias como filtros adicionais do Excel**; medidas posteriores cabem ao CRM.
 - PDF da FL traz composição e saldos **acumulados**. Somar componentes pertencentes ao boleto; não usar `Saldo` global da unidade como valor do boleto.
 - PDF de inadimplência não traz todas as informações pessoais. Buscar no Cadastro Geral por condominium + torre + unidade, respeitando a data de origem.
-- Linhas cadastrais sem dívida são permitidas segundo configuração do condomínio; podem coexistir com linhas de dívidas.
+- Linhas cadastrais sem dívida seguem o modo universal A/B escolhido no processamento; podem coexistir com dívida elegível conforme a seção 8.
 - Ausência de algumas unidades na referência manual não torna o arquivo automaticamente errado se só há parcelas fora do prazo e o cadastro antecipado é opcional.
 
 ## 6. CPF e contato
 - A **coluna literal `CPF` aceita CPF válido de 11 dígitos ou CNPJ válido de 14 dígitos**, conforme atualização geral aprovada em 21/10/2026. Validar os dígitos verificadores de acordo com o tipo; não retipar documento explícito para forçar validade.
 - Documento ausente ou inválido: exportar célula em branco e emitir alerta não bloqueante. Preservar valor bruto e fonte na auditoria protegida; não completar dígitos ou zeros que não constem na fonte.
+- Restrição adicional explicitamente confirmada para o **novo fluxo sintético 4.3B.1**: CPF/CNPJ inválido encaminha a unidade à revisão, sem dívida/cadastro automático; documento ausente continua somente alerta. Essa guarda preserva evidências e não altera o resolvedor histórico, os leitores ou o contrato do template. O incremento não exporta XLSX.
 - Preservar zeros à esquerda de CPF e CNPJ usando texto literal e formato `@` no Excel; nunca números. Normalizar somente pontuação permitida antes da validação.
 - Telefones/e-mails opcionais. Até 5 pares DDD/FONE e 3 e-mails; não inventar.
 - Identificações de vários titulares/corresponsáveis exigem regras claras de identificação por unidade. Unidade ou nome isolado não prova associação de documento ao titular. Não substituir automaticamente CPF por CNPJ ou vice-versa. Dois documentos válidos distintos para o mesmo titular bloqueiam resolução automática e exportação desse cadastro; encaminhar à revisão humana, com todas as evidências e fontes. Associação não confirmada também bloqueia. Não escolher fonte mais recente ou Cadastro como prioridade implícita.
@@ -102,7 +122,9 @@ nenhuma observação administrativa ou credencial pode virar condição financei
 - Usar exatamente a estrutura descrita em `04_DICIONARIO_TEMPLATE.md`.
 - Linha de dívida: dados cadastrais mais contrato, dívida, parcela, vencimento, valor.
 - Linha só cadastral: campos cadastrais preenchidos quando conhecidos; 6 campos finais de contrato/dívida ficam vazios.
-- Cadastro antecipado é política por condomínio, não regra global. Mesmo unidade pode ter dívida elegível e linha cadastral sem dívida, caso haja requisito de destino.
+- Cadastro antecipado é opção **universal**, independente de administradora/condomínio, escolhida explicitamente por processamento, sem default definido: **A**, somente cotas elegíveis; **B**, cotas elegíveis e no máximo uma linha exclusivamente cadastral adicional por unidade com cotas não elegíveis. Pode coexistir dívida elegível e cadastro da mesma unidade.
+- Nunca exportar cota não elegível como dívida, incluir automaticamente todo o Cadastro Geral ou usar linha cadastral para contornar bloqueio crítico de lote, unidade, titularidade ou documentos. Indeterminação relevante exige revisão, não classificação presumida como não elegível.
+- Registrar modo escolhido no histórico e auditoria. Estes são requisitos documentais; implementação/projeção operacional dependem de autorização posterior, sem início da Fase 5.
 - `VL_PARCELA` é valor numérico e `VENCIMENTO` é data reconhecida pelo Excel; validar com importador de destino.
 
 ## 9. Validação e bloqueios
@@ -114,6 +136,13 @@ Não deve existir exportação de cobranças com valor presumido. Dados não ver
 
 ## 10. Auditoria
 Registrar ID da execução, horário, data de referência, hashes dos arquivos, fontes, versão do leitor, regra/perfil/template, total de unidades/boletos/linhas, incluídos/excluídos/adiados, motivo específico, documento faltante/inválido/conflitante, e origem (página/linha) da decisão. Logs operacionais não incluem credenciais; anonimizar documentos pessoais quando possível.
+
+Registrar também o modo A/B selecionado e a versão da política de processamento.
+O responsável pelo projeto pode acumular Administrador, Revisor e Operador na
+mesma identidade autorizada. Ações, aprovações, atestos e decisões humanas exigem
+registros independentes com ator/papel, instante e fundamento. O acúmulo de papéis
+não aprova plano nem atesta fontes automaticamente; vínculo da identidade e atos
+formais continuam pendentes. Não há concessão de credenciais nesta atualização.
 
 ## 11. Tratamento de mudanças
 - Novos formatos entram como versão rascunho e precisam de testes/aprovação.

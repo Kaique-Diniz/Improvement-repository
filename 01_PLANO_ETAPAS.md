@@ -1,5 +1,16 @@
 # 01 — Plano do projeto e fases
 
+## Situação posterior — incremento 4.3B.1
+
+Implementação autorizada exclusivamente com dados sintéticos: cinco condições
+TREE usando o motor 4.2 existente e projeção universal A/B sem XLSX.
+Regressão: **1.027 aprovados**, incluindo os 943 anteriores. O
+[relatório do incremento](docs/INCREMENTO_4_3B_1_TREE_SINTETICO.md) registra os
+contratos aditivos, a restrição de identidade e as pendências do 4.3B.2.
+Os registros abaixo de etapas preparatórias são históricos. Nenhum plano real
+foi aprovado, assinado ou ativado; bloqueios continuam obrigatórios. Não houve
+simulação financeira real, início da Fase 5 ou homologação para produção.
+
 ## Visão geral
 
 **Produto:** aplicação para importação padronizada de inadimplência condominial.  
@@ -51,6 +62,32 @@ exclusivamente a preparação documental seguinte. O
 conferência privada, checklist de atesto, matriz das oito propostas e perguntas
 de decisão. Não foram configurados, aprovados ou ativados planos reais. O 4.3B
 efetivo continua aguardando os atestos, decisões e autorização posterior.
+
+Os [requisitos extrajudiciais esclarecidos posteriormente](docs/ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md)
+foram incorporados somente à documentação/matriz/proposta: centavo por cota,
+prazo estrito em dias corridos, retirada de filtros judiciais e de exclusão
+autônoma por garantidora, cadastro universal A/B e papéis acumuláveis com atos
+separados. Não houve implementação do 4.3B, aprovação/ativação de planos nem
+atestos automáticos. A decisão específica posterior para TREE confirmou A/AJ/J
+como exclusões da cota/componentes, suficientes isoladamente e independentes do
+vencimento, sem afetar automaticamente outras cotas. Prioridades, vigências,
+mapeamento dos campos e vínculo à régua continuam pendentes de validação técnica
+e formalização, preservando todos os bloqueios operacionais.
+
+A validação técnica preparatória posterior conferiu o
+[mapeamento no PDF TREE autorizado](docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md),
+sem execução de regras reais. Original integral, encargos e apontamentos dos 769
+boletos batem com a fonte e o canônico preservado. Isso supera a pendência de
+mapeamento técnico **neste arquivo**, sem substituir atesto humano, aprovação de
+plano ou autorização para iniciar o motor real/4.3B efetivo. Testes novos são
+sintéticos; leitores e bloqueios existentes permanecem inalterados.
+
+O mapeamento foi aceito tecnicamente com 915 testes. A conferência preparatória
+seguinte distingue presença, vazio validado e inconclusão para todos os 769
+boletos, com evidências privadas e fichas individuais ainda não aprovadas. Ver
+[cobertura e prontidão](docs/COBERTURA_APONTAMENTOS_FICHAS_TREE_4_3B.md). Não
+implementa planos reais, não gera aprovação/atesto e não inicia o 4.3B efetivo
+ou Fase 5; bloqueios anteriores mantidos.
 
 **Primeira tarefa:** desenvolver somente a Fase 1. Não pedir numa única execução: leitor de centenas de layouts + frontend + regra complexa + implantação.  
 **Segunda:** reconhecimento (Fase 2) usando PDFs sintéticos e reais previamente sanitizados/autorizados.  
