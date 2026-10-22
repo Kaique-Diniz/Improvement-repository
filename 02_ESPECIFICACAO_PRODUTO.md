@@ -50,6 +50,12 @@ assinado, reprodução histórica e comparação diagnóstica. A ausência/carga
 de fonte ou bloqueio impede simular pelo fluxo privado. Um candidato ainda não
 atestado não é pacote autorizado; a revisão técnica do inventário não aprova
 regras financeiras. Replay histórico não equivale à validade administrativa atual.
+Na [correção de integridade do 4.3A](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md),
+IDs internos de importação são separados por namespace/fonte/conteúdo, com vínculo
+integral ao identificador e registro legados. Evidências distintas não são fundidas
+ou deduplicadas pelo ID antigo. Assinatura de preparação técnica não substitui
+atesto humano de completude nem aprovação de plano; contratos privados 1.0 são
+preservados e pacotes reconciliados usam schema 1.1 explícito.
 
 Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance (boleto, unidade, condomínio), ação (incluir, excluir, adiar, alerta, bloquear) e prioridade. Regras especiais por unidade não se limitam às políticas comuns. A contagem deve especificar se é `> N` ou `>= N` dias conforme condomínio.
 

@@ -5,6 +5,13 @@ Este incremento não implementa nem ativa planos de TREE/Plaza. Não executa cob
 não escreve XLSX operacional e não altera leitores, valores, competência,
 CPF/CNPJ ou as 30 colunas. **Sistema não homologado para produção.**
 
+Atualização corretiva posterior: a causa e a reconciliação das colisões FL estão
+no [relatório de correção de identidades](CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
+Ele retifica a associação inicialmente descrita: os dois pares de registros são
+internos ao dossiê documental. A ressalva de identidade foi corrigida; não houve
+remoção de bloqueios ou aprovação de completude/regras reais. Os resultados abaixo
+registram a primeira preparação 005 e sua suíte de 830 testes.
+
 ## Arquitetura e arquivos
 
 ```mermaid
@@ -236,14 +243,15 @@ revisão final permanecem byte a byte inalterados.
   crítica de subtotal preservada. As 769 competências continuam ausentes.
   Catálogos: 903 ocorrências de leitura e uma de auditoria do lote; categorias
   restantes explicitadas. **Sem atesto humano, recibo ou simulação real.**
-- FL: canônico válido com 50 unidades e 115 boletos. A consolidação do dossiê de
-  conflitos documentais com as ocorrências operacionais revelou **duas colisões
-  de IDs com evidências diferentes** (`DOCUMENTOS_CONFLITANTES` e
+- FL: canônico válido com 50 unidades e 115 boletos. A consolidação revelou
+  **duas colisões de IDs entre os casos do próprio dossiê documental**, com
+  evidências de origem diferentes (`DOCUMENTOS_CONFLITANTES` e
   `DOCUMENTO_TITULAR_NAO_CONFIRMADO`). Preparação bloqueada integralmente; nenhum
   registro foi escolhido, fundido ou descartado. Os dois lados foram retidos no
-  relatório privado `fl.colisoes_privadas.json`. Exige correção rastreável das
-  identidades de auditoria, sem escolher documento/titular, antes de registrar um
-  pacote completo. Não é divergência de valor financeiro nem liberação das
+  relatório privado `fl.colisoes_privadas.json`. A correção rastreável de identidade
+  foi implementada na etapa corretiva posterior, sem escolher documento/titular;
+  registrar um pacote completo ainda exige atesto humano. Não é divergência
+  de valor financeiro nem liberação das
   34 unidades ou dos dois conflitos de CPF existentes.
 
 Os 884 boletos permanecem preservados; as 132 correspondências financeiras são
@@ -279,9 +287,10 @@ não há dependência dos anexos reais nos testes versionados.
 1. Aprovar condição, operador, campo, ação, escopo, prioridade e vigência de cada
    regra, com responsável e fonte autorizada; resolver a semântica jurídica dos
    60 dias e o cadastro antecipado. Configuração administrativa não substitui isso.
-2. Resolver as duas colisões de identidade da auditoria FL preservando as duas
-   evidências e seu vínculo histórico; conferir e atestar os inventários completos
-   e a relação de dossiês, incluindo os bloqueios de titularidade/documentos.
+2. A correção rastreável de identidade FL foi implementada em etapa própria,
+   preservando os registros e evidências. Conferir e atestar os inventários
+   reconciliados completos e a relação de dossiês, incluindo os bloqueios de
+   titularidade/documentos; a assinatura técnica não é esse atesto humano.
 3. Registrar pacotes privados sob autoridade; aprovar vínculos com as referências
    e o significado de cada agrupamento/valor. Guardar fontes e ambiente de replay.
 4. Definir data de referência explícita e criar/aprovar versões de planos pelo
@@ -293,8 +302,9 @@ não há dependência dos anexos reais nos testes versionados.
    evidência e decisão humana própria, fora da prioridade das regras.
 6. Autorizar expressamente o próximo incremento e sua comparação financeira real.
 
-O 4.3A prepara os mecanismos e expõe uma pendência concreta de consolidação privada;
-não declara as regras reais prontas. **4.3B e Fase 5 não foram iniciados.**
+O 4.3A prepara os mecanismos; a pendência de identidade exposta pela preparação
+005 foi reconciliada na etapa corretiva documentada. As regras reais continuam
+dependendo de decisões e aprovação próprias. **4.3B e Fase 5 não foram iniciados.**
 
 ## Registro da entrega
 

@@ -39,6 +39,9 @@ O 4.2 foi aceito tecnicamente com 716 testes. Foi autorizado exclusivamente o
 4.3A: preparação da homologação, com inventário de entradas/bloqueios, persistência
 privada, reprodução e comparação, sem regras reais. Veja a
 [entrega e matriz preliminar](docs/INCREMENTO_4_3A_PREPARACAO_HOMOLOGACAO.md).
+A etapa corretiva das duas colisões FL preserva os IDs históricos e acrescenta
+reconciliação de auditoria, identificação documental v2 e preparação técnica
+assinada. Veja [causa e evidências de preservação](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
 O 4.3B depende de autorização própria e das decisões documentadas. Sem Fase 5
 e sem homologação para produção.
 
