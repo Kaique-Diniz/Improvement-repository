@@ -1,0 +1,79 @@
+{
+  "schema_version": "1.0",
+  "finalidade": "levantamento_nao_executavel",
+  "autoriza_ativacao": false,
+  "regras": [
+    {
+      "id": "tree_centavo",
+      "condominio_referencia": "TREE_MORUMBI",
+      "condicao": {"campo": "valor_boleto_a_confirmar", "operador": "eq", "valor": "0.01"},
+      "escopo": "unidade", "acao": "excluir", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Confirmar qual campo financeiro comprova R$ 0,01 e o conjunto de boletos examinado.", "Aprovar prioridade, vigência e fonte documental; preservar bloqueio de lote VG."]
+    },
+    {
+      "id": "tree_apontamento_a",
+      "condominio_referencia": "TREE_MORUMBI",
+      "condicao": {"campo": "apontamento", "operador": "eq", "valor": "A", "namespace": null},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Confirmar significado de A, namespace, escopo e efeito; não converter marcador em status jurídico automaticamente."]
+    },
+    {
+      "id": "tree_apontamento_aj",
+      "condominio_referencia": "TREE_MORUMBI",
+      "condicao": {"campo": "apontamento", "operador": "eq", "valor": "AJ", "namespace": null},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Confirmar significado de AJ, namespace, escopo e efeito, incluindo coexistência com A ou J."]
+    },
+    {
+      "id": "tree_apontamento_j",
+      "condominio_referencia": "TREE_MORUMBI",
+      "condicao": {"campo": "apontamento", "operador": "eq", "valor": "J", "namespace": null},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Confirmar significado de J e efeito por unidade ou boleto; não selecionar titular ou documento por este marcador."]
+    },
+    {
+      "id": "tree_prazo_30",
+      "condominio_referencia": "TREE_MORUMBI",
+      "condicao": {"campo": "dias_atraso", "operador": "gt", "valor": 30},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Aprovar contagem em dias corridos, data de referência, ação e escopo; testar 29/30/31 sem inferir competência."]
+    },
+    {
+      "id": "plaza_prazo_30",
+      "condominio_referencia": "PLAZA_MAYOR_IPIRANGA",
+      "condicao": {"campo": "dias_atraso", "operador": "gt", "valor": 30},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Aprovar escopo, ação e prioridade perante casos jurídicos e cadastro antecipado."]
+    },
+    {
+      "id": "plaza_juridico_60",
+      "condominio_referencia": "PLAZA_MAYOR_IPIRANGA",
+      "condicao": {"campo": "juridico_e_prazo", "operador": "a_confirmar", "valor": 60},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Definir evidência e vigência do status jurídico, marco inicial dos 60 dias, operador e efeito.", "Confirmar interação com o prazo de 30 dias, exclusão integral e bloqueios de identidade."]
+    },
+    {
+      "id": "plaza_cadastro_antecipado",
+      "condominio_referencia": "PLAZA_MAYOR_IPIRANGA",
+      "condicao": {"campo": "cadastro_antecipado", "operador": "a_confirmar", "valor": null},
+      "escopo": "a_confirmar", "acao": "a_confirmar", "prioridade": null,
+      "vigente_de": null, "vigente_ate": null,
+      "evidencia": "SOLICITACAO_4_3A", "situacao_aprovacao": "pendente_aprovacao_humana",
+      "questoes_humanas": ["Aprovar gatilho, cardinalidade por unidade, campos obrigatórios e interação com dívida elegível.", "A política usada no laboratório não se torna regra geral; geração operacional de linhas pertence à Fase 5."]
+    }
+  ]
+}

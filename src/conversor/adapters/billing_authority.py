@@ -143,8 +143,13 @@ class AutoridadeHMAC:
     def conferir_evento(self, evento: EventoPlano):
         dados = evento.model_dump(mode='json', exclude={'assinatura'})
         self.verificar(dados, evento.assinatura, dominio='evento-plano-1.0')
-        registro = self._politica_historica(evento.politica_autorizacao_hash)
-        if not any(c.responsavel_id == evento.responsavel_id and evento.acao in c.acoes
-                   and evento.condominio_id in c.condominio_ids and evento.ambiente in c.ambientes
+        self.conferir_autorizacao_historica(evento.responsavel_id, evento.politica_autorizacao_hash,
+            acao=evento.acao, condominio_id=evento.condominio_id, ambiente=evento.ambiente)
+
+    def conferir_autorizacao_historica(self, responsavel_id, politica_hash, *, acao, condominio_id, ambiente):
+        """Verifica recibos históricos sem conceder novas permissões administrativas."""
+        registro = self._politica_historica(politica_hash)
+        if not any(c.responsavel_id == responsavel_id and acao in c.acoes
+                   and condominio_id in c.condominio_ids and ambiente in c.ambientes
                    for c in registro.concessoes):
             raise ErroAplicacao('EVENTO_SEM_AUTORIZACAO_HISTORICA')

@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "VinculoReferencia": {
+      "additionalProperties": false,
+      "properties": {
+        "boletos_ids": {
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Boletos Ids",
+          "type": "array"
+        },
+        "criterio_valor": {
+          "const": "soma_originais_para_comparacao",
+          "default": "soma_originais_para_comparacao",
+          "title": "Criterio Valor",
+          "type": "string"
+        },
+        "linha": {
+          "minimum": 2,
+          "title": "Linha",
+          "type": "integer"
+        },
+        "pessoa_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pessoa Id"
+        },
+        "tipo": {
+          "enum": [
+            "divida",
+            "cadastral"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "linha",
+        "unidade_id",
+        "tipo",
+        "boletos_ids"
+      ],
+      "title": "VinculoReferencia",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:simulacao-privada:1.0:mapeamento",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evidencia_revisao_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Evidencia Revisao Id",
+      "type": "string"
+    },
+    "fundamento": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Fundamento",
+      "type": "string"
+    },
+    "referencia_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Referencia Hash",
+      "type": "string"
+    },
+    "referencia_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Referencia Id",
+      "type": "string"
+    },
+    "vinculos": {
+      "items": {
+        "$ref": "#/$defs/VinculoReferencia"
+      },
+      "minItems": 1,
+      "title": "Vinculos",
+      "type": "array"
+    }
+  },
+  "required": [
+    "referencia_id",
+    "referencia_hash",
+    "evidencia_revisao_id",
+    "fundamento",
+    "vinculos"
+  ],
+  "title": "MapeamentoReferencia",
+  "type": "object"
+}
