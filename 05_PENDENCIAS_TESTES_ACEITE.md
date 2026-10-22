@@ -1,5 +1,15 @@
 # 05 — Pendências, decisões e plano de testes
 
+**Atualização de 22/10/2026:** a correção do 4.3A foi aceita tecnicamente com
+872 testes. A etapa atual é exclusivamente documental: confira o
+[checklist de atesto humano](docs/ATESTO_HUMANO_FONTES_FASE4_3B.md), a
+[matriz das oito propostas](docs/MATRIZ_NEGOCIO_PRELIMINAR_8_REGRAS.md) e as
+[perguntas para decisão](docs/DECISOES_PENDENTES_HOMOLOGACAO_REGRAS.md).
+Os cenários particulares de regra abaixo são material de levantamento/teste,
+sem plano real aprovado por essa descrição. A identificação de uma fonte de régua
+não equivale à aprovação de todas as interpretações do seu conteúdo. Atestos,
+prioridades e vigências reais continuam pendentes; o 4.3B não foi iniciado.
+
 ## Decisões aprovadas
 
 - JSON agora, PostgreSQL depois.
@@ -86,4 +96,6 @@ Competências Habita continuam ausentes, com alerta e impedimento de exportaçã
 quando exigidas; não houve inferência pelo vencimento. Consulte a classificação
 completa e a recomendação de encerramento técnico, com bloqueios preservados,
 em [Aceite técnico da Fase 3](docs/ACEITE_TECNICO_FASE3.md).
-Fase 4 não iniciada; sem homologação para produção.
+Na época da revisão final da Fase 3, a Fase 4 ainda não havia sido iniciada.
+O estado posterior está na atualização no início deste documento; o sistema
+continua sem homologação para produção.

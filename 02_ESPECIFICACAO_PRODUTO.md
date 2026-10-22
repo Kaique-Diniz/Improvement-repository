@@ -56,6 +56,11 @@ integral ao identificador e registro legados. Evidências distintas não são fu
 ou deduplicadas pelo ID antigo. Assinatura de preparação técnica não substitui
 atesto humano de completude nem aprovação de plano; contratos privados 1.0 são
 preservados e pacotes reconciliados usam schema 1.1 explícito.
+Após o aceite técnico dessa correção, foi preparada somente a
+[documentação de revisão humana do 4.3B](docs/PRONTIDAO_DOCUMENTAL_FASE4_3B.md).
+O checklist de fontes e a matriz em linguagem de negócio não emitem atestos nem
+aprovam regras. Continuam necessários responsáveis, evidências e aprovação
+expressa das condições, ações, prioridades e vigências antes dos planos reais.
 
 Motor declarativo com operador (igual, contém, maior que, dias atraso), alcance (boleto, unidade, condomínio), ação (incluir, excluir, adiar, alerta, bloquear) e prioridade. Regras especiais por unidade não se limitam às políticas comuns. A contagem deve especificar se é `> N` ou `>= N` dias conforme condomínio.
 

@@ -28,3 +28,30 @@
 - A regra de outro jurídico não pode ser inferida apenas por termos genéricos da FL.
 - O cabeçalho `NM_DIVIDA_CEDENTE ` contém espaço final no XLSX recebido: teste obrigatório com destino.
 - Referências do template manual não implicam que ele seja um gabarito perfeito; o cadastro antecipado pode ser opcional.
+
+## Inventário efetivamente conferido na preparação documental — 22/10/2026
+
+Os quadros anteriores registram o histórico original do dossiê. A disponibilização
+posterior dos cinco anexos abaixo foi autorizada; seus SHA/tamanhos foram
+novamente conferidos na área privada. A referência TREE em XLSX, antes pendente,
+agora integra esse conjunto. Não presumir equivalência entre nomes antigos e
+novos arquivos: identificar sempre pelo conteúdo/hash e pelo inventário.
+
+| Fonte disponível | Papel nesta revisão | Conferência humana |
+|---|---|---|
+| `Inadimplencia_Tree.pdf` | Entrada Habita/TREE; inventário de 112 unidades e 769 boletos | Pendente; manter o bloqueio de lote Habita/VG |
+| `TREE MORUMBI_OUTUBRO 2026.xlsx` | Resultado esperado TREE, sem caráter de gabarito absoluto | Pendente; revisar identidade, agrupamentos e critérios do autor |
+| `Inadimplencia_PlazaMayor.pdf` | Entrada FL/Plaza; inventário de 50 unidades e 115 boletos | Pendente; preservar retenções de titularidade/documentos |
+| `Cadastro Geral- PMI.pdf` | Fonte complementar FL de 390 registros | Pendente; cruzar apenas os registros pertinentes às 50 unidades, sem misturar conjuntos |
+| `TEMPLATE - PLAZA_MAYOR_IPIRANGA_outubro_2026.xlsx` | Resultado esperado Plaza; nome real do anexo inventariado | Pendente; variantes com sufixos não são equivalentes sem conferência |
+
+Mapas de IDs legados/internos, inventários e assinaturas técnicas continuam fora
+do Git. A ficha privada de revisão registra hashes completos e versões disponíveis;
+o procedimento público está no
+[checklist de atesto](docs/ATESTO_HUMANO_FONTES_FASE4_3B.md).
+
+Um extrato autorizado e aplicável da régua ainda precisa ser identificado e
+vinculado à revisão das oito propostas. Não foi obtido novo material de régua
+nesta tarefa. Informação de acesso, credencial ou nota administrativa não deve
+ser transcrita para condição financeira. Não houve atesto humano nem início do
+4.3B, simulação financeira real ou exportação operacional.

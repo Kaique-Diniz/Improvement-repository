@@ -2,13 +2,13 @@
 
 **Status:** Fases 1 e 2 implementadas; Fase 3 tecnicamente encerrada por autorização do responsável, com ressalvas e bloqueios operacionais preservados. Sem homologação para produção.
 **Última fase concluída tecnicamente:** Fase 3 — Leitores. **458 testes aprovados**, 884 boletos reconciliados e 132 correspondências financeiras. Veja o [aceite técnico e decisão de encerramento](docs/ACEITE_TECNICO_FASE3.md).
-**Fase 4 — incremento 4.3A implementado para revisão:** inventário revisado de fontes/bloqueios, pacotes privados assinados, persistência/reprodução histórica e comparação diagnóstica com Excel. Veja [arquitetura, matriz preliminar, testes e pendências](docs/INCREMENTO_4_3A_PREPARACAO_HOMOLOGACAO.md), na branch `feature/fase-4-motor-cobranca`. Os incrementos 4.1 e 4.2 foram aceitos tecnicamente. Sem planos reais ativados, cobrança ou exportação operacional; 4.3B e Fase 5 não iniciados.
+**Fase 4 — 4.3A e correção aceitos tecnicamente:** infraestrutura de preparação privada concluída com ressalvas operacionais preservadas. Nesta tarefa foi preparada somente a [documentação para revisão do 4.3B](docs/PRONTIDAO_DOCUMENTAL_FASE4_3B.md), com checklist por fonte, oito propostas de regra e perguntas ao negócio. Atestos humanos e aprovação dos planos reais continuam pendentes. Branch `feature/fase-4-motor-cobranca`; sem início efetivo do 4.3B ou da Fase 5.
 **Arquitetura da Fase 4:** [modelo JSON, decisões e incrementos](docs/ARQUITETURA_MOTOR_FASE4.md). O laboratório sintético anterior não constitui motor geral aprovado nem homologação do Excel.
-**Correção do 4.3A:** colisões FL reconciliadas com IDs internos, mapa completo do legado e assinatura técnica privada; bloqueios operacionais e atesto humano pendente preservados. Veja [causa comprovada, contratos e revalidação FL/Habita](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
+**Correção do 4.3A:** aprovada tecnicamente pelo responsável; colisões FL reconciliadas com mapa completo do legado e assinatura técnica privada. Bloqueios operacionais e atesto humano pendente preservados. Veja [causa comprovada, contratos e revalidação FL/Habita](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
 **Regressão atual:** 872 testes aprovados (830 anteriores + 42 da correção de auditoria), com schemas antigos preservados e schemas aditivos de auditoria/pacotes 1.1 sincronizados.
 **Correções dos layouts reais:** [resultado antes/depois, testes e pendências](docs/CORRECOES_LEITORES_REAIS_FASE3.md). Os bloqueios permanecem obrigatórios.
 **Atualização documental:** CPF/CNPJ válidos na coluna literal `CPF`, como texto; compatibilidade confirmada pelo responsável no CRM easyCollector. Conflitos documentais exigem revisão humana. Veja [contratos, auditoria e testes](docs/DOCUMENTOS_CPF_CNPJ.md). A homologação integral permanece pendente.
-**Atualização:** 21/10/2026.
+**Atualização:** 22/10/2026 (America/Sao_Paulo).
 **Idioma do projeto:** português brasileiro.
 
 ## Objetivo

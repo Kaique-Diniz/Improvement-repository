@@ -45,6 +45,13 @@ assinada. Veja [causa e evidências de preservação](docs/CORRECAO_IDENTIDADES_
 O 4.3B depende de autorização própria e das decisões documentadas. Sem Fase 5
 e sem homologação para produção.
 
+O responsável aceitou tecnicamente a correção do 4.3A com 872 testes e autorizou
+exclusivamente a preparação documental seguinte. O
+[relatório de prontidão documental](docs/PRONTIDAO_DOCUMENTAL_FASE4_3B.md) contém
+conferência privada, checklist de atesto, matriz das oito propostas e perguntas
+de decisão. Não foram configurados, aprovados ou ativados planos reais. O 4.3B
+efetivo continua aguardando os atestos, decisões e autorização posterior.
+
 **Primeira tarefa:** desenvolver somente a Fase 1. Não pedir numa única execução: leitor de centenas de layouts + frontend + regra complexa + implantação.  
 **Segunda:** reconhecimento (Fase 2) usando PDFs sintéticos e reais previamente sanitizados/autorizados.  
 **Terceira:** leitores de Habita e FL (Fase 3).  
