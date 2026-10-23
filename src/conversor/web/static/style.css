@@ -2,3 +2,14 @@
 
 /* Itens do grid devem encolher; a tabela rola dentro do painel em telas pequenas. */
 .card,.workspace,.painel,.entrada{min-width:0}.table-wrap{width:100%}
+
+/* O input real ocupa a área de seleção; o × fica fora dela e não envia o formulário. */
+.upload-control{display:flex;align-items:center;gap:4px;min-width:0;border:1px solid #d0d5dd;border-radius:6px;background:#fafbfc}
+.arquivo-selecao{position:relative;display:flex;align-items:center;gap:7px;flex:1;min-width:0;padding:8px}
+.arquivo-selecao input[type=file]{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;cursor:pointer;z-index:1}
+.arquivo-escolher{flex-shrink:0;border:1px solid #d0d5dd;border-radius:4px;background:white;padding:5px;color:#475467;font-size:11px}
+.arquivo-nome{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#667085;font-size:11px}
+.remover-arquivo{flex-shrink:0;width:32px;height:32px;margin-right:4px;padding:0;border:1px solid transparent;background:transparent;color:#667085;font-size:21px;line-height:1}
+.remover-arquivo:hover{background:#f2f4f7;color:#344054;border-color:#d0d5dd}
+.arquivo-selecao:focus-within,.remover-arquivo:focus-visible{outline:2px solid #c7bfff;outline-offset:2px;border-radius:5px}
+.arquivo-selecao:has(input:disabled){opacity:.5}.aviso-selecao{font-size:11px;color:#82580d}

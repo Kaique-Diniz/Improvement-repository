@@ -1,5 +1,6 @@
 const $ = id => document.getElementById(id);
-let atual = null, aguardando = false;
+let atual = null, aguardando = false, revisaoSelecao = 0;
+const arquivos = ['inadimplencia','cadastro','referencia'];
 const financeiro = {elegivel_na_simulacao:'Elegível por regra',excluido:'Não elegível por regra',pendente_revisao:'Indeterminada',bloqueado:'Bloqueada'};
 const nomes = {elegivel:'Elegível na prévia',nao_elegivel:'Não elegível',revisao:'Revisão necessária'};
 async function api(url, options={}) {
@@ -12,8 +13,40 @@ async function api(url, options={}) {
   return data;
 }
 function elemento(tag,text,cls) { const e=document.createElement(tag); if(text!==undefined)e.textContent=text; if(cls)e.className=cls; return e; }
-function bloquear(b) { aguardando=b; document.querySelectorAll('#app button').forEach(x=>x.disabled=b||x.hasAttribute('data-sempre-desativado')); }
-function falhar(e) { $('progresso').hidden=true; $('erro').hidden=false; $('erro').textContent='Análise interrompida: '+e.message+'. Confira os arquivos e os parâmetros.'; bloquear(false); }
+function atualizarArquivo(id) {
+  const arquivo=$(id).files[0], nome=$(id+'-nome');
+  nome.textContent=arquivo?arquivo.name:'Nenhum arquivo selecionado';nome.title=arquivo?arquivo.name:'';
+  $('remover-'+id).hidden=!arquivo;
+}
+function limparResultado() {
+  atual=null;$('resultado').hidden=true;$('erro').hidden=true;$('progresso').hidden=true;$('vazio').hidden=false;
+  for(const id of ['download','inconsistencias']) { $(id).hidden=true;$(id).removeAttribute('href'); }
+  for(const id of ['linhas','previa-linhas','previa-cabecalho','resumo','avisos','comparacao','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
+  $('previa-template').open=false;
+  if($('detalhes').open)$('detalhes').close();
+  $('contexto').textContent='Sua análise aparecerá aqui.';
+}
+function selecaoAlterada(e) {
+  const anterior=!!atual;revisaoSelecao++;limparResultado();
+  if(arquivos.includes(e.target.id))atualizarArquivo(e.target.id);
+  let aviso=anterior||!$('selecao-aviso').hidden?'Seleção alterada. Faça uma nova análise para atualizar a prévia e os downloads.':'';
+  if(!$('inadimplencia').files.length)aviso='Selecione um PDF de inadimplência para iniciar uma nova análise.';
+  else if(e.target.id==='inadimplencia'&&($('cadastro').files.length||$('referencia').files.length))aviso='PDF alterado. Confira se o Cadastro e a referência ainda selecionados pertencem ao mesmo condomínio. Remova os anteriores pelo × e faça uma nova análise.';
+  $('selecao-aviso').textContent=aviso;$('selecao-aviso').hidden=!aviso;
+}
+for(const id of arquivos) {
+  atualizarArquivo(id);
+  $('remover-'+id).onclick=()=>{$(id).value='';$(id).dispatchEvent(new Event('change',{bubbles:true}));$(id).focus();};
+}
+$('converter').addEventListener('change',selecaoAlterada);
+function bloquear(b) {
+  aguardando=b;document.querySelectorAll('#app button').forEach(x=>x.disabled=b||x.hasAttribute('data-sempre-desativado'));
+  document.querySelectorAll('#converter input,#converter select').forEach(x=>x.disabled=b);
+}
+function falhar(e) {
+  const mensagem=e.message==='CADASTRO_DE_OUTRO_CONDOMINIO'?'O Cadastro complementar pertence a outro condomínio. Remova-o pelo × ou selecione o cadastro correspondente ao PDF de inadimplência.':e.message;
+  $('progresso').hidden=true;$('erro').hidden=false;$('erro').textContent='Análise interrompida: '+mensagem+(mensagem.endsWith('.')?'':'.')+' Confira os arquivos e os parâmetros.';bloquear(false);
+}
 async function configurar() {
   const c=await api('/api/config'); $('login').hidden=true; $('app').hidden=false; $('sair').hidden=false;
   $('casos').replaceChildren();
@@ -33,14 +66,16 @@ async function executar(tipo,id) {
   let endpoint='/api/exemplo';
   if(tipo==='privado')endpoint='/api/fontes-privadas/'+encodeURIComponent(id)+'/processar';
   if(tipo==='upload') { endpoint='/api/processamentos'; f.append('condominio',$('condominio').value); for(const role of ['inadimplencia','cadastro','referencia'])if($(role).files.length)f.append(role,$(role).files[0]); }
-  bloquear(true);$('vazio').hidden=true;$('erro').hidden=true;$('resultado').hidden=true;$('progresso').hidden=false;$('etapa').textContent='Recebendo documentos…';
-  try { const j=await api(endpoint,{method:'POST',body:f}); await acompanhar(j.id); }catch(e){falhar(e);}
+  const revisao=revisaoSelecao;
+  limparResultado();$('selecao-aviso').hidden=true;bloquear(true);$('vazio').hidden=true;$('progresso').hidden=false;$('etapa').textContent='Recebendo documentos…';
+  try { const j=await api(endpoint,{method:'POST',body:f}); await acompanhar(j.id,revisao); }catch(e){if(revisao===revisaoSelecao)falhar(e);else bloquear(false);}
 }
 $('converter').addEventListener('submit',e=>{e.preventDefault();executar('upload');});$('demo').onclick=()=>executar('demo');
-async function acompanhar(id) {
+async function acompanhar(id,revisao) {
   const j=await api('/api/processamentos/'+id);
+  if(revisao!==revisaoSelecao){bloquear(false);return;}
   if(j.estado==='erro')throw new Error(j.codigo);
-  if(j.estado==='processando') { $('etapa').textContent=j.etapa||'Iniciando extração…';await new Promise(r=>setTimeout(r,650));return acompanhar(id); }
+  if(j.estado==='processando') { $('etapa').textContent=j.etapa||'Iniciando extração…';await new Promise(r=>setTimeout(r,650));return acompanhar(id,revisao); }
   atual=j.resultado;mostrar();bloquear(false);
 }
 function mostrar() {
@@ -54,7 +89,7 @@ function mostrar() {
   $('historico-tecnico').textContent=(historicos[r.historico_tecnico.estado]||r.historico_tecnico.estado)+' · '+r.historico_tecnico.aviso;
   if(r.resumo.revisao) $('avisos').prepend(elemento('p','Há cotas retidas para revisão. Bloqueios de lote, unidade e identidade foram preservados.'));
   $('download').hidden=!r.arquivo_teste_disponivel;$('download').href='/api/processamentos/'+r.id+'/arquivo-teste.xlsx';$('sem-excel').hidden=r.arquivo_teste_disponivel;
-  $('inconsistencias').href='/api/processamentos/'+r.id+'/inconsistencias.json';
+  $('inconsistencias').hidden=false;$('inconsistencias').href='/api/processamentos/'+r.id+'/inconsistencias.json';
   $('comparacao').hidden=!r.comparacao;
   if(r.comparacao){$('comparacao').replaceChildren(elemento('h3','Confronto com a referência'),elemento('p','A referência é um resultado esperado, não um gabarito absoluto. Nenhuma diferença altera os dados extraídos.'),elemento('pre',JSON.stringify(r.comparacao.resumo,null,2)),elemento('p',r.comparacao.limite));}
   desenharTabela();mostrarPrevia();
