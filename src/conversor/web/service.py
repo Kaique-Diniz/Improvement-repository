@@ -5,7 +5,7 @@ negócio confirmadas alimentam apenas as funções puras diagnósticas existente
 """
 from collections import Counter
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from hashlib import sha256
 from io import BytesIO
@@ -30,6 +30,7 @@ from conversor.domain.documents import resolver_documento
 from conversor.domain.identity import chave_unidade
 from conversor.domain.template import Template
 from conversor.export.contract import DividaExportacao, LinhaExportacao, materializar
+from conversor.export.identifiers import selecionar_perfil
 from conversor.export.xlsx import escrever_xlsx
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
@@ -38,6 +39,7 @@ from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
+PERFIS_SAIDA_PATH = Path(__file__).with_name('perfis_saida.json')
 PERFIS = {p['id']: p for p in json.loads(PERFIS_PATH.read_text())}
 LIMIT = 20 * 1024 * 1024
 
@@ -149,12 +151,24 @@ def configurar(perfil, namespace):
     return ConfiguracaoDiagnostica('1.0.0', tuple(fontes), tuple(regras))
 
 
-def comparar_referencia(conteudo, lote, decisoes, mapeamento=None):
+def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificadores=None):
     """Confronto estrito por identificador de origem ou bloco/unidade explícitos.
 
     Não infere torre numérica a partir de letra, não ajusta valores ou seleção.
     Sem vínculo inequívoco, a linha é não avaliável, nunca coincidência presumida.
     """
+    def data_excel(valor):
+        if isinstance(valor, datetime):
+            return valor.date()
+        if type(valor) is date:
+            return valor
+        if isinstance(valor, str):
+            for formato in ('%d/%m/%Y', '%Y-%m-%d'):
+                try:
+                    return datetime.strptime(valor, formato).date()
+                except ValueError:
+                    pass
+        return None
     sonda = SondadorLocal().sondar(conteudo, arquivo_id='referencia')
     if sonda.tipo != 'xlsx' or sonda.bloqueios or not sonda.completo:
         raise ErroLeitura('REFERENCIA_XLSX_INVALIDA')
@@ -191,6 +205,9 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None):
             if m:
                 unidades = [u for u in lote.unidades if u.bloco_original == m[1]
                             and int(u.unidade_original) == int(m[2])]
+            if not unidades and identificadores:
+                unidades = [u for u in lote.unidades if identificadores[u.id]['estado'] == 'codificado_para_teste'
+                            and (chave, complemento) == (identificadores[u.id]['cedente'], identificadores[u.id]['complemento'])]
             vinculo = vinculos.get(i)
             if vinculo:
                 unidades = [u for u in lote.unidades if u.chave_normalizada == vinculo['unidade']]
@@ -201,7 +218,7 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None):
                 if tipo == 'divida':
                     boletos = [b for b in lote.boletos if b.unidade_id == u.id and
                         (b.identificador == vinculo['boleto'] if vinculo else
-                         hasattr(row[28], 'date') and b.vencimento == row[28].date())]
+                         b.vencimento == data_excel(row[28]))]
                     if boletos and row[29] is not None and not isinstance(row[29], str):
                         original = sum((b.composicao.total_original for b in boletos), Decimal('0.00'))
                         if original == Decimal(str(row[29])):
@@ -246,6 +263,28 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         raise ErroLeitura('SELECAO_DIVERGENTE_DO_CABECALHO')
     progresso('Extraindo unidades, cotas e composições')
     lote, ctx = ler(conteudo, perfil, codigo, leitor, 'inadimplencia')
+    saida_bytes = PERFIS_SAIDA_PATH.read_bytes()
+    perfil_saida = selecionar_perfil(json.loads(saida_bytes), administradora_id=perfil['administradora_id'],
+                                     condominio_id=perfil['condominio_id'])
+    identificadores, codigos = {}, {}
+    for u in lote.unidades:
+        cedente, complemento, estado, motivo = u.chave_normalizada, u.chave_normalizada, 'provisorio', 'PERFIL_SAIDA_NAO_CONFIGURADO'
+        if perfil_saida:
+            try:
+                cedente, complemento = perfil_saida.codificar(u, administradora_id=perfil['administradora_id'])
+                estado, motivo = 'codificado_para_teste', None
+            except ErroLeitura as erro:
+                if erro.codigo not in ('TORRE_SEM_MAPEAMENTO_DOCUMENTAL', 'UNIDADE_SEM_CODIFICACAO_DOCUMENTAL', 'UNIDADE_FORA_DA_LARGURA_DOCUMENTADA'):
+                    raise
+                motivo = erro.codigo
+        if cedente in codigos:
+            raise ErroLeitura('CEDENTE_AMBIGUO_APOS_CODIFICACAO')
+        codigos[cedente] = u.id
+        identificadores[u.id] = {'estado': estado, 'motivo': motivo, 'cedente': cedente, 'complemento': complemento,
+            'contrato': cedente, 'nome_cedente': perfil_saida.nome_cedente if perfil_saida else perfil['nome'],
+            'produto': perfil_saida.produto if perfil_saida else perfil['nome'],
+            'unidade_original': u.unidade_original, 'bloco_original': u.bloco_original,
+            'chave_normalizada': u.chave_normalizada, 'origem_unidade': u.origem.model_dump(mode='json')}
     fontes = [{'papel': 'inadimplencia', 'sha256': sha256(conteudo).hexdigest(), 'leitor': leitor + '@1'}]
     cad = None
     if cadastro:
@@ -352,11 +391,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         pessoa = pessoas.get(u.id)
         if pessoa is None:
             continue
+        identificacao = identificadores[u.id]
         contato = Contato.model_validate(pessoa.contato.model_dump() | {
-            'endereco': pessoa.contato.endereco.model_dump() | {'complemento': u.chave_normalizada}})
+            'endereco': pessoa.contato.endereco.model_dump() | {'complemento': identificacao['complemento']}})
         pessoa_saida = Pessoa.model_validate(pessoa.model_dump() | {'contato': contato})
         base = dict(processamento_id=processamento_id, registro_id=u.id,
-                    nm_cedente_cedente=perfil['nome'], cedente=u.chave_normalizada, pessoa=pessoa_saida)
+                    nm_cedente_cedente=identificacao['nome_cedente'], cedente=identificacao['cedente'], pessoa=pessoa_saida)
         boletos_por_id = {b.id: b for b in lote.boletos if b.unidade_id == u.id}
         ordenadas = sorted(ds, key=lambda d: (boletos_por_id[d['id']].vencimento,
                                               boletos_por_id[d['id']].identificador, d['id']))
@@ -373,7 +413,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if boleto.competencia:
                 ano,mes = boleto.competencia.split('-')
                 nome_divida = f'COTA {mes}/{ano}' + (f' - {parcela_final}' if parcela_final else '')
-            divida = DividaExportacao(contrato=u.chave_normalizada, produto=perfil['nome'],
+            divida = DividaExportacao(contrato=identificacao['contrato'], produto=identificacao['produto'],
                 nome_divida=nome_divida, parcela=parcela_final or 1, vencimento=boleto.vencimento,
                 valor=boleto.composicao.total_original) if boleto.composicao.total_original > 0 else None
             bloqueios = d['bloqueios'] or (['CONDICAO_INDETERMINADA'] if d['situacao'] == 'revisao' else [])
@@ -417,9 +457,13 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'previa_template': {'colunas': list(Template(id='previa', nome='Universal', versao='1.0').cabecalhos_fisicos),
                            'linhas': previa, 'somente_conferencia': True, 'exportacao_operacional': False},
         'politica_cadastral': 'cadastro_por_unidade@2',
+        'codificacao_template': {'perfil_id': perfil_saida.id if perfil_saida else None,
+            'versao': perfil_saida.versao if perfil_saida else None, 'configuracao_sha256': sha256(saida_bytes).hexdigest(),
+            'uso': 'diagnostico_nao_operacional', 'evidencia': perfil_saida.evidencia.model_dump(mode='json') if perfil_saida else None,
+            'unidades': identificadores, 'pendentes': sum(i['estado'] == 'provisorio' for i in identificadores.values())},
         'reavaliacoes_historicas': reavaliacoes,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
-            'Arquivo de teste usa identificadores de origem para cedente/contrato/dívida; codificação operacional do easyCollector ainda não homologada.',
+            'Codificação de integração apenas para teste; unidades sem mapa explícito conservam identificadores provisórios. Importação no easyCollector não homologada.',
             'Competências ausentes permanecem ausentes; nenhum dado pessoal é inventado.'],
         'decisoes': decisoes, 'linhas_teste': linhas_info,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
@@ -427,7 +471,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if referencia:
         progresso('Comparando com a referência, sem ajustar os dados')
         try:
-            resultado['comparacao'] = comparar_referencia(referencia, lote, {d['id']: d for d in decisoes}, mapeamento_referencia)
+            resultado['comparacao'] = comparar_referencia(referencia, lote, {d['id']: d for d in decisoes}, mapeamento_referencia, identificadores)
         except ErroLeitura as erro:
             resultado['comparacao'] = {'resumo': {'referencia_nao_avaliavel': 1}, 'linhas': [],
                 'codigo': erro.codigo, 'referencia_nao_e_gabarito_absoluto': True,

@@ -340,6 +340,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             'ocorrencias': r['ocorrencias'], 'decisoes': r['decisoes'],
             'politica_cadastral': r['politica_cadastral'], 'reavaliacoes_historicas': r['reavaliacoes_historicas'],
             'historico_tecnico': r['historico_tecnico'], 'previa_template': r['previa_template'],
+            'codificacao_template': r['codificacao_template'],
             'autoriza_cobranca': False, 'permite_exportacao_operacional': False},
             headers={'Content-Disposition': f'attachment; filename="inconsistencias_{id_[:8]}.json"'})
 

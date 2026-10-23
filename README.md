@@ -6,7 +6,52 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-## Correção consolidada atual — cadastro, parcelas e notificações
+## Conferência atual — identificadores do template PLAZA
+
+O [perfil de saída](src/conversor/web/perfis_saida.json) separa codificação de
+integração da identidade canônica e das regras financeiras. Seleção explícita por
+administradora + condomínio, versão, hash da configuração e evidência da referência
+na auditoria. O mapa de torres é declarado: A=1, B=2, C=3, D=4, E=5, F=6, G=7;
+não há conversão alfabética automática. Sem mapa, a prévia conserva identificação
+provisória e informa a pendência, sem presumir compatibilidade operacional.
+
+Na referência privada, 42 das 47 unidades puderam ser associadas independentemente
+por número e nome integral ou dados financeiros, corroborando as sete torres sem
+contradições. Cinco associações restantes usam esse mapa explícito. Os três
+registros adicionais do modo B não estão na referência, que contém 43 cadastros.
+Essa evidência valida a projeção de teste; não aprova importação operacional.
+
+| Campo | Projeção anterior A/0091 | Projeção corrigida |
+|---|---|---|
+| NM_CEDENTE_CEDENTE | PLAZA MAYOR IPIRANGA | FL |
+| CEDENTE | A/91 | 10091 |
+| COMPLEMENTO | A/91 | UNI0091-BL1 |
+| NM_CONTRATO_CEDENTE | A/91 | 10091 |
+| PRODUTO_CEDENTE | PLAZA MAYOR IPIRANGA | PLAZA MAYOR |
+
+Upload privado comum em 23/10/2026: modo A **69 dívidas**; B **69 dívidas + 46
+cadastros**. As dívidas dos dois modos são iguais. Cinco identificadores coincidem
+com a referência em 69/69 dívidas. Somente esses cinco campos mudaram: demais
+células, canônico completo, decisões financeiras e configuração da régua preservados.
+Comparação aceita datas textuais brasileiras/ISO na referência sem alterar vencimentos.
+
+Nas 69 dívidas, as duas diferenças de CPF são uma perda de zero inicial na
+referência e um conflito entre documentos válidos; não copiar nem resolver esse
+conflito automaticamente. Nove diferenças de nomes em sete unidades correspondem
+a múltiplos nomes no Cadastro, que contém os nomes da referência. As 37 diferenças
+de endereço correspondem a duas unidades; não há evidência para substituir o
+Cadastro atual pela referência. Há telefones adicionais em 47 linhas (46 com
+referência vazia), e e-mails em 47 linhas com referência vazia. Conferidos nome,
+documento e contatos das 50 unidades contra o Cadastro fornecido. No conjunto das
+112 linhas da referência existem quatro perdas de zeros e dois conflitos entre
+documentos válidos, preservados para revisão. Referência não alimenta o cadastro.
+
+**1.243 testes aprovados**: 1.183 regulares e 60 explícitos, incluindo 24 novos
+casos; oito verificações de schemas. Relatórios por unidade e fontes permanecem
+privados. Sem push/merge desta correção, exportação operacional indisponível e
+sistema não homologado para produção.
+
+## Histórico — cadastro, parcelas e notificações
 
 Com identidade inequívoca por administradora + condomínio + torre/bloco + unidade,
 o Cadastro Geral é preferencial para NOME e contatos. Diferenças de nomes são

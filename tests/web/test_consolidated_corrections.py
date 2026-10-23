@@ -51,7 +51,7 @@ def test_parcelas_por_contrato_vencimento_desempate_ano_sem_consumir_retidas(tmp
     r=executar(tmp_path,data,modo=modo,historico=hist)
     wb=load_workbook(tmp_path/'TESTE_LOCAL_NAO_IMPORTAR.xlsx');rows=list(wb['Dados'].iter_rows(min_row=2,values_only=True))
     dividas=[row for row in rows if row[27]is not None]
-    a=[row for row in dividas if row[1]=='A/1'];b=[row for row in dividas if row[1]=='B/2']
+    a=[row for row in dividas if row[1]=='10001'];b=[row for row in dividas if row[1]=='20002']
     assert [row[27]for row in a]==list(range(1,len(a)+1))
     assert [row[27]for row in b]==[1]
     esperado=['900100','900200','900300']if retida else ['900100','900250','900200','900300']
@@ -65,7 +65,8 @@ def test_parcelas_por_contrato_vencimento_desempate_ano_sem_consumir_retidas(tmp
     prevista=r['previa_template']['linhas']
     for l in prevista:
         if l['tipo']=='divida'and not l['bloqueada']:
-            row=next(row for row in dividas if row[1]==f"{l['bloco']}/{int(l['unidade'])}"and row[27]==l['parcela_final'])
+            codigo=r['codificacao_template']['unidades'][l['unidade_id']]['cedente']
+            row=next(row for row in dividas if row[1]==codigo and row[27]==l['parcela_final'])
             assert l['valores'][26]==row[26] and l['valores'][27]==row[27]
         elif l['tipo']=='divida':
             assert l['parcela_final']is None and l['numeracao_pendente'] and l['valores'][27]==''
