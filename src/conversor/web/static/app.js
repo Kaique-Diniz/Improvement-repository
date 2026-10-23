@@ -21,7 +21,8 @@ function atualizarArquivo(id) {
 function limparResultado() {
   atual=null;$('resultado').hidden=true;$('erro').hidden=true;$('progresso').hidden=true;$('vazio').hidden=false;
   for(const id of ['download','inconsistencias']) { $(id).hidden=true;$(id).removeAttribute('href'); }
-  for(const id of ['linhas','previa-linhas','previa-cabecalho','resumo','avisos','comparacao','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
+  for(const id of ['linhas','grupos-cotas','previa-linhas','previa-cabecalho','resumo','avisos','comparacao','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
+  $('cotas-agrupadas').open=false;
   $('previa-template').open=false;
   if($('detalhes').open)$('detalhes').close();
   $('contexto').textContent='Sua análise aparecerá aqui.';
@@ -81,25 +82,42 @@ async function acompanhar(id,revisao) {
 function mostrar() {
   const r=atual;$('progresso').hidden=true;$('resultado').hidden=false;
   $('contexto').textContent=r.administradora+' · '+r.condominio+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
-  const stats=[['Unidades',r.resumo.unidades],['Cotas extraídas',r.resumo.cotas],['Elegíveis pela régua',r.resumo.elegiveis_pela_regua],['Não elegíveis pela régua',r.resumo.nao_elegiveis_pela_regua],['Retidas na prévia',r.resumo.revisao||0],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
-  if(r.resumo.indeterminadas_pela_regua)stats.push(['Indeterminadas pela régua',r.resumo.indeterminadas_pela_regua]);
+  const stats=[['Unidades / cotas',r.resumo.cotas],['Boletos extraídos',r.resumo.boletos],['Cotas elegíveis pela régua',r.resumo.cotas_elegiveis_pela_regua],['Cotas excluídas por veto coletivo',r.resumo.cotas_excluidas_por_veto],['Boletos selecionados pela régua',r.resumo.boletos_selecionados_pela_regua],['Boletos fora do prazo',r.resumo.boletos_nao_selecionados_prazo],['Cotas retidas tecnicamente',r.resumo.cotas_retidas],['Boletos retidos tecnicamente',r.resumo.boletos_retidos],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
+  if(r.resumo.indeterminadas_pela_regua)stats.push(['Boletos indeterminados pela régua',r.resumo.indeterminadas_pela_regua]);
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
   const historicos={nao_disponivel:'Sem histórico anterior (informativo)',carregado:'Histórico anterior carregado',vazio_inventariado:'Histórico conferido sem ocorrências anteriores',divergente:'Histórico conhecido ausente ou divergente: revisão necessária',exemplo_sintetico:'Exemplo sintético'};
   $('historico-tecnico').textContent=(historicos[r.historico_tecnico.estado]||r.historico_tecnico.estado)+' · '+r.historico_tecnico.aviso;
-  if(r.resumo.revisao) $('avisos').prepend(elemento('p','Há cotas retidas para revisão. Bloqueios de lote, unidade e identidade foram preservados.'));
+  if(r.resumo.boletos_retidos) $('avisos').prepend(elemento('p','Há boletos retidos tecnicamente, inclusive os selecionados pela régua. Um veto financeiro e um impedimento técnico são situações distintas; os bloqueios continuam preservados.'));
   $('download').hidden=!r.arquivo_teste_disponivel;$('download').href='/api/processamentos/'+r.id+'/arquivo-teste.xlsx';$('sem-excel').hidden=r.arquivo_teste_disponivel;
   $('inconsistencias').hidden=false;$('inconsistencias').href='/api/processamentos/'+r.id+'/inconsistencias.json';
   $('comparacao').hidden=!r.comparacao;
   if(r.comparacao){$('comparacao').replaceChildren(elemento('h3','Confronto com a referência'),elemento('p','A referência é um resultado esperado, não um gabarito absoluto. Nenhuma diferença altera os dados extraídos.'),elemento('pre',JSON.stringify(r.comparacao.resumo,null,2)),elemento('p',r.comparacao.limite));}
-  desenharTabela();mostrarPrevia();
+  desenharTabela();mostrarCotas();mostrarPrevia();
+}
+function mostrarCotas() {
+  const estados={elegivel:'Com boletos selecionados pela régua',excluida_por_veto:'Excluída por veto coletivo',sem_boleto_no_prazo:'Sem boleto no prazo',pendente_revisao:'Avaliação financeira inconclusiva'};
+  const decisoes=new Map(atual.decisoes.map(d=>[d.id,d]));
+  $('grupos-cotas').replaceChildren(...atual.cotas.map(c=>{
+    const grupo=elemento('details',undefined,'cota-grupo');
+    grupo.append(elemento('summary',c.bloco+'/'+c.unidade+' · '+c.boletos_ids.length+' boletos · '+estados[c.situacao_financeira]+(c.retida_tecnicamente?' · Retida tecnicamente':'')));
+    for(const causa of c.causas_veto)grupo.append(elemento('p','Boleto '+causa.boleto+' vetou toda a cota: '+motivoLegivel(causa.regra_id)+' · '+causa.origens.map(o=>'página '+o.pagina+', linha '+o.linha).join('; ')));
+    if(c.impedimentos_tecnicos.length)grupo.append(elemento('p','Retenção técnica: '+c.impedimentos_tecnicos.map(motivoLegivel).join('; ')));
+    for(const id of c.boletos_ids) {
+      const d=decisoes.get(id),boleto=elemento('details',undefined,'boleto-grupo'),conteudo=elemento('div');
+      boleto.append(elemento('summary','Boleto '+d.boleto+' · '+d.vencimento.split('-').reverse().join('/')+' · R$ '+d.valor+' · '+financeiro[d.situacao_financeira]),conteudo);
+      boleto.ontoggle=()=>{if(boleto.open&&!conteudo.childElementCount)preencherDetalhes(d,conteudo);};
+      grupo.append(boleto);
+    }
+    return grupo;
+  }));
 }
 function mostrarPrevia() {
   const p=atual.previa_template,head=elemento('tr');
   for(const label of ['Situação / origem',...p.colunas]) {const th=elemento('th',label);th.scope='col';head.append(th);}
   $('previa-cabecalho').replaceChildren(head);
   $('previa-linhas').replaceChildren(...p.linhas.map(l=>{
-    const tr=elemento('tr'),identidade=elemento('td',(l.bloqueada?'RETIDA':'Prévia sem retenção')+' · '+l.tipo+' · '+l.bloco+'/'+l.unidade+(l.cota?' · Cota '+l.cota:''));
+    const tr=elemento('tr'),identidade=elemento('td',(l.bloqueada?'RETIDA':'Prévia sem retenção')+' · '+l.tipo+' · '+l.bloco+'/'+l.unidade+(l.cota?' · Boleto '+l.cota:''));
     if(l.numeracao_pendente)identidade.append(elemento('small','Numeração final pendente: linha retida não consome parcela.'));
     if(l.motivos.length)identidade.append(elemento('small',l.motivos.map(motivoLegivel).join('; ')));
     if(!l.valores)identidade.append(elemento('small','Campos indisponíveis até resolução das pendências.'));
@@ -125,32 +143,37 @@ function desenharTabela() {
     const detalhe=elemento('td');const b=elemento('button','Detalhes','secundario');b.onclick=()=>abrirDetalhes(d);detalhe.append(b);
     tr.append(unidade,cota,valor,regra,contato,documental,estado,motivo,detalhe);return tr;
   }));
-  $('contagem').textContent=ds.length+' de '+atual.decisoes.length+' cotas · Valores originais, sem recalcular encargos';
+  $('contagem').textContent=ds.length+' de '+atual.decisoes.length+' boletos · '+atual.cotas.length+' cotas/unidades · Valores originais, sem recalcular encargos';
 }
 $('filtro').onchange=desenharTabela;$('busca').oninput=desenharTabela;$('fechar').onclick=()=>$('detalhes').close();
 configurar().catch(()=>{});
 
 function motivoLegivel(c) {
-  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Divergência histórica de nomes: conferir reavaliação',MARCADOR_ADMINISTRATIVO_NO_CABECALHO:'Marcador administrativo separado do nome; preservado na auditoria',CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA:'Contato cadastral ausente complementado com a fonte de inadimplência',DIVERGENCIA_NOME_ENTRE_FONTES:'Nomes diferentes entre fontes (informativo); contato do Cadastro Geral preferencial',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Histórico conhecido não pôde ser validado: revisão necessária',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
+  const textos={tree_centavo:'Boleto de original R$ 0,01 na unidade: veto coletivo',tree_apontamento_a:'Apontamento A em boleto da unidade: veto coletivo',tree_apontamento_aj:'Apontamento AJ em boleto da unidade: veto coletivo',tree_apontamento_j:'Apontamento J em boleto da unidade: veto coletivo',tree_prazo_30:'Prazo individual superior a 30 dias; sujeito aos vetos da cota',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Divergência histórica de nomes: conferir reavaliação',MARCADOR_ADMINISTRATIVO_NO_CABECALHO:'Marcador administrativo separado do nome; preservado na auditoria',CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA:'Contato cadastral ausente complementado com a fonte de inadimplência',DIVERGENCIA_NOME_ENTRE_FONTES:'Nomes diferentes entre fontes (informativo); contato do Cadastro Geral preferencial',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Histórico conhecido não pôde ser validado: revisão necessária',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
   return textos[c]||c.toLowerCase().replaceAll('_',' ');
 }
 function contatoLegivel(d) {
   const docs={disponivel:'CPF/CNPJ disponível no registro da unidade',ausente:'CPF/CNPJ não informado (opcional)',invalido:'CPF/CNPJ inválido: ficará vazio',revisao:'CPF/CNPJ em revisão'};
   return (docs[d.contato.documento]||d.contato.documento)+' · Telefone '+(d.contato.telefone?'disponível':'não informado')+' · E-mail '+(d.contato.email?'disponível':'não informado');
 }
-function abrirDetalhes(d) {
-  const box=$('detalhes-legiveis');box.replaceChildren();
-  box.append(elemento('h3',d.condominio+' · '+d.bloco+' / '+d.unidade),elemento('p','Cota '+d.cota+' · Vencimento '+d.vencimento.split('-').reverse().join('/')+' · '+nomes[d.situacao]));
+function preencherDetalhes(d,box) {
+  box.replaceChildren();
+  box.append(elemento('h3',d.condominio+' · '+d.bloco+' / '+d.unidade),elemento('p','Boleto '+d.boleto+' · Vencimento '+d.vencimento.split('-').reverse().join('/')+' · '+nomes[d.situacao]));
   box.append(elemento('h3','Elegibilidade financeira'),elemento('p',financeiro[d.situacao_financeira]||d.situacao_financeira));
+  const cota=atual.cotas.find(c=>c.id===d.cota_id);
+  if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>'página '+o.pagina+', linha '+o.linha).join('; ')));
   box.append(elemento('h3','Informações de contato da unidade'),elemento('p',contatoLegivel(d)));
   for(const m of d.alertas_cadastrais)box.append(elemento('p',motivoLegivel(m)));
   box.append(elemento('h3','Pendências documentais'),elemento('p',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join('; '):'Sem conflito documental. Vários nomes não atribuem o documento a cada pessoa.'));
-  box.append(elemento('h3','Impedimentos para exportação'),elemento('p',d.bloqueios.length?d.bloqueios.map(motivoLegivel).join('; '):'Sem retenção específica desta cota para a prévia.'));
+  box.append(elemento('h3','Impedimentos para exportação'),elemento('p',d.bloqueios.length?d.bloqueios.map(motivoLegivel).join('; '):'Sem retenção técnica específica deste boleto para a prévia.'));
   box.append(elemento('p','Exportação operacional indisponível em todos os casos.'));
   for(const m of d.motivos)box.append(elemento('p',motivoLegivel(m)));
   box.append(elemento('h3','Composição original'));
   for(const c of d.componentes)box.append(elemento('p',c.descricao_original+' · R$ '+c.valor+' · página '+c.origem.pagina+', linha '+c.origem.linha));
   box.append(elemento('p','Competência: '+(d.competencia||'não informada na fonte; preservada em branco')));
   box.append(elemento('p','Documento: '+(d.documento.estado.length?d.documento.estado.map(motivoLegivel).join('; '):'disponível no registro da unidade, sem atribuição individual')));
-  $('json-detalhes').textContent=JSON.stringify(d,null,2);$('detalhes').showModal();
+}
+function abrirDetalhes(d) {
+  preencherDetalhes(d,$('detalhes-legiveis'));
+  $('json-detalhes').textContent=JSON.stringify({boleto:d,cota:atual.cotas.find(c=>c.id===d.cota_id)},null,2);$('detalhes').showModal();
 }

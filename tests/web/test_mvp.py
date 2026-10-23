@@ -41,7 +41,7 @@ def test_demo_completo_upload_leitura_AB_excel_e_comparacao(client, modo, linhas
     r = aguardar(client, client.post('/api/exemplo', data={'data_ref':'2026-10-21','modo':modo}))
     assert r['estado'] == 'concluido'
     data = r['resultado']
-    assert data['resumo']['unidades'] == 2 and data['resumo']['cotas'] == 3
+    assert data['resumo']['unidades'] == data['resumo']['cotas'] == 2 and data['resumo']['boletos'] == 3
     assert data['resumo']['elegivel'] == 2 and data['resumo']['nao_elegivel'] == 1
     assert data['resumo']['cadastros_adicionais'] == cadastrais
     assert data['comparacao']['resumo']['valores_coincidentes'] == 2

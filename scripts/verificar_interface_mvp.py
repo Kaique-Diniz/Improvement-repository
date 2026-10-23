@@ -28,6 +28,15 @@ def main():
         page.locator('#demo').click()
         page.locator('#resultado').wait_for(state='visible',timeout=60000)
         assert page.locator('#linhas tr').count()==3
+        page.locator('#cotas-agrupadas>summary').click()
+        assert page.locator('.cota-grupo').count()==2
+        grupo=page.locator('.cota-grupo').first
+        grupo.locator(':scope>summary').click()
+        assert grupo.locator('.boleto-grupo').count()==2
+        boleto=grupo.locator('.boleto-grupo').first
+        boleto.locator('summary').click()
+        boleto.get_by_role('heading',name='Composição original').wait_for(state='visible')
+        page.locator('#cotas-agrupadas>summary').click()
         for coluna in ('Elegibilidade financeira', 'Contatos da unidade', 'Pendências documentais', 'Resultado da prévia'):
             assert page.get_by_role('columnheader',name=coluna,exact=True).is_visible()
         assert page.locator('#operacional').is_disabled()
@@ -46,6 +55,7 @@ def main():
         page.screenshot(path=str(args.captura.with_name(args.captura.stem+'-mobile.png')),full_page=True)
         assert not errors
         print(json.dumps({'login':True,'exemplo_sintetico':True,'filtros':True,
+            'cotas_e_boletos_separados':True,'expansao_componentes':True,
             'detalhes':True,'download_xlsx':True,'operacional_desativado':True,
             'mobile_sem_overflow':True,'erros_javascript':0},ensure_ascii=False))
         browser.close()

@@ -337,7 +337,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             raise HTTPException(409, 'PROCESSAMENTO_NAO_CONCLUIDO')
         r = job['resultado']
         return JSONResponse({'resumo': r['resumo'], 'avisos': r['avisos'], 'comparacao': r['comparacao'],
-            'ocorrencias': r['ocorrencias'], 'decisoes': r['decisoes'],
+            'ocorrencias': r['ocorrencias'], 'decisoes': r['decisoes'], 'cotas': r['cotas'], 'hierarquia': r['hierarquia'],
             'politica_cadastral': r['politica_cadastral'], 'reavaliacoes_historicas': r['reavaliacoes_historicas'],
             'historico_tecnico': r['historico_tecnico'], 'previa_template': r['previa_template'],
             'codificacao_template': r['codificacao_template'],

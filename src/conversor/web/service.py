@@ -20,6 +20,7 @@ from pydantic import Field
 from conversor.adapters.document_probe import SondadorLocal
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
+from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
 from conversor.domain.base import Data, Modelo
@@ -128,27 +129,29 @@ class ConfiguracaoDiagnostica:
 def configurar(perfil, namespace):
     fontes, regras, exclusoes = [], [], []
     config_hash = sha256(PERFIS_PATH.read_bytes()).hexdigest()
-    def regra(id_, condicao, acao, prioridade, fonte_id=None):
+    def regra(id_, condicao, acao, prioridade, fonte_id=None, alvo='boleto'):
         fonte_id = fonte_id or id_
         if not any(f.identificador == fonte_id for f in fontes):
             fontes.append(Origem(arquivo_id='decisoes_negocio_mvp', sha256=config_hash,
                           leitor_versao='configuracao_diagnostica@1', identificador=fonte_id))
-        regras.append(ClausulaCobranca(id=id_, prioridade=prioridade, alvo='boleto',
+        regras.append(ClausulaCobranca(id=id_, prioridade=prioridade, alvo=alvo,
             quando=condicao, acao=acao, motivo_codigo=id_, fonte_id=fonte_id))
     for spec in perfil['exclusoes']:
         condicao = {k: v for k, v in spec.items() if k != 'id'}
         if condicao['tipo'] == 'apontamento':
             condicao['namespace'] = namespace
         exclusoes.append(condicao)
-        regra(spec['id'], condicao, 'excluir', perfil['prioridade_exclusao'])
+        alvo = perfil.get('escopo_exclusao', 'boleto')
+        regra(spec['id'], {'tipo': 'existe_boleto', 'condicao': condicao} if alvo == 'unidade' else condicao,
+              'excluir', perfil['prioridade_exclusao'], alvo=alvo)
     prazo = {'tipo': 'dias_atraso', 'operador': 'gt', 'valor': perfil['dias']}
     inclusao = {'tipo': 'todas', 'condicoes': [prazo,
-        {'tipo': 'nao', 'condicao': {'tipo': 'qualquer', 'condicoes': exclusoes}}]} if exclusoes else prazo
+        {'tipo': 'nao', 'condicao': {'tipo': 'qualquer', 'condicoes': exclusoes}}]} if exclusoes and perfil.get('escopo_exclusao') != 'unidade' else prazo
     regra(perfil['regra_prazo'], inclusao, 'incluir', perfil['prioridade_prazo'])
     regra(perfil['regra_prazo'] + '_nao_atingido',
           {'tipo': 'dias_atraso', 'operador': 'lte', 'valor': perfil['dias']},
           'excluir', perfil['prioridade_prazo'], perfil['regra_prazo'])
-    return ConfiguracaoDiagnostica('1.0.0', tuple(fontes), tuple(regras))
+    return ConfiguracaoDiagnostica(perfil.get('configuracao_versao', '1.0.0'), tuple(fontes), tuple(regras))
 
 
 def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificadores=None):
@@ -317,6 +320,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     progresso('Avaliando condições e bloqueios no motor existente')
     pessoas = {p.unidade_id: p for p in lote.pessoas}
     unidades = {u.id: u for u in lote.unidades}
+    avaliacoes_unidade = {u.id: avaliar_regras(config, entrada, pedido.data_ref, u) for u in lote.unidades}
     identidades = set(unidades) | {b.id for b in lote.boletos} | {p.id for p in lote.pessoas}
     efetivas = [o for o in ocorrencias if o.id not in reavaliadas]
     globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
@@ -343,7 +347,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     for b in lote.boletos:
         u = unidades[b.unidade_id]
         avaliacoes = avaliar_regras(config, entrada, pedido.data_ref, u, b)
-        resolucao = resolver_candidatos((), avaliacoes)
+        regras_cota = avaliacoes_unidade[u.id]
+        resolucao = resolver_candidatos(regras_cota, avaliacoes)
         pessoa = pessoas.get(u.id)
         documento = resolver_documento(pessoa) if pessoa else None
         problemas = [o for o in efetivas if o.bloqueante and
@@ -359,12 +364,16 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             motivos.append('VALOR_ORIGINAL_NAO_POSITIVO')
         status = 'revisao' if motivos or resolucao.revisao_humana else (
             'elegivel' if resolucao.situacao == 'elegivel_na_simulacao' else 'nao_elegivel')
-        regras = [r for r in avaliacoes if r.passo.resultado == 'verdadeiro']
+        regras = [r for r in (*regras_cota, *avaliacoes) if r.passo.resultado == 'verdadeiro']
+        veto = any(r.alvo == 'unidade' and r.acao == 'excluir' for r in regras)
         pendencias_documentais = sorted(set(
             (list(documento.codigos) if documento and documento.bloqueante else []) +
             [o.codigo for o in problemas if o.codigo in ('DOCUMENTOS_CONFLITANTES', 'DOCUMENTO_TITULAR_NAO_CONFIRMADO')]))
         decisoes.append({'id': b.id, 'unidade_id': u.id, 'condominio': perfil['nome'],
             'bloco': u.bloco_original, 'unidade': u.unidade_original, 'cota': b.identificador,
+            'boleto': b.identificador, 'cota_id': u.id, 'veto_coletivo': veto,
+            'motivo_selecao': ('veto_coletivo' if veto else 'prazo_nao_atingido' if resolucao.situacao == 'excluido'
+                              else 'prazo_satisfeito' if resolucao.situacao == 'elegivel_na_simulacao' else 'indeterminado'),
             'vencimento': b.vencimento.isoformat(), 'competencia': b.competencia,
             'valor': format(b.composicao.total_original, '.2f'), 'situacao': status,
             'situacao_financeira': resolucao.situacao,
@@ -372,6 +381,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                                   ([resolucao.motivo] if resolucao.revisao_humana else []))),
             'origens': [o.model_dump(mode='json') for o in b.origens],
             'regras_avaliadas': [r.model_dump(mode='json') for r in avaliacoes],
+            'regras_da_cota': [r.regra_id for r in regras_cota],
             'componentes': [i.model_dump(mode='json') for i in b.composicao.itens],
             'documento': {'estado': list(documento.codigos) if documento else ['TITULAR_AUSENTE']},
             'contato': {'documento': ('revisao' if pendencias_documentais else
@@ -385,7 +395,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                     'DIVERGENCIA_NOME_ENTRE_FONTES','MARCADOR_ADMINISTRATIVO_NO_CABECALHO','CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA')])),
             'impedimentos_exportacao_operacional': sorted(set(motivos + ['EXPORTACAO_OPERACIONAL_INDISPONIVEL'])),
             'bloqueios': motivos})
-    # Projeção A/B por unidade: nenhuma cota excluída derruba as outras.
+    cotas = projetar_cotas(lote, decisoes, avaliacoes_unidade)
+    # Uma cota/unidade vetada não afeta outras unidades; linhas são por boleto.
     for u in lote.unidades:
         ds = [d for d in decisoes if d['unidade_id'] == u.id]
         pessoa = pessoas.get(u.id)
@@ -437,7 +448,19 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                       output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx', data_ref=pedido.data_ref,
                       titulo='TESTE LOCAL DIAGNOSTICO - NAO IMPORTAR - SEM APROVACAO OPERACIONAL')
     resumo = dict(Counter(d['situacao'] for d in decisoes))
-    resumo.update(unidades=len(lote.unidades), cotas=len(lote.boletos),
+    resumo.update(unidades=len(lote.unidades), cotas=len(lote.unidades), boletos=len(lote.boletos),
+                  cotas_elegiveis_pela_regua=sum(c['situacao_financeira'] == 'elegivel' for c in cotas),
+                  cotas_excluidas_por_veto=sum(c['situacao_financeira'] == 'excluida_por_veto' for c in cotas),
+                  cotas_sem_boleto_no_prazo=sum(c['situacao_financeira'] == 'sem_boleto_no_prazo' for c in cotas),
+                  cotas_indeterminadas=sum(c['situacao_financeira'] == 'pendente_revisao' for c in cotas),
+                  cotas_excluidas_centavo=sum(any(x['regra_id'] == 'tree_centavo' for x in c['causas_veto']) for c in cotas),
+                  cotas_excluidas_apontamentos=sum(any(x['regra_id'] in ('tree_apontamento_a','tree_apontamento_aj','tree_apontamento_j') for x in c['causas_veto']) for c in cotas),
+                  boletos_selecionados_pela_regua=sum(d['situacao_financeira'] == 'elegivel_na_simulacao' for d in decisoes),
+                  boletos_nao_selecionados_prazo=sum(d['motivo_selecao'] == 'prazo_nao_atingido' for d in decisoes),
+                  boletos_excluidos_por_veto=sum(d['veto_coletivo'] for d in decisoes),
+                  cotas_retidas=sum(c['retida_tecnicamente'] for c in cotas),
+                  boletos_retidos=sum(d['situacao'] == 'revisao' for d in decisoes),
+                  dividas_efetivamente_geradas=sum(l.tipo == 'divida' for l in linhas),
                   elegiveis_pela_regua=sum(d['situacao_financeira'] == 'elegivel_na_simulacao' for d in decisoes),
                   nao_elegiveis_pela_regua=sum(d['situacao_financeira'] == 'excluido' for d in decisoes),
                   indeterminadas_pela_regua=sum(d['situacao_financeira'] not in ('elegivel_na_simulacao', 'excluido') for d in decisoes),
@@ -465,6 +488,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
             'Codificação de integração apenas para teste; unidades sem mapa explícito conservam identificadores provisórios. Importação no easyCollector não homologada.',
             'Competências ausentes permanecem ausentes; nenhum dado pessoal é inventado.'],
+        'cotas': cotas, 'hierarquia': 'condominio_bloco_unidade_cota_boletos_componentes@1',
         'decisoes': decisoes, 'linhas_teste': linhas_info,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
         'arquivo_teste_disponivel': bool(linhas), 'comparacao': None}

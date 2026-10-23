@@ -2,13 +2,14 @@
   {
     "id": "tree", "condominio_id": "cond_habita", "administradora_id": "adm_habita",
     "nome": "TREE MORUMBI", "administradora": "Habita", "familia": "habita",
+    "configuracao_versao": "1.1.0", "escopo_exclusao": "unidade",
     "aliases": ["TREE MORUMBI"], "vigente_de": "2026-09-10", "vigente_ate": null,
     "exclusoes": [{"id":"tree_centavo","tipo":"valor_original","operador":"eq","valor":"0.01"},
       {"id":"tree_apontamento_a","tipo":"apontamento","codigo":"A"},
       {"id":"tree_apontamento_aj","tipo":"apontamento","codigo":"AJ"},
       {"id":"tree_apontamento_j","tipo":"apontamento","codigo":"J"}],
     "regra_prazo": "tree_prazo_30", "dias": 30, "prioridade_exclusao": 1, "prioridade_prazo": 0,
-    "ressalvas": ["A redação original menciona unidades; esta prévia usa a decisão posterior por cota. Validação formal operacional pendente.",
+    "ressalvas": ["Cota TREE corresponde à unidade e reúne seus boletos. Centavo ou A/AJ/J em qualquer boleto veta o conjunto; prazo é individual. Planos operacionais não aprovados.",
       "O início escolhido antecede a data nominal da fonte. Fundamento da aplicabilidade anterior pendente."]
   },
   {

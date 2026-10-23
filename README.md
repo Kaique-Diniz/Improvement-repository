@@ -6,7 +6,20 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-## Conferência atual — identificadores do template PLAZA
+## Correção atual — cota, boletos e componentes TREE
+
+No TREE, **cota = unidade**, reunindo todos os seus boletos. Um boleto de original
+R$ 0,01 ou com A/AJ/J veta o conjunto; somente depois se aplica o prazo individual
+`>30` dias. A interface separa contagens, veto financeiro e retenção técnica,
+com unidades expansíveis e identificação dos boletos causadores.
+
+Validação privada: **112 cotas, 769 boletos, 63 selecionados em 15 contratos**,
+coincidentes financeiramente com a referência. O bloqueio Habita/VG mantém zero
+dívidas geradas. PLAZA preservado, inclusive os XLSX de teste byte a byte.
+**1.259 testes aprovados**, oito schemas; nenhuma publicação desta correção.
+Veja o [comparativo, causas, evidências e limites](docs/CORRECAO_HIERARQUIA_TREE_MVP.md).
+
+## Histórico — identificadores do template PLAZA
 
 O [perfil de saída](src/conversor/web/perfis_saida.json) separa codificação de
 integração da identidade canônica e das regras financeiras. Seleção explícita por
