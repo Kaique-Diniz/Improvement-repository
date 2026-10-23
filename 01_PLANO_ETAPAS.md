@@ -1,5 +1,42 @@
 # 01 — Plano do projeto e fases
 
+## Pausa autorizada — testes do ambiente real
+
+Em 23/10/2026, o responsável autorizou commit, push e merge da entrega atual e
+a interrupção temporária de novas funcionalidades para testar o ambiente real.
+O escopo é estabilizar e avaliar o MVP existente, preservando os bloqueios,
+as pendências formais dos planos e o status não homologado para produção.
+Não há autorização de exportação operacional ou liberação financeira.
+
+## Prioridade atual autorizada — MVP funcional privado
+
+O responsável autorizou interface web, integração dos leitores/motor, primeira
+execução diagnóstica real e XLSX de teste. Esta solicitação posterior supera a
+restrição anterior a entregas documentais e autoriza integrar os componentes de
+saída/interface necessários ao MVP, preservando bloqueios e contratos históricos.
+Não aprova planos, não emite atestos, não libera exportação operacional nem
+homologa produção. Execução e limites estão no [README do MVP](README.md).
+Os marcos anteriores abaixo permanecem como histórico; não são novas barreiras
+para experimentar o diagnóstico agora expressamente autorizado.
+
+## Verificação final de aprovações — somente sintéticos/metadados
+
+Conferida a semântica 1 > 0 no motor sem alterá-lo, com 21 novos testes puros:
+**1.132 aprovados no total**, mais oito verificações de schemas. Consulte a
+[tabela final TREE/PLAZA](docs/preparacao_4_3B_2B/VERIFICACAO_FINAL_E_DECISOES_HUMANAS.md).
+Propostas, vigências, fonte/hash da régua e atos humanos continuam pendentes.
+Nenhum plano real ativado, simulação privada real executada ou crítico liberado;
+Fase 5 não iniciada. A verificação técnica não é aprovação das prioridades.
+
+## Etapa atual — preparação documental de aprovações para o 4.3B.2B
+
+4.3B.2A aceito tecnicamente, sujeito à revisão posterior do código. Preparadas
+fichas TREE/PLAZA, precedências propostas, vigência com lacunas, cinco fichas de
+atesto e checklist separado de aprovação/simulação/exportação. Veja a
+[prontidão para revisão humana](docs/preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md).
+Esta tarefa não inicia execução real do 4.3B.2B nem Fase 5; não altera código,
+planos, bloqueios ou contratos. Aprovações e atestos continuam não registrados.
+
 ## Situação atual — incremento 4.3B.2A
 
 Integrados, somente com sintéticos, preparação reconciliada 4.3A, controles de

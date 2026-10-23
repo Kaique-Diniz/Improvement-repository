@@ -15,12 +15,13 @@ from conversor.readers.text_support import ErroLeitura
 from .contract import materializar
 
 
-def escrever_xlsx(linhas, template: Template, destino: Path, *, data_ref: date):
+def escrever_xlsx(linhas, template: Template, destino: Path, *, data_ref: date,
+                  titulo="LABORATORIO SINTETICO - NAO HOMOLOGADO PARA PRODUCAO"):
     registros = tuple(materializar(linha) for linha in linhas)
     workbook = Workbook()
     aba = workbook.active
     aba.title = template.nome_aba
-    workbook.properties.title = "LABORATORIO SINTETICO - NAO HOMOLOGADO PARA PRODUCAO"
+    workbook.properties.title = titulo
     workbook.properties.creator = "Conversor Inteligente de Inadimplencia"
     instante = datetime(data_ref.year, data_ref.month, data_ref.day, tzinfo=timezone.utc)
     workbook.properties.created = workbook.properties.modified = instante
