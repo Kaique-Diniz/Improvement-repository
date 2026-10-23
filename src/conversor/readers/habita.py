@@ -2,13 +2,13 @@
 from decimal import Decimal
 import re
 
-from conversor.domain.canonical import Contato, Documento, Pessoa
+from conversor.domain.canonical import Contato, Pessoa, documento_de_texto
 from .text_support import AcumuladorLeitura, ContextoLeitura, TextoPDF, VALOR_BRL, data_curta, dinheiro_brl, telefone
 
 QUATRO = rf"({VALOR_BRL})\s+({VALOR_BRL})\s+({VALOR_BRL})\s+({VALOR_BRL})"
 INICIO = re.compile(rf"^(\d{{8}})\s+(?:([A-Z]+)\s+)?(\d{{2}}/\d{{2}}/\d{{2}})\s+(\d{{6}})\s+(\d+)\s+(.+?)\s+{QUATRO}$")
 ITEM = re.compile(rf"^(\d+)\s+(.+?)\s+{QUATRO}$")
-UNIDADE = re.compile(r"^Bloco:\s*(\w+)\s+Unidade:\s*(\w+)\s+(.+?)\s+CPF:\s*(.+)$")
+UNIDADE = re.compile(r"^Bloco:\s*(\w+)\s+Unidade:\s*(\w+)\s+(.+?)\s+(?:CPF(?:/CNPJ)?|CNPJ):\s*(.+)$")
 
 
 class LeitorHabitaSintetico:
@@ -28,7 +28,7 @@ class LeitorHabitaSintetico:
                 texto = linha.texto.strip()
                 if match := UNIDADE.fullmatch(texto):
                     bloco, unidade, nome, cpf = match.groups()
-                    documento = Documento(tipo="cpf", valor=cpf) if re.fullmatch(r"[0-9.\-]+", cpf) else None
+                    documento = documento_de_texto(cpf)
                     acc.unidade(bloco, unidade, nome, linha, documento)
                 elif texto.startswith("Celular:"):
                     if acc.atual is None: acc.falhar("CONTATO_SEM_UNIDADE", linha)

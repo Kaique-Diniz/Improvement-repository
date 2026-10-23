@@ -29,14 +29,14 @@
 | Ponto | Comportamento nesta fase | Impacto/decisão futura |
 |---|---|---|
 | P01/P02: lote e referência | data explícita por processamento; sem execução | Definir interface e convenção da data antes do motor/UI |
-| P04/P05: titular, CNPJ e fontes divergentes | CPF inválido/CNPJ -> vazio + alerta; sem enriquecimento | Aprovar associação de titulares e prioridade temporal das fontes |
+| P04/P05: titular, CNPJ e fontes divergentes | CPF/CNPJ válido -> texto na coluna CPF; ausente/inválido -> vazio + alerta; conflito/vínculo não confirmado -> revisão humana auditada | Aprovar associação de titulares e prioridade temporal das fontes |
 | P06: espaço final AA | preservado no cabeçalho físico por opção de template | Testar contra importador; não foi declarado homologado |
 | P07: judicial e exceções | contrato de regra, sem avaliação; nenhuma regra real ativada | Aprovar modalidade, alcance, ações e evidências na Fase 4 |
 | P08: escopo do bloqueio | cada ocorrência exige escopo; linha crítica é rejeitada | Homologar matriz lote/arquivo/registro; não inferir matriz global |
 | P09: retenção e acesso | gerações locais privadas, sem expiração automática | Definir proteção/retencão/backup antes de dados reais/produção |
 | P10: gabarito TREE | nenhum gabarito real suposto | Aprovar fixture de aceite autorizada |
 | P11: stack UI/infra | nenhuma UI, API, implantação ou banco SQL | Confirmar apenas antes dessas fases |
-| P12: importador de destino | somente DTO de saída, sem arquivo XLSX | CPF vazio, tipos, duplicados e datas exigem homologação; produção bloqueada |
+| P12: importador de destino | somente DTO de saída, sem arquivo XLSX | CPF/CNPJ na coluna CPF do easyCollector confirmado pelo responsável; ensaio integral de vazios, tipos, duplicados e datas ainda pendente; produção bloqueada |
 | Identidade de boleto | leitor fornecerá ID estável, lote rejeita repetição | Homologar chave por formato/administradora na Fase 3 |
 | Ativação de réguas | aprovação explícita e vigência validada; sem autenticação real | Definir autoridade/ACL e agendamento de novas versões na Fase 4 |
 

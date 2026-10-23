@@ -44,7 +44,7 @@ adiado: `A/0041`, `B/0012`, `A/0142`. A unidade do boleto 900104 no documento é
 `G/0072`; a menção anterior a G/0093 na pergunta não corresponde à fonte.
 
 CPF ausente/invalidado permanece vazio: quatro alertas por unidade na FL,
-mesmo havendo cinco linhas; dois alertas na saída Habita. CNPJ nunca ocupa CPF.
+mesmo havendo cinco linhas; dois alertas na saída Habita. A restrição histórica a CPF foi substituída pela atualização geral de 21/10/2026: CPF/CNPJ válido como texto na coluna CPF. As fixtures originais continuam sem documento válido.
 
 ## Divergências encontradas, sem ocultação
 
@@ -139,7 +139,7 @@ explicitamente solicitada, sem liberar o fluxo operacional.
 
 Foram testados também erro de soma, desconto negativo, duplicação de componente,
 continuidade incompleta/divergente, idade 29/30/31 dias, namespace A/AJ/J,
-CPF ausente/CNPJ, precisão incompatível com Excel e proteção contra sobrescrever
+documentos ausentes/inválidos (inclusive CNPJ inválido), precisão incompatível com Excel e proteção contra sobrescrever
 fixtures. Na integração, foram usados gabaritos e resumos alterados **em cópias
 temporárias**, confirmando que diferenças são detectadas e que valores esperados
 não alimentam o cálculo. Fontes desconhecidas, assinaturas ambíguas e identidade

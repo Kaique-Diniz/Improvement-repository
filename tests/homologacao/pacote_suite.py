@@ -85,7 +85,7 @@ def test_excel_universal_tipos_e_cadastros(execucao, familia, linhas):
         assert tuple(c.value for c in aba[1]) == COLUNAS
         assert aba.max_column == 30 and aba.max_row == linhas + 1
         for linha in list(aba.values)[1:]:
-            assert linha[2] is None  # CPF ausente/invalidado nunca vira CNPJ ou texto.
+            assert linha[2] is None  # Documentos ausentes/inválidos desta fixture continuam vazios.
             if linha[24] is None:
                 assert all(v is None for v in linha[24:])
             else:
@@ -111,7 +111,7 @@ def test_divergencias_de_contato_sao_reportadas_com_origem(execucao, familia, ca
 def test_cadastro_prioritario_com_alerta_e_original_preservado(execucao):
     relatorio, saida = execucao
     fl = relatorio["casos"]["fl"]
-    assert sum(o["codigo"] == "CPF_AUSENTE_OU_INVALIDO" for o in fl["ocorrencias"]) == 4
+    assert sum(o["codigo"] in ("DOCUMENTO_AUSENTE", "DOCUMENTO_INVALIDO") for o in fl["ocorrencias"]) == 4
     conflitos = [o for o in fl["ocorrencias"] if o["codigo"] == "TITULAR_DIVERGENTE_RESOLVIDO_NO_LAB"]
     assert len(conflitos) == 1 and conflitos[0]["gravidade"] == "alerta"
     anterior = LoteCanonico.model_validate_json((saida / "fl_extraido_antes_cadastro.json").read_bytes())

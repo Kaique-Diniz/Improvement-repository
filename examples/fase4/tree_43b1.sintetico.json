@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0",
+  "id": "plano_demonstrativo_tree_43b1",
+  "condominio_id": "cond_sintetico",
+  "versao": "1.0.0",
+  "natureza": "sintetico",
+  "vigente_de": "2026-01-01",
+  "vigente_ate": "2027-01-01",
+  "fontes": [
+    {
+      "arquivo_id": "requisitos_inventados_43b1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_versao": "fixture_43b1",
+      "pagina": 1,
+      "linha": 1,
+      "identificador": "tree_centavo"
+    },
+    {
+      "arquivo_id": "requisitos_inventados_43b1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_versao": "fixture_43b1",
+      "pagina": 1,
+      "linha": 2,
+      "identificador": "tree_apontamento_a"
+    },
+    {
+      "arquivo_id": "requisitos_inventados_43b1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_versao": "fixture_43b1",
+      "pagina": 1,
+      "linha": 3,
+      "identificador": "tree_apontamento_aj"
+    },
+    {
+      "arquivo_id": "requisitos_inventados_43b1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_versao": "fixture_43b1",
+      "pagina": 1,
+      "linha": 4,
+      "identificador": "tree_apontamento_j"
+    },
+    {
+      "arquivo_id": "requisitos_inventados_43b1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_versao": "fixture_43b1",
+      "pagina": 1,
+      "linha": 5,
+      "identificador": "tree_prazo_30"
+    }
+  ],
+  "fatos": [],
+  "regras": [
+    {
+      "id": "tree_centavo",
+      "prioridade": 0,
+      "alvo": "boleto",
+      "quando": {
+        "tipo": "valor_original",
+        "operador": "eq",
+        "valor": "0.01"
+      },
+      "acao": "excluir",
+      "motivo_codigo": "EXCLUSAO_SINTETICA_TREE_CENTAVO",
+      "fonte_id": "tree_centavo"
+    },
+    {
+      "id": "tree_apontamento_a",
+      "prioridade": 0,
+      "alvo": "boleto",
+      "quando": {
+        "tipo": "apontamento",
+        "codigo": "A",
+        "namespace": "fmt_habita_sintetico_mapeamento"
+      },
+      "acao": "excluir",
+      "motivo_codigo": "EXCLUSAO_SINTETICA_TREE_APONTAMENTO_A",
+      "fonte_id": "tree_apontamento_a"
+    },
+    {
+      "id": "tree_apontamento_aj",
+      "prioridade": 0,
+      "alvo": "boleto",
+      "quando": {
+        "tipo": "apontamento",
+        "codigo": "AJ",
+        "namespace": "fmt_habita_sintetico_mapeamento"
+      },
+      "acao": "excluir",
+      "motivo_codigo": "EXCLUSAO_SINTETICA_TREE_APONTAMENTO_AJ",
+      "fonte_id": "tree_apontamento_aj"
+    },
+    {
+      "id": "tree_apontamento_j",
+      "prioridade": 0,
+      "alvo": "boleto",
+      "quando": {
+        "tipo": "apontamento",
+        "codigo": "J",
+        "namespace": "fmt_habita_sintetico_mapeamento"
+      },
+      "acao": "excluir",
+      "motivo_codigo": "EXCLUSAO_SINTETICA_TREE_APONTAMENTO_J",
+      "fonte_id": "tree_apontamento_j"
+    },
+    {
+      "id": "tree_prazo_30",
+      "prioridade": 0,
+      "alvo": "boleto",
+      "acao": "incluir",
+      "quando": {
+        "tipo": "todas",
+        "condicoes": [
+          {
+            "tipo": "dias_atraso",
+            "operador": "gt",
+            "valor": 30
+          },
+          {
+            "tipo": "nao",
+            "condicao": {
+              "tipo": "qualquer",
+              "condicoes": [
+                {
+                  "tipo": "valor_original",
+                  "operador": "eq",
+                  "valor": "0.01"
+                },
+                {
+                  "tipo": "apontamento",
+                  "codigo": "A",
+                  "namespace": "fmt_habita_sintetico_mapeamento"
+                },
+                {
+                  "tipo": "apontamento",
+                  "codigo": "AJ",
+                  "namespace": "fmt_habita_sintetico_mapeamento"
+                },
+                {
+                  "tipo": "apontamento",
+                  "codigo": "J",
+                  "namespace": "fmt_habita_sintetico_mapeamento"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "motivo_codigo": "PRAZO_SATISFEITO_SEM_EXCLUSOES",
+      "fonte_id": "tree_prazo_30"
+    },
+    {
+      "id": "tree_prazo_30_nao_atingido",
+      "prioridade": 0,
+      "alvo": "boleto",
+      "acao": "excluir",
+      "quando": {
+        "tipo": "dias_atraso",
+        "operador": "lte",
+        "valor": 30
+      },
+      "motivo_codigo": "PRAZO_NAO_ATINGIDO_NA_REFERENCIA",
+      "fonte_id": "tree_prazo_30"
+    }
+  ]
+}

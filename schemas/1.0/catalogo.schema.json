@@ -190,6 +190,32 @@
       "title": "Condominio",
       "type": "object"
     },
+    "Documento": {
+      "additionalProperties": false,
+      "description": "Valor bruto textual; a validade fiscal é avaliada sem apagar evidências inválidas.",
+      "properties": {
+        "tipo": {
+          "enum": [
+            "cpf",
+            "cnpj",
+            "outro"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "description": "CPF/CNPJ bruto como texto, preservando zeros iniciais.",
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "Documento",
+      "type": "object"
+    },
     "Endereco": {
       "additionalProperties": false,
       "properties": {
@@ -232,6 +258,36 @@
         }
       },
       "title": "Endereco",
+      "type": "object"
+    },
+    "EvidenciaDocumento": {
+      "additionalProperties": false,
+      "properties": {
+        "documento": {
+          "$ref": "#/$defs/Documento"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "titular_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Titular Id"
+        }
+      },
+      "required": [
+        "documento",
+        "origem"
+      ],
+      "title": "EvidenciaDocumento",
       "type": "object"
     },
     "Formato": {
@@ -344,6 +400,14 @@
           ],
           "title": "Escopo",
           "type": "string"
+        },
+        "evidencias_documentais": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenciaDocumento"
+          },
+          "title": "Evidencias Documentais",
+          "type": "array"
         },
         "gravidade": {
           "$ref": "#/$defs/Gravidade"

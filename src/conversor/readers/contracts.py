@@ -1,9 +1,12 @@
-from typing import Annotated, Literal, Protocol
+from typing import Annotated, Literal, Protocol, TYPE_CHECKING, runtime_checkable
 
 from pydantic import Field, model_validator
 
 from conversor.domain.base import Hash, Id, Modelo
 from conversor.domain.canonical import LoteCanonico
+
+if TYPE_CHECKING:
+    from .text_support import ContextoLeitura
 
 
 class ClassificacaoFormato(Modelo):
@@ -32,6 +35,15 @@ class FonteProtegida(Modelo):
     sha256: Hash
 
 
+class RepositorioFontes(Protocol):
+    def ler(self, fonte: FonteProtegida) -> bytes: ...
+
+
+class ResolutorContexto(Protocol):
+    def resolver(self, fonte: FonteProtegida, *, formato_id: str, condominio_id: str) -> "ContextoLeitura": ...
+
+
+@runtime_checkable
 class Leitor(Protocol):
-    """Implementações futuras registradas por leitor_id/versão, nunca por condomínio."""
+    """Adaptadores por leitor_id/versão; retornam o mesmo contrato inclusive para Cadastro."""
     def ler(self, fonte: FonteProtegida, *, formato_id: str, condominio_id: str) -> LoteCanonico: ...

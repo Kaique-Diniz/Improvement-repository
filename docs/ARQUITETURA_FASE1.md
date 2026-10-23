@@ -136,9 +136,9 @@ semântica financeira de uma régua nem autentica a autoridade do aprovador.
 continua aberta; nenhum cabeçalho foi homologado no importador de destino.
 
 `LinhaExportacao` é DTO: `cadastral` proíbe dívida; `divida` exige seus seis campos.
-`materializar` produz exatamente 30 posições. CPF é normalizado e validado por
-dígitos verificadores; ausência, invalidade ou documento CNPJ produz texto vazio
-e ocorrência de alerta. Não atesta titularidade ou situação cadastral. Telefones
+`materializar` produz exatamente 30 posições. CPF/CNPJ é normalizado e validado por
+dígitos verificadores; ausência ou invalidade produz texto vazio
+e ocorrência de alerta. A atualização geral de 21/10/2026 aceita CNPJ na coluna literal CPF como texto; conflitos válidos ou titularidade não confirmada bloqueiam resolução automática e preservam fontes na auditoria. Não atesta titularidade ou situação cadastral. Telefones
 (máximo cinco) e e-mails (máximo três) não são truncados silenciosamente. Campos
 desconhecidos permanecem vazios. CEDENTE, produto e complemento são independentes.
 Dates/Decimal são preservados como tipos Python para o futuro escritor XLSX.

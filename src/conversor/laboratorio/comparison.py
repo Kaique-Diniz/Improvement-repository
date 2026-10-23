@@ -60,7 +60,7 @@ def conferir_financeiro(lote, resultados, linhas, ocorrencias, esperado):
                  for r in resultados if r.acao == "incluir"}
     excluidas = sorted({unidades[r.unidade_id].chave_normalizada for r in resultados if r.acao == "excluir"})
     cadastrais = [unidades[l.pessoa.unidade_id].chave_normalizada for l in linhas if l.tipo == "cadastral"]
-    cpf = sum(o.codigo == "CPF_AUSENTE_OU_INVALIDO" for o in ocorrencias)
+    cpf = sum(o.codigo in ("CPF_AUSENTE_OU_INVALIDO", "DOCUMENTO_AUSENTE", "DOCUMENTO_INVALIDO") for o in ocorrencias)
     verificacoes = []
     def checar(campo, atual, ouro):
         verificacoes.append({"campo": campo, "ok": atual == ouro,

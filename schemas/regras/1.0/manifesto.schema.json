@@ -1,0 +1,62 @@
+{
+  "$id": "urn:conversor:regras:1.0:manifesto",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiente": {
+      "enum": [
+        "sintetico",
+        "privado"
+      ],
+      "title": "Ambiente",
+      "type": "string"
+    },
+    "assinatura": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Assinatura",
+      "type": "string"
+    },
+    "geracao": {
+      "pattern": "^[0-9a-f]{32}$",
+      "title": "Geracao",
+      "type": "string"
+    },
+    "raiz_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Raiz Hash",
+      "type": "string"
+    },
+    "repositorio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Repositorio Id",
+      "type": "string"
+    },
+    "revisao": {
+      "minimum": 1,
+      "title": "Revisao",
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Sha256",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repositorio_id",
+    "raiz_hash",
+    "ambiente",
+    "revisao",
+    "geracao",
+    "sha256",
+    "assinatura"
+  ],
+  "title": "ManifestoPlanos",
+  "type": "object"
+}

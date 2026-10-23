@@ -1,0 +1,36 @@
+{
+  "natureza": "inteiramente_sintetica_criada_do_zero",
+  "data_ref": "2026-11-01",
+  "cotas": [
+    {
+      "numero": "91000001", "vencimento": "01/10/26", "apontamento": null,
+      "itens": [["0.01", "0.00", "0.00", "0.00"], ["149.99", "2.00", "3.00", "4.00"]],
+      "esperado_original": "150.00", "esperado_atualizado": "159.00", "predicado_centavo": "falso"
+    },
+    {
+      "numero": "91000002", "vencimento": "01/10/26", "apontamento": null,
+      "itens": [["0.01", "0.02", "0.03", "0.04"]],
+      "esperado_original": "0.01", "esperado_atualizado": "0.10", "predicado_centavo": "verdadeiro"
+    },
+    {
+      "numero": "91000003", "vencimento": "01/12/26", "apontamento": "A",
+      "itens": [["50.00", "0.00", "0.00", "0.00"]],
+      "esperado_original": "50.00", "esperado_atualizado": "50.00", "predicado_centavo": "falso"
+    },
+    {
+      "numero": "91000004", "vencimento": "01/10/26", "apontamento": "AJ",
+      "itens": [["20.00", "0.00", "0.00", "0.00"], ["30.00", "0.00", "0.00", "0.00"]],
+      "esperado_original": "50.00", "esperado_atualizado": "50.00", "predicado_centavo": "falso"
+    },
+    {
+      "numero": "91000005", "vencimento": "02/10/26", "apontamento": "J",
+      "itens": [["50.00", "0.00", "0.00", "0.00"]],
+      "esperado_original": "50.00", "esperado_atualizado": "50.00", "predicado_centavo": "falso"
+    },
+    {
+      "numero": "91000006", "vencimento": "01/10/26", "apontamento": null,
+      "itens": [["0.02", "0.00", "0.00", "0.00"], ["-0.01", "0.00", "0.00", "0.00"]],
+      "esperado_original": "0.01", "esperado_atualizado": "0.01", "predicado_centavo": "verdadeiro"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "schema_version": "1.0",
+  "finalidade": "validacao_privada_fase3",
+  "natureza": "sintetica",
+  "autorizacao_id": "exemplo_nao_operacional",
+  "casos": [
+    {
+      "id": "habita_caso_1",
+      "fonte": {"arquivo_id": "fonte_habita_1", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "arquivo": "fontes/habita.pdf",
+      "gabarito": "gabaritos/habita.canonico.esperado.json",
+      "gabarito_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_id": "habita_composicao_sintetico_v1",
+      "leitor_versao": "1",
+      "formato_id": "fmt_habita_exemplo",
+      "condominio_id": "cond_exemplo_habita",
+      "administradora_id": "adm_exemplo_habita",
+      "codigo_condominio": "9999",
+      "data_ref": "2026-10-20"
+    },
+    {
+      "id": "fl_caso_1",
+      "fonte": {"arquivo_id": "fonte_fl_1", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "arquivo": "fontes/fl.pdf",
+      "gabarito": "gabaritos/fl.canonico.esperado.json",
+      "gabarito_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_id": "fl_composicao_sintetico_v1",
+      "leitor_versao": "1",
+      "formato_id": "fmt_fl_exemplo",
+      "condominio_id": "cond_exemplo_fl",
+      "administradora_id": "adm_exemplo_fl",
+      "codigo_condominio": "CONDOMINIO FICTICIO",
+      "data_ref": "2026-10-20"
+    },
+    {
+      "id": "cadastro_caso_1",
+      "fonte": {"arquivo_id": "fonte_cadastro_1", "sha256": "0000000000000000000000000000000000000000000000000000000000000000"},
+      "arquivo": "fontes/cadastro.pdf",
+      "gabarito": "gabaritos/cadastro.canonico.esperado.json",
+      "gabarito_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "leitor_id": "cadastro_fl_sintetico_v1",
+      "leitor_versao": "1",
+      "formato_id": "fmt_cadastro_exemplo",
+      "condominio_id": "cond_exemplo_fl",
+      "administradora_id": "adm_exemplo_fl",
+      "codigo_condominio": "CONDOMINIO FICTICIO",
+      "data_ref": "2026-10-20"
+    }
+  ]
+}

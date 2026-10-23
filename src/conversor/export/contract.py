@@ -1,11 +1,12 @@
 from datetime import date
-from hashlib import sha256
 from typing import Annotated, Literal
 
 from pydantic import Field, model_validator
 
 from conversor.domain.base import Data, Dinheiro, Id, Modelo, Texto
-from conversor.domain.canonical import Gravidade, Ocorrencia, Pessoa, cpf_validado
+from conversor.domain.canonical import Ocorrencia, Pessoa
+from conversor.domain.documents import resolver_documento
+from conversor.application.documents import ocorrencias_documentais
 from conversor.domain.template import COLUNAS, Template
 
 
@@ -37,6 +38,8 @@ class LinhaExportacao(Modelo):
             raise ValueError("OCORRENCIA_DE_OUTRA_EXECUCAO")
         if any(o.bloqueante for o in self.ocorrencias):
             raise ValueError("LINHA_COM_BLOQUEIO")
+        if resolver_documento(self.pessoa).bloqueante:
+            raise ValueError("CADASTRO_DOCUMENTAL_EXIGE_REVISAO_HUMANA")
         return self
 
 
@@ -47,20 +50,14 @@ class LinhaMaterializada(Modelo):
 
 def materializar(linha: LinhaExportacao) -> LinhaMaterializada:
     linha = LinhaExportacao.model_validate(linha.model_dump())
-    cpf = cpf_validado(linha.pessoa.documento)
+    documento = resolver_documento(linha.pessoa).valor
     ocorrencias = list(linha.ocorrencias)
-    if not cpf:
-        ocorrencia = Ocorrencia(
-            id="cpf:" + sha256(f"{linha.processamento_id}:{linha.registro_id}".encode()).hexdigest(),
-            processamento_id=linha.processamento_id,
-            codigo="CPF_AUSENTE_OU_INVALIDO", gravidade=Gravidade.ALERTA,
-            escopo="registro", registro_id=linha.registro_id, origem=linha.pessoa.origem,
-        )
+    for ocorrencia in ocorrencias_documentais(linha.pessoa, processamento_id=linha.processamento_id):
         if ocorrencia not in ocorrencias:
             ocorrencias.append(ocorrencia)
     pessoa = linha.pessoa
     endereco = pessoa.contato.endereco
-    valores = [linha.nm_cedente_cedente, linha.cedente, cpf, pessoa.nome,
+    valores = [linha.nm_cedente_cedente, linha.cedente, documento, pessoa.nome,
                endereco.logradouro, endereco.numero, endereco.complemento, endereco.cep,
                endereco.bairro, endereco.cidade, endereco.uf]
     for i in range(5):

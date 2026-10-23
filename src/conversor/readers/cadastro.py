@@ -1,11 +1,13 @@
 """Cadastro Geral FL do laboratório; associação exige condomínio, torre e unidade."""
 import re
 
-from conversor.domain.canonical import Contato, Documento, Endereco, Pessoa
+from conversor.domain.canonical import Contato, Endereco, Pessoa, documento_de_texto
 from .text_support import ContextoLeitura, ErroLeitura, TextoPDF, id_estavel, telefone
 
 
 class LeitorCadastroFLSintetico:
+    formato_id = "cadastro_fl_sintetico_v1"
+
     def ler(self, conteudo: bytes, *, contexto: ContextoLeitura):
         fonte = TextoPDF(conteudo, contexto)
         # W045A identifica o Cadastro, não é outro condomínio em relação ao W002A.
@@ -28,7 +30,7 @@ class LeitorCadastroFLSintetico:
                     uid = id_estavel("uni", contexto.condominio_id, bloco, unidade)
                     endereco = re.fullmatch(r"(.+?),\s*(\S+)", campos[3])
                     if not endereco: raise ErroLeitura("ENDERECO_CADASTRAL_INVALIDO", pagina=linha.pagina, linha=linha.numero)
-                    documento = Documento(tipo="cpf", valor=campos[4]) if campos[4] != "(vazio)" else None
+                    documento = documento_de_texto(campos[4])
                     emails = () if campos[5] == "(vazio)" else (campos[5],)
                     contato = Contato(endereco=Endereco(logradouro=endereco[1], numero=endereco[2]), emails=emails, origem=fonte.origem(linha))
                     resultado[chave] = Pessoa(id=id_estavel("pes", uid), unidade_id=uid, nome=campos[1], documento=documento,

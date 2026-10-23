@@ -1,0 +1,183 @@
+{
+  "$defs": {
+    "Documento": {
+      "additionalProperties": false,
+      "description": "Valor bruto textual; a validade fiscal é avaliada sem apagar evidências inválidas.",
+      "properties": {
+        "tipo": {
+          "enum": [
+            "cpf",
+            "cnpj",
+            "outro"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "valor": {
+          "description": "CPF/CNPJ bruto como texto, preservando zeros iniciais.",
+          "title": "Valor",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipo",
+        "valor"
+      ],
+      "title": "Documento",
+      "type": "object"
+    },
+    "EvidenciaDocumento": {
+      "additionalProperties": false,
+      "properties": {
+        "documento": {
+          "$ref": "#/$defs/Documento"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "titular_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Titular Id"
+        }
+      },
+      "required": [
+        "documento",
+        "origem"
+      ],
+      "title": "EvidenciaDocumento",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:1.0:resolucao_documental",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "bloqueante": {
+      "title": "Bloqueante",
+      "type": "boolean"
+    },
+    "codigos": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Codigos",
+      "type": "array"
+    },
+    "evidencias": {
+      "items": {
+        "$ref": "#/$defs/EvidenciaDocumento"
+      },
+      "title": "Evidencias",
+      "type": "array"
+    },
+    "valor": {
+      "description": "Documento normalizado para a coluna literal CPF: texto de 11 ou 14 dígitos, ou vazio.",
+      "pattern": "^(?:[0-9]{11}|[0-9]{14})?$",
+      "title": "Valor",
+      "type": "string"
+    }
+  },
+  "required": [
+    "valor",
+    "codigos",
+    "bloqueante",
+    "evidencias"
+  ],
+  "title": "ResolucaoDocumento",
+  "type": "object"
+}

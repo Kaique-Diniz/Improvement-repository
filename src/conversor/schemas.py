@@ -6,11 +6,13 @@ from pathlib import Path
 from conversor.adapters.json_repository import Manifesto
 from conversor.domain.catalog import Catalogo
 from conversor.domain.canonical import LoteCanonico, ResultadoCobranca
+from conversor.domain.documents import ResolucaoDocumento
 from conversor.export.contract import LinhaExportacao
 from conversor.readers.contracts import ClassificacaoFormato
 
 MODELOS = {"catalogo": Catalogo, "canonico": LoteCanonico, "resultado_cobranca": ResultadoCobranca,
-           "linha_exportacao": LinhaExportacao, "classificacao": ClassificacaoFormato, "manifesto": Manifesto}
+           "linha_exportacao": LinhaExportacao, "classificacao": ClassificacaoFormato, "manifesto": Manifesto,
+           "resolucao_documental": ResolucaoDocumento}
 
 
 def documentos():

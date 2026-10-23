@@ -26,7 +26,7 @@ O repositório implementa o **Conversor Inteligente de Inadimplência**. Instru�
 
 ## Interface de exportação
 - A aba `Dados` exige 30 colunas na ordem documentada em `04_DICIONARIO_TEMPLATE.md`.
-- Coluna CPF é exclusivamente CPF; ausência -> vazio e alerta. O campo CPF não é bloqueante por si.
+- A coluna literal `CPF` aceita CPF válido (11 dígitos) ou CNPJ válido (14), sempre como texto com zeros iniciais. Ausência/invalidade -> vazio e alerta; conflito entre documentos válidos ou titularidade não confirmada bloqueia resolução automática e exige revisão humana com fontes na auditoria.
 - Separar valores originais de saldos cumulativos, juros e multas.
 - Não modificar o template fonte in-place.
 

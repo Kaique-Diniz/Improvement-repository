@@ -1,0 +1,210 @@
+{
+  "$defs": {
+    "CondicaoLevantamento": {
+      "additionalProperties": false,
+      "properties": {
+        "campo": {
+          "enum": [
+            "valor_boleto_a_confirmar",
+            "apontamento",
+            "dias_atraso",
+            "juridico_e_prazo",
+            "cadastro_antecipado"
+          ],
+          "title": "Campo",
+          "type": "string"
+        },
+        "namespace": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Namespace"
+        },
+        "operador": {
+          "enum": [
+            "eq",
+            "gt",
+            "a_confirmar"
+          ],
+          "title": "Operador",
+          "type": "string"
+        },
+        "valor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Valor"
+        }
+      },
+      "required": [
+        "campo",
+        "operador",
+        "valor"
+      ],
+      "title": "CondicaoLevantamento",
+      "type": "object"
+    },
+    "RegraEmLevantamento": {
+      "additionalProperties": false,
+      "properties": {
+        "acao": {
+          "enum": [
+            "excluir",
+            "incluir",
+            "bloquear",
+            "a_confirmar"
+          ],
+          "title": "Acao",
+          "type": "string"
+        },
+        "condicao": {
+          "$ref": "#/$defs/CondicaoLevantamento"
+        },
+        "condominio_referencia": {
+          "enum": [
+            "TREE_MORUMBI",
+            "PLAZA_MAYOR_IPIRANGA"
+          ],
+          "title": "Condominio Referencia",
+          "type": "string"
+        },
+        "escopo": {
+          "enum": [
+            "unidade",
+            "boleto",
+            "a_confirmar"
+          ],
+          "title": "Escopo",
+          "type": "string"
+        },
+        "evidencia": {
+          "const": "SOLICITACAO_4_3A",
+          "title": "Evidencia",
+          "type": "string"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "prioridade": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prioridade"
+        },
+        "questoes_humanas": {
+          "items": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Questoes Humanas",
+          "type": "array"
+        },
+        "situacao_aprovacao": {
+          "const": "pendente_aprovacao_humana",
+          "default": "pendente_aprovacao_humana",
+          "title": "Situacao Aprovacao",
+          "type": "string"
+        },
+        "vigente_ate": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigente Ate"
+        },
+        "vigente_de": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vigente De"
+        }
+      },
+      "required": [
+        "id",
+        "condominio_referencia",
+        "condicao",
+        "escopo",
+        "acao",
+        "evidencia",
+        "questoes_humanas"
+      ],
+      "title": "RegraEmLevantamento",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:simulacao-privada:1.0:matriz_preliminar",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "autoriza_ativacao": {
+      "const": false,
+      "default": false,
+      "title": "Autoriza Ativacao",
+      "type": "boolean"
+    },
+    "finalidade": {
+      "const": "levantamento_nao_executavel",
+      "default": "levantamento_nao_executavel",
+      "title": "Finalidade",
+      "type": "string"
+    },
+    "regras": {
+      "items": {
+        "$ref": "#/$defs/RegraEmLevantamento"
+      },
+      "minItems": 1,
+      "title": "Regras",
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "regras"
+  ],
+  "title": "MatrizPreliminar",
+  "type": "object"
+}

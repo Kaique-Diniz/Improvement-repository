@@ -1,0 +1,124 @@
+{
+  "$id": "urn:conversor:regras:1.0:evento",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acao": {
+      "enum": [
+        "criar",
+        "submeter",
+        "rejeitar",
+        "aprovar",
+        "ativar",
+        "revogar"
+      ],
+      "title": "Acao",
+      "type": "string"
+    },
+    "ambiente": {
+      "enum": [
+        "sintetico",
+        "privado"
+      ],
+      "title": "Ambiente",
+      "type": "string"
+    },
+    "assinatura": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Assinatura",
+      "type": "string"
+    },
+    "condominio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Id",
+      "type": "string"
+    },
+    "data_ref": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Data Ref"
+    },
+    "em": {
+      "format": "date-time",
+      "title": "Em",
+      "type": "string"
+    },
+    "evidencia_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Evidencia Id",
+      "type": "string"
+    },
+    "fundamento": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Fundamento",
+      "type": "string"
+    },
+    "hash_anterior": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Hash Anterior",
+      "type": "string"
+    },
+    "hash_conteudo": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Hash Conteudo",
+      "type": "string"
+    },
+    "plano_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Plano Id",
+      "type": "string"
+    },
+    "politica_autorizacao_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Politica Autorizacao Hash",
+      "type": "string"
+    },
+    "responsavel_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Responsavel Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sequencia": {
+      "minimum": 1,
+      "title": "Sequencia",
+      "type": "integer"
+    },
+    "versao": {
+      "title": "Versao",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sequencia",
+    "ambiente",
+    "plano_id",
+    "condominio_id",
+    "versao",
+    "hash_conteudo",
+    "acao",
+    "responsavel_id",
+    "em",
+    "fundamento",
+    "evidencia_id",
+    "hash_anterior",
+    "politica_autorizacao_hash",
+    "assinatura"
+  ],
+  "title": "EventoPlano",
+  "type": "object"
+}

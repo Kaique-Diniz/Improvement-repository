@@ -1,0 +1,77 @@
+{
+  "aviso": "EXEMPLO SINTETICO NAO EXECUTAVEL. MODELO E POLITICAS AGUARDAM APROVACAO.",
+  "execucao_habilitada": false,
+  "schema_version": "proposta-1.0",
+  "plano": {
+    "id": "plano_cond_sintetico_v1",
+    "condominio_id": "cond_sintetico",
+    "versao": "1.0.0",
+    "vigencia": {"de": "2026-01-01", "ate": "2027-01-01"},
+    "fontes": [
+      {
+        "id": "fonte_regra_sintetica",
+        "arquivo_id": "requisito_inventado_para_teste",
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "identificador": "secao_exemplo",
+        "pagina": 1,
+        "linha": 1
+      }
+    ],
+    "politicas_propostas": {
+      "prioridade": "maior_numero",
+      "decisao_unidade": "terminal_prevalece_sobre_boleto",
+      "empate_incompativel": "revisao_humana",
+      "sem_decisao": "pendente_sem_inclusao",
+      "condicao_indeterminada": "pendente_sem_inclusao",
+      "alerta": "acumular_sem_liberar"
+    },
+    "regras": [
+      {
+        "id": "excluir_unidade_por_boleto_gatilho",
+        "prioridade": 100,
+        "alvo": "unidade",
+        "quando": {
+          "existe_boleto": {
+            "campo": "boleto.valor_original",
+            "operador": "eq",
+            "valor": {"tipo": "dinheiro", "conteudo": "0.01"}
+          }
+        },
+        "acao": "excluir",
+        "motivo_codigo": "GATILHO_SINTETICO_UNIDADE",
+        "fonte_id": "fonte_regra_sintetica"
+      },
+      {
+        "id": "incluir_boleto_por_prazo_explicito",
+        "prioridade": 10,
+        "alvo": "boleto",
+        "quando": {
+          "todas": [
+            {"campo": "boleto.dias_atraso", "operador": "gt", "valor": {"tipo": "inteiro", "conteudo": 30}},
+            {"campo": "boleto.valor_original", "operador": "gt", "valor": {"tipo": "dinheiro", "conteudo": "0.00"}}
+          ]
+        },
+        "acao": "incluir",
+        "motivo_codigo": "PRAZO_SINTETICO_ATINGIDO",
+        "fonte_id": "fonte_regra_sintetica"
+      },
+      {
+        "id": "adiar_boleto_por_prazo_explicito",
+        "prioridade": 10,
+        "alvo": "boleto",
+        "quando": {"campo": "boleto.dias_atraso", "operador": "lte", "valor": {"tipo": "inteiro", "conteudo": 30}},
+        "acao": "adiar",
+        "motivo_codigo": "PRAZO_SINTETICO_NAO_ATINGIDO",
+        "fonte_id": "fonte_regra_sintetica"
+      }
+    ]
+  },
+  "historico_aprovacao": [],
+  "solicitacao_simulacao_exemplo": {
+    "condominio_id": "cond_sintetico",
+    "plano_id": "plano_cond_sintetico_v1",
+    "data_ref": "2026-10-21",
+    "modo": "somente_simulacao",
+    "observacao": "Sem aprovacao: a solicitacao deve ser recusada. Datas e prazos nao sao defaults."
+  }
+}

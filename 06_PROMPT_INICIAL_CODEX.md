@@ -12,7 +12,7 @@ Leia e obedeça os documentos deste repositório nesta ordem:
 6. `05_PENDENCIAS_TESTES_ACEITE.md`
 7. `FONTES_E_IMPORTACAO.md`
 
-A aplicação irá reconhecer formatos variados de relatórios de inadimplência de administradoras de condomínios, extrair dados para um modelo comum, aplicar réguas de cobrança específicas, enriquecer com Cadastro Geral e gerar um Excel de 30 colunas. Deve haver bloqueios automáticos quando existir risco de cobrança incorreta. Um CPF ausente não é bloqueante: fica em branco e gera alerta. CNPJ não pode ocupar o campo CPF.
+A aplicação irá reconhecer formatos variados de relatórios de inadimplência de administradoras de condomínios, extrair dados para um modelo comum, aplicar réguas de cobrança específicas, enriquecer com Cadastro Geral e gerar um Excel de 30 colunas. Deve haver bloqueios automáticos quando existir risco de cobrança incorreta. Documento ausente/inválido não é bloqueante: célula vazia com alerta. A coluna literal CPF aceita CPF ou CNPJ válido como texto; conflitos válidos exigem revisão humana e auditoria.
 
 ## Solicitação: **implemente somente a Fase 1**
 1. Proponha a estrutura modular do projeto, com arquitetura pronta para leitores de centenas de formatos e regras por condomínio; sem assumir um leitor por condomínio.
@@ -27,7 +27,7 @@ A aplicação irá reconhecer formatos variados de relatórios de inadimplência
 ## Restrições inegociáveis
 - Não desenvolver múltiplas fases numa única tarefa.
 - Sem OCR/LLM como única fonte de verdade de valor financeiro.
-- CPF ausente -> célula vazia + alerta; nunca inserir CNPJ no campo CPF.
+- A coluna literal CPF aceita CPF/CNPJ válido como texto; ausente/inválido -> vazio + alerta; nunca inventar dígitos ou substituir tipos sem vínculo ao titular; conflito válido exige revisão humana auditada.
 - A arquitetura deverá permitir JSON -> PostgreSQL sem reescrever os casos de uso.
 - Não logar senhas/tokens nem expor dados pessoais.
 - Dados de exemplo reais (PDFs e régua) serão disponibilizados separadamente em ambiente autorizado, sem commit.

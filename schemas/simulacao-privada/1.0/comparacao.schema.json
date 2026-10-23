@@ -1,0 +1,499 @@
+{
+  "$defs": {
+    "DivergenciaSimulacao": {
+      "additionalProperties": false,
+      "properties": {
+        "boletos_ids": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Boletos Ids",
+          "type": "array"
+        },
+        "categoria": {
+          "enum": [
+            "regras",
+            "dados",
+            "formatacao",
+            "nao_avaliavel"
+          ],
+          "title": "Categoria",
+          "type": "string"
+        },
+        "coluna": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Coluna"
+        },
+        "esperado_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Esperado Hash"
+        },
+        "exige_revisao_humana": {
+          "const": true,
+          "default": true,
+          "title": "Exige Revisao Humana",
+          "type": "boolean"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "motivo_codigo": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Motivo Codigo",
+          "type": "string"
+        },
+        "observado_hash": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observado Hash"
+        },
+        "origens": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Origem"
+          },
+          "title": "Origens",
+          "type": "array"
+        },
+        "unidade_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unidade Id"
+        }
+      },
+      "required": [
+        "categoria",
+        "motivo_codigo"
+      ],
+      "title": "DivergenciaSimulacao",
+      "type": "object"
+    },
+    "MapeamentoReferencia": {
+      "additionalProperties": false,
+      "properties": {
+        "evidencia_revisao_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Evidencia Revisao Id",
+          "type": "string"
+        },
+        "fundamento": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Fundamento",
+          "type": "string"
+        },
+        "referencia_hash": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Referencia Hash",
+          "type": "string"
+        },
+        "referencia_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Referencia Id",
+          "type": "string"
+        },
+        "vinculos": {
+          "items": {
+            "$ref": "#/$defs/VinculoReferencia"
+          },
+          "minItems": 1,
+          "title": "Vinculos",
+          "type": "array"
+        }
+      },
+      "required": [
+        "referencia_id",
+        "referencia_hash",
+        "evidencia_revisao_id",
+        "fundamento",
+        "vinculos"
+      ],
+      "title": "MapeamentoReferencia",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "Template": {
+      "additionalProperties": false,
+      "properties": {
+        "colunas_logicas": {
+          "default": [
+            "NM_CEDENTE_CEDENTE",
+            "CEDENTE",
+            "CPF",
+            "NOME",
+            "ENDERECO",
+            "NUMERO",
+            "COMPLEMENTO",
+            "CEP",
+            "BAIRRO",
+            "CIDADE",
+            "UF",
+            "DDD1",
+            "FONE1",
+            "DDD2",
+            "FONE2",
+            "DDD3",
+            "FONE3",
+            "DDD4",
+            "FONE4",
+            "DDD5",
+            "FONE5",
+            "EMAIL1",
+            "EMAIL2",
+            "EMAIL3",
+            "NM_CONTRATO_CEDENTE",
+            "PRODUTO_CEDENTE",
+            "NM_DIVIDA_CEDENTE",
+            "NU_PARCELA",
+            "VENCIMENTO",
+            "VL_PARCELA"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "title": "Colunas Logicas",
+          "type": "array"
+        },
+        "espaco_final_coluna_27": {
+          "default": true,
+          "title": "Espaco Final Coluna 27",
+          "type": "boolean"
+        },
+        "id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "nome": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        },
+        "nome_aba": {
+          "const": "Dados",
+          "default": "Dados",
+          "title": "Nome Aba",
+          "type": "string"
+        },
+        "versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Versao",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "nome",
+        "versao"
+      ],
+      "title": "Template",
+      "type": "object"
+    },
+    "VinculoReferencia": {
+      "additionalProperties": false,
+      "properties": {
+        "boletos_ids": {
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Boletos Ids",
+          "type": "array"
+        },
+        "criterio_valor": {
+          "const": "soma_originais_para_comparacao",
+          "default": "soma_originais_para_comparacao",
+          "title": "Criterio Valor",
+          "type": "string"
+        },
+        "linha": {
+          "minimum": 2,
+          "title": "Linha",
+          "type": "integer"
+        },
+        "pessoa_id": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pessoa Id"
+        },
+        "tipo": {
+          "enum": [
+            "divida",
+            "cadastral"
+          ],
+          "title": "Tipo",
+          "type": "string"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "linha",
+        "unidade_id",
+        "tipo",
+        "boletos_ids"
+      ],
+      "title": "VinculoReferencia",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:simulacao-privada:1.0:comparacao",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ambiente": {
+      "enum": [
+        "sintetico",
+        "privado"
+      ],
+      "title": "Ambiente",
+      "type": "string"
+    },
+    "autoriza_cobranca": {
+      "const": false,
+      "default": false,
+      "title": "Autoriza Cobranca",
+      "type": "boolean"
+    },
+    "cobertura_referencia_completa": {
+      "title": "Cobertura Referencia Completa",
+      "type": "boolean"
+    },
+    "colunas": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 30,
+      "minItems": 30,
+      "title": "Colunas",
+      "type": "array"
+    },
+    "colunas_nao_avaliadas": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Colunas Nao Avaliadas",
+      "type": "array"
+    },
+    "comparador_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Comparador Hash",
+      "type": "string"
+    },
+    "comparador_versao": {
+      "const": "4.3A.0",
+      "default": "4.3A.0",
+      "title": "Comparador Versao",
+      "type": "string"
+    },
+    "condominio_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Id",
+      "type": "string"
+    },
+    "divergencias": {
+      "items": {
+        "$ref": "#/$defs/DivergenciaSimulacao"
+      },
+      "title": "Divergencias",
+      "type": "array"
+    },
+    "execucao_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Execucao Hash",
+      "type": "string"
+    },
+    "execucao_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Execucao Id",
+      "type": "string"
+    },
+    "id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "mapeamento": {
+      "$ref": "#/$defs/MapeamentoReferencia"
+    },
+    "permite_exportacao_operacional": {
+      "const": false,
+      "default": false,
+      "title": "Permite Exportacao Operacional",
+      "type": "boolean"
+    },
+    "referencia_e_gabarito_absoluto": {
+      "const": false,
+      "default": false,
+      "title": "Referencia E Gabarito Absoluto",
+      "type": "boolean"
+    },
+    "schema_version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "template": {
+      "$ref": "#/$defs/Template"
+    }
+  },
+  "required": [
+    "id",
+    "condominio_id",
+    "ambiente",
+    "execucao_id",
+    "execucao_hash",
+    "comparador_hash",
+    "template",
+    "mapeamento",
+    "divergencias",
+    "colunas",
+    "colunas_nao_avaliadas",
+    "cobertura_referencia_completa"
+  ],
+  "title": "ComparacaoPrivada",
+  "type": "object"
+}

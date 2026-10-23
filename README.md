@@ -1,8 +1,208 @@
+# Conversor Inteligente de Inadimplência — MVP local
+
+Aplicação web para **upload → reconhecimento → leitura → análise A/B → consulta → XLSX de teste**.
+Reutiliza os leitores Habita/FL/Cadastro, o núcleo determinístico 4.2 e o escritor
+universal existente. **Desenvolvimento e testes privados; não homologado para produção.**
+A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
+puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
+
+## Pausa para validação do ambiente real
+
+O responsável autorizou o commit, push e merge desta entrega em 23/10/2026.
+O desenvolvimento de novas funcionalidades fica temporariamente interrompido
+para testar o ambiente real com o MVP existente. Essa publicação não aprova
+planos, não remove bloqueios nem libera exportação operacional ou produção.
+Documentos e resultados privados permanecem fora do Git.
+
+## Iniciar backend e frontend
+
+Python 3.12 ou superior e Git instalados. Na pasta do repositório:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-dev.lock
+python -m pip install --no-build-isolation --no-deps -e .
+python -m conversor.web --private-dir /workspace/validacao-privada-fase3/mvp
+```
+
+No PowerShell, use `.venv\Scripts\Activate.ps1` e informe em `--private-dir`
+uma pasta privada local **fora do checkout Git**. O caminho `/workspace/...`
+corresponde ao Codex Cloud. Não publique a porta sem proteção de rede/TLS adequada;
+o padrão é somente `127.0.0.1`.
+
+Abra **http://127.0.0.1:8000**. Backend e frontend são servidos juntos; não é
+necessário Node, npm ou outro servidor de frontend. O processo fica ativo até
+Ctrl+C. Abra `acesso-local.txt`, dentro da pasta privada, em um editor local e
+cole a chave na tela de acesso. Não envie essa chave para logs, commits ou tickets.
+Ela é gerada automaticamente, arquivo 0600 em diretório 0700. Sessões duram oito
+horas e isolam os resultados entre navegadores. Acesso/download sempre autenticados.
+
+## Utilizar
+
+1. Para uma primeira demonstração, clique **Experimentar com dados sintéticos**.
+   O exemplo usa explicitamente 21/10/2026 e modo B se ainda não selecionados:
+   duas unidades, três cotas, continuidade entre páginas, duas dívidas elegíveis
+   e um cadastro adicional. Compare escolhendo o modo A e execute novamente.
+2. Para arquivos próprios, selecione reconhecimento automático ou o condomínio,
+   envie o PDF e, se necessário, o Cadastro Geral FL. Selecione a referência
+   explícita e A/B. Pode anexar o Excel de referência; ele nunca alimenta a extração.
+3. Clique **Analisar documentos**. Acompanhe a etapa real de processamento;
+   filtre situação, unidade ou cota; abra **Detalhes** para composição, motivo,
+   competência e páginas/linhas de origem. Auditoria técnica pode ser expandida.
+4. **Baixar XLSX de teste** aparece somente havendo registros sem bloqueios.
+   O arquivo usa aba `Dados`, 30 colunas na ordem original (inclusive o espaço
+   físico histórico no cabeçalho AA), CPF/CNPJ textual com zeros e Y:AD vazias
+   nos cadastros. Relatório de inconsistências é um JSON separado.
+5. **Exportação operacional permanece indisponível**, inclusive por chamada direta
+   à API. Nenhum arquivo de teste deve ser importado no easyCollector. Não há
+   integração, envio ao CRM ou execução automática de cobrança.
+
+Neste ambiente, os botões **Fontes já autorizadas** permitem usar os cinco
+originais privados sem reenviá-los. Seus tamanhos/hashes, inventários históricos
+(904 registros TREE e 205 FL) e os 132 vínculos financeiros técnicos anteriores
+são conferidos privadamente, preservando todas as evidências. Arquivos com
+integridade divergente não são processados por esse caminho.
+
+O catálogo privado `fontes_autorizadas.json` fica junto da chave; não é um catálogo
+de planos aprovados. Uma instalação nova não possui esses documentos. Upload sem
+histórico externo íntegro/vinculado continua sendo extraído e exibido, mas recebe
+revisão global e não libera XLSX. Isso evita perder bloqueios já conhecidos ao
+omitir Cadastro ou carregar parcialmente um pacote. O exemplo fictício funciona
+sem catálogo privado. Não copie os originais ou esse catálogo para o Git.
+
+## Limites explícitos do MVP
+
+- Condições configuradas por condomínio em `src/conversor/web/perfis.json`, somente
+  para diagnóstico: TREE centavo/A/AJ/J por cota (prioridade 1), prazo >30 (0);
+  PLAZA apenas prazo >30 (0); vigência de negócio inclusiva 2026-09-10, fim aberto.
+  A/B é universal, sem filtro judicial/garantidora e sem configuração numérica na UI.
+- A autorização mais recente permite diagnóstico real, **não** cria aprovação ou
+  atesto. O fluxo autorizativo anterior e seus contratos não foram relaxados.
+  O novo caso de uso chama as funções **puras diagnósticas** do mesmo motor e
+  grava `autoriza_cobranca=false`, `permite_exportacao_operacional=false`.
+- Habita/VG retém todo o lote. Titularidades/documentos FL e documento inválido
+  continuam em revisão. CPF/CNPJ ausente gera alerta e fica vazio.
+- Os identificadores de origem são usados nos campos de cedente/contrato/dívida
+  **do arquivo de teste**. Codificação operacional desses campos e homologação
+  integral easyCollector permanecem pendentes. Competência ausente não é inferida.
+- Comparação verifica vínculo inequívoco e valor original; separa seleção de regras,
+  dados e representação. Os vínculos técnicos históricos só são usados para os
+  hashes exatos das fontes/referências. Sem vínculo, retorna não avaliável; não
+  infere torre numérica a partir de letra nem usa nomes para escolher titulares.
+- Armazenamento fica em `--private-dir/processamentos/<id>/`: PDFs recebidos,
+  referência, canônico, auditoria e eventual XLSX. Nada disso é estático/público.
+  Não há limpeza automática nem histórico de sessões na UI após reiniciar o
+  servidor; retenção e exclusão dos resultados devem ser administradas localmente.
+- Dois trabalhadores e até quatro trabalhos em curso; limite de 20 MB por arquivo.
+  OCR, formatos adicionais, multiusuário de produção e importação no CRM não fazem
+  parte desta entrega. A sessão única local não substitui um IAM de produção.
+- Ainda pendem validações formais da aplicabilidade anterior à fonte de 20/10/2026
+  e da redação TREE unidade/cota, atestos e aprovação dos planos. Nenhum bloqueio
+  é removido por diagnóstico ou por geração do arquivo de teste.
+
+## Verificar o fluxo
+
+```bash
+python -m pytest -q tests/web/test_mvp.py
+python -m pytest -q
+python -m pytest -q tests/homologacao/pacote_suite.py tests/homologacao/revisao_suite.py tests/homologacao/leitores_fase3_suite.py
+```
+
+Smoke test opcional no navegador, somente com dados fictícios (servidor já ativo):
+
+```bash
+python -m pip install playwright==1.56.0
+python scripts/verificar_interface_mvp.py --chave-arquivo /workspace/validacao-privada-fase3/mvp/acesso-local.txt --chromium /usr/bin/chromium
+```
+
+O teste confere login, filtro, detalhes, download, bloqueio operacional e layout
+móvel; grava capturas sintéticas em `/tmp`, sem registrar a chave. Se não houver
+Chromium instalado, instale um navegador compatível no seu ambiente.
+
+## Resultado verificado neste ambiente — 22/10/2026
+
+Referência do diagnóstico real: **2026-10-22**, modo B, selecionados explicitamente.
+
+| Conjunto | Leitura | Confronto financeiro | Retenções e arquivo de teste |
+|---|---|---|---|
+| TREE / Habita | 112 unidades, 769 cotas; valores/componentes/vencimentos preservados | 63 valores originais coincidentes com os vínculos técnicos da referência | Todas as 769 cotas retidas por bloqueio do lote; sem XLSX |
+| PLAZA / FL + Cadastro | 50 unidades, 115 cotas; cadastro complementar sem incluir as outras unidades | 69 valores originais coincidentes | 34 unidades em revisão (99 cotas retidas); 16 cotas não elegíveis nas demais; modo B gera **16 linhas exclusivamente cadastrais**, Y:AD vazias |
+
+As condições financeiras puras indicam 138 cotas TREE e 69 FL potencialmente
+selecionáveis nessa referência, **antes dos bloqueios**. Nenhuma é liberada como
+dívida operacional. A divergência entre seleção e referência não autoriza forçar
+os dados ou alterar regras. A referência TREE tem uma anotação extra em AE,
+registrada como formatação; o XLSX de saída continua estritamente A:AD.
+A comparação cadastral/formatos e a ausência de vínculos de algumas linhas são
+ressalvas explícitas; as 132 correspondências monetárias não homologam o Excel.
+
+Regressão: **1.146 testes aprovados**, 1.086 regulares (incluindo 14 novos testes
+HTTP/integração essenciais) + 60 explícitos de homologação sintética; oito
+verificações de schemas passaram. Smoke test Chromium passou em login, filtro,
+detalhes, download, bloqueio operacional e viewport móvel, sem erro JavaScript.
+Os originais, históricos, aprovações e planos anteriores não foram modificados.
+A publicação desta entrega foi autorizada posteriormente, conforme a pausa acima.
+
+---
+
+## Histórico de desenvolvimento e decisões anteriores
+
 # Dossiê de transferência ao Codex — Conversor Inteligente de Inadimplência
 
-**Status:** Fases 1 e 2 implementadas. Laboratório adicional de extração, regras e Excel testado com o pacote sintético fornecido; nenhum formato real homologado.
-**Última fase concluída:** Fase 2. As Fases 3–5 têm implementações parciais de laboratório; a próxima fase pendente é a Fase 3. Consulte a [matriz de progresso e cobertura dos 275 testes](docs/DIAGNOSTICO_PROGRESSO.md).
-**Atualização:** 21/10/2026.
+**Verificação técnica final de aprovações:** [tabela única TREE/PLAZA e pendências humanas](docs/preparacao_4_3B_2B/VERIFICACAO_FINAL_E_DECISOES_HUMANAS.md).
+Prioridade 1 > 0 demonstrada em testes sintéticos puros, sem aprovar a proposta.
+Somente metadados de fontes reais foram consultados. Vigência, hash aplicável
+da régua, atestos e aprovação formal continuam pendentes; sem simulação real.
+
+**Etapa atual: preparação de aprovações para o 4.3B.2B, somente documental.**
+O responsável aceitou tecnicamente o 4.3B.2A, sujeito à revisão posterior do
+código. Consulte as [fichas consolidadas, prioridades propostas, vigência,
+cinco atestos e checklist](docs/preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md).
+Nenhuma decisão humana preenchida, plano real aprovado/ativado ou simulação real
+executada nesta preparação. Fase 5 não iniciada; sem homologação de produção.
+
+**Status:** Fases 1 e 2 implementadas; Fase 3 tecnicamente encerrada por autorização do responsável, com ressalvas e bloqueios operacionais preservados. Sem homologação para produção.
+**Última fase concluída tecnicamente:** Fase 3 — Leitores. **458 testes aprovados**, 884 boletos reconciliados e 132 correspondências financeiras. Veja o [aceite técnico e decisão de encerramento](docs/ACEITE_TECNICO_FASE3.md).
+**Fase 4 — incremento 4.3B.2A implementado exclusivamente com dados sintéticos:** integração entre inventário reconciliado, aprovação de planos, motor existente, decisões A/B e persistência auditável, sem XLSX operacional. Veja [implementação, demonstração e limites](docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md). O [4.3B.1](docs/INCREMENTO_4_3B_1_TREE_SINTETICO.md) foi aceito tecnicamente e registrado em commit próprio. Atestos humanos e aprovação dos planos reais continuam pendentes. Branch `feature/fase-4-motor-cobranca`; sem início do 4.3B.2B ou da Fase 5.
+**Arquitetura da Fase 4:** [modelo JSON, decisões e incrementos](docs/ARQUITETURA_MOTOR_FASE4.md). O laboratório sintético anterior não constitui motor geral aprovado nem homologação do Excel.
+**Correção do 4.3A:** aprovada tecnicamente pelo responsável; colisões FL reconciliadas com mapa completo do legado e assinatura técnica privada. Bloqueios operacionais e atesto humano pendente preservados. Veja [causa comprovada, contratos e revalidação FL/Habita](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
+**Regressão atual:** 1.132 testes aprovados (1.111 anteriores + 21 novos puros de prioridade 1/0), com schemas históricos preservados. São 1.072 testes regulares e 60 explícitos; oito geradores de schemas conferidos. Não representam aprovação das prioridades ou homologação de planos reais.
+
+**Requisitos de negócio revisados, somente documentação:** consulte a
+[matriz atual dos oito IDs](docs/MATRIZ_NEGOCIO_PRELIMINAR_8_REGRAS.md), as
+[respostas Q01–Q26](docs/DECISOES_PENDENTES_HOMOLOGACAO_REGRAS.md) e a
+[proposta não executável](examples/fase4/proposta_configuracao_4_3B.revisada.json).
+Centavo exclui só cota/componentes; prazo de 30 é estrito em dias corridos;
+judicial/garantidora não criam filtros adicionais; cadastro universal A/B é
+escolha do processamento. A implementação sintética está no 4.3B.1; integração
+real, planos formais e atestos continuam pendentes. Exemplos históricos anteriores
+não representam essas novas decisões; veja
+[compatibilidade e limites](docs/ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md).
+
+**Decisão TREE confirmada:** centavo, A, AJ ou J excluem somente a cota inteira e
+componentes, independentemente do vencimento; outras cotas seguem avaliação
+normal. `Valor` é referência do boleto; validar seu mapeamento e os campos próprios
+dos apontamentos antes da configuração técnica. Dia 31 satisfaz o prazo TREE,
+sem anular exclusões/bloqueios. Atualização documental, sem plano aprovado,
+assinado ou ativado e sem execução de regras reais.
+
+**Validação técnica preparatória TREE:** o
+[mapeamento dos valores e apontamentos](docs/MAPEAMENTO_TECNICO_TREE_PREPARATORIO_4_3B.md)
+foi conferido no PDF privado: original integral em `Boleto.composicao.total_original`,
+encargos separados e A/AJ/J associados por campo próprio ao boleto. Nenhuma regra
+real foi executada; bloqueio Habita/VG mantido. Novos testes usam somente dados
+inventados. Atestos, planos formais e autorização para o 4.3B.2 continuam pendentes;
+a autorização posterior do 4.3B.1 limita-se a testes sintéticos.
+
+**Apontamentos e fichas TREE:** [cobertura técnica exaustiva](docs/COBERTURA_APONTAMENTOS_FICHAS_TREE_4_3B.md)
+concluída nos 769 boletos: 628 campos vazios validados, 141 preenchidos, zero
+inconclusivos, incluindo 33 continuidades. Cinco fichas individuais e
+[resumo de atestos](docs/RESUMO_ATESTOS_DECISOES_4_3B.md) preparados para decisão;
+sem cobertura operacional emitida, atesto, assinatura ou ativação de plano real.
+**Correções dos layouts reais:** [resultado antes/depois, testes e pendências](docs/CORRECOES_LEITORES_REAIS_FASE3.md). Os bloqueios permanecem obrigatórios.
+**Atualização documental:** CPF/CNPJ válidos na coluna literal `CPF`, como texto; compatibilidade confirmada pelo responsável no CRM easyCollector. Conflitos documentais exigem revisão humana. Veja [contratos, auditoria e testes](docs/DOCUMENTOS_CPF_CNPJ.md). A homologação integral permanece pendente.
+**Atualização:** 22/10/2026 (America/Sao_Paulo).
 **Idioma do projeto:** português brasileiro.
 
 ## Objetivo
