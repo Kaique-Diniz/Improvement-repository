@@ -19,7 +19,7 @@ from pydantic import Field
 
 from conversor.adapters.document_probe import SondadorLocal
 from conversor.adapters.private_json import escrever_json
-from conversor.application.cadastro import cruzar_cadastro
+from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
 from conversor.domain.base import Data, Modelo
@@ -247,6 +247,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     progresso('Extraindo unidades, cotas e composições')
     lote, ctx = ler(conteudo, perfil, codigo, leitor, 'inadimplencia')
     fontes = [{'papel': 'inadimplencia', 'sha256': sha256(conteudo).hexdigest(), 'leitor': leitor + '@1'}]
+    cad = None
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True)
@@ -265,13 +266,16 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
+    reavaliacoes = reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     entrada = EntradaSimulacao(lote=lote, fatos=(), ocorrencias_anteriores=(), coberturas_apontamentos=coberturas)
     config = configurar(perfil, ctx.formato_id)
     progresso('Avaliando condições e bloqueios no motor existente')
     pessoas = {p.unidade_id: p for p in lote.pessoas}
     unidades = {u.id: u for u in lote.unidades}
     identidades = set(unidades) | {b.id for b in lote.boletos} | {p.id for p in lote.pessoas}
-    globais = [o for o in ocorrencias if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
+    efetivas = [o for o in ocorrencias if o.id not in reavaliadas]
+    globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
     fora_vigencia = pedido.data_ref < date.fromisoformat(perfil['vigente_de'])
     decisoes, linhas, linhas_info = [], [], []
     for b in lote.boletos:
@@ -280,20 +284,23 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         resolucao = resolver_candidatos((), avaliacoes)
         pessoa = pessoas.get(u.id)
         documento = resolver_documento(pessoa) if pessoa else None
-        problemas = [o for o in ocorrencias if o.bloqueante and
+        problemas = [o for o in efetivas if o.bloqueante and
                      (o in globais or o.registro_id in {u.id, b.id, pessoa.id if pessoa else None})]
         motivos = [o.codigo for o in problemas]
         if fora_vigencia:
             motivos.append('REFERENCIA_ANTERIOR_A_VIGENCIA_CONFIGURADA')
         if pessoa is None or not pessoa.nome.strip():
             motivos.append('TITULAR_AUSENTE')
-        if documento and ('DOCUMENTO_INVALIDO' in documento.codigos or documento.bloqueante):
+        if documento and documento.bloqueante:
             motivos.extend(documento.codigos)
         if b.composicao.total_original <= 0:
             motivos.append('VALOR_ORIGINAL_NAO_POSITIVO')
         status = 'revisao' if motivos or resolucao.revisao_humana else (
             'elegivel' if resolucao.situacao == 'elegivel_na_simulacao' else 'nao_elegivel')
         regras = [r for r in avaliacoes if r.passo.resultado == 'verdadeiro']
+        pendencias_documentais = sorted(set(
+            (list(documento.codigos) if documento and documento.bloqueante else []) +
+            [o.codigo for o in problemas if o.codigo in ('DOCUMENTOS_CONFLITANTES', 'DOCUMENTO_TITULAR_NAO_CONFIRMADO')]))
         decisoes.append({'id': b.id, 'unidade_id': u.id, 'condominio': perfil['nome'],
             'bloco': u.bloco_original, 'unidade': u.unidade_original, 'cota': b.identificador,
             'vencimento': b.vencimento.isoformat(), 'competencia': b.competencia,
@@ -305,6 +312,14 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'regras_avaliadas': [r.model_dump(mode='json') for r in avaliacoes],
             'componentes': [i.model_dump(mode='json') for i in b.composicao.itens],
             'documento': {'estado': list(documento.codigos) if documento else ['TITULAR_AUSENTE']},
+            'contato': {'documento': ('revisao' if pendencias_documentais else
+                         'disponivel' if documento.valor else 'invalido' if 'DOCUMENTO_INVALIDO' in documento.codigos else 'ausente')
+                         if documento else 'ausente',
+                        'telefone': bool(pessoa and pessoa.contato.telefones),
+                        'email': bool(pessoa and pessoa.contato.emails)},
+            'pendencias_documentais': pendencias_documentais,
+            'alertas_cadastrais': list(documento.codigos) if documento and not documento.bloqueante else [],
+            'impedimentos_exportacao_operacional': sorted(set(motivos + ['EXPORTACAO_OPERACIONAL_INDISPONIVEL'])),
             'bloqueios': motivos})
     # Projeção A/B por unidade: nenhuma cota excluída derruba as outras.
     for u in lote.unidades:
@@ -348,6 +363,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'aprovacao_formal_plano': False, 'autoriza_cobranca': False,
         'permite_exportacao_operacional': False, 'fontes': fontes, 'resumo': resumo,
         'registros_historicos_carregados': len(historico or ()),
+        'politica_cadastral': 'cadastro_por_unidade@1',
+        'reavaliacoes_historicas': reavaliacoes,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
             'Arquivo de teste usa identificadores de origem para cedente/contrato/dívida; codificação operacional do easyCollector ainda não homologada.',
             'Competências ausentes permanecem ausentes; nenhum dado pessoal é inventado.'],

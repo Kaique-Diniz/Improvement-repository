@@ -9,8 +9,8 @@ Arquivo: `TEMPLATE - PLAZA_MAYOR_IPIRANGA_outubro_2026(1).xlsx`. Aba: **Dados**.
 |---:|---|---|---|
 | 1 | `NM_CEDENTE_CEDENTE` | Nome/código do cedente (perfil/administradora) | Obrigatório existir; conteúdo conforme perfil |
 | 2 | `CEDENTE` | Identificador do cliente/cedente conforme perfil | Obrigatório existir; código não pode ser inventado |
-| 3 | `CPF` | CPF válido (11 dígitos) ou CNPJ válido (14), associado ao titular | Texto obrigatório com zeros; ausente/inválido vazio + alerta; conflito exige revisão |
-| 4 | `NOME` | Nome do titular/cliente | Nome obtido da origem/cadastro |
+| 3 | `CPF` | CPF válido (11 dígitos) ou CNPJ válido (14) do registro da unidade | Opcional, sempre texto com zeros; ausente/inválido vazio + aviso/alerta; conflito exige revisão |
+| 4 | `NOME` | Nome(s) apresentados no registro da unidade | Preservar todos os nomes da fonte, sem criar linhas por nome |
 | 5 | `ENDERECO` | Logradouro | Texto cadastral |
 | 6 | `NUMERO` | Número do endereço | Texto para preservar caracteres |
 | 7 | `COMPLEMENTO` | Bloco/unidade/código no padrão do perfil | Texto conforme codificador do condomínio |
@@ -44,7 +44,7 @@ O arquivo real possui **espaço final** no cabeçalho `NM_DIVIDA_CEDENTE ` da co
 ## Contratos de preenchimento
 - A planilha sempre possui os **30 campos em mesma ordem** e a aba `Dados`.
 - Campos de cadastro sem valor conhecido permanecem vazios, sem valores fabricados.
-- `CPF` permanece o nome literal da coluna C: aceita CPF ou CNPJ válido, com dígitos verificadores, associado ao titular. Ausência/invalidade -> vazio + alerta. Conflitos entre documentos válidos ou vínculo não confirmado impedem resolução/exportação automática do cadastro e exigem revisão humana com auditoria das fontes.
+- `CPF` permanece o nome literal da coluna C: aceita CPF ou CNPJ válido do registro da unidade, sem exigir associação individual quando houver vários nomes. Ausência/invalidade -> vazio + aviso informativo/alerta, sem bloqueio. Documentos válidos conflitantes ou divergências reais entre fontes exigem revisão com auditoria; múltiplos nomes isoladamente não são conflito.
 - CPF e CNPJ são sempre gravados como texto literal, formato `@`, nunca números. CEP, telefone, DDD, CEDENTE e códigos com zeros também preservam representação textual. Nunca completar documentos inválidos por inferência.
 - `VENCIMENTO`: data reconhecível/importável no Excel; confirmar convenção de serial e formato com destino.
 - `VL_PARCELA`: número monetário com precisão de centavos, não string formatada com `R$`.

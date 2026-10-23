@@ -1,9 +1,10 @@
-"""Cadastro FL W045A por colunas, sem escolher titular em situações ambíguas."""
+"""Cadastro FL W045A por unidade; nomes e documento não atribuem titularidade."""
 import json
 import re
 
 from conversor.domain.canonical import EvidenciaDocumento, Pessoa, documento_de_texto
 from conversor.domain.recognition import normalizar_assinatura
+from conversor.domain.documents import CONTATO_UNIDADE
 from .real_support import AcervoReal, PDFReal, falhar
 from .contact_segments import segmentar_emails, segmentar_endereco, segmentar_telefones
 
@@ -60,13 +61,10 @@ class LeitorCadastroFLReal:
             email_linhas=[l for c,l,x,y in r['campos']if c=='email']
             emails,pendentes=segmentar_emails([l.texto for l in email_linhas])
             if pendentes:acc.ressalva('EMAIL_NAO_SEGMENTADO',email_linhas[0],unidade=u,valores=pendentes)
-            tipos=[l.texto for c,l,x,y in r['campos']if c=='tipo']
-            multiplos=len({(d.tipo,d.valor)for d,_ in docs})>1 or len(tipos)>1 or any('/'in n for n in nomes)
-            evidencias=tuple(EvidenciaDocumento(documento=d,origem=o,titular_id=None if multiplos else p.id)for d,o in docs)
+            evidencias=tuple(EvidenciaDocumento(documento=d,origem=o)for d,o in docs)
             p=Pessoa.model_validate(p.model_dump()|{'documento':None,'evidencias_documentais':evidencias,
-                'relacao_unidade':'titular_nao_resolvido'if multiplos else'titular_informado_na_fonte'})
+                'relacao_unidade':CONTATO_UNIDADE})
             acc.pessoas[u.id]=p
-            if multiplos:acc.ressalva('TITULAR_MULTIPLO_OU_NAO_SEGMENTADO',r['linha'],unidade=u,critico=True,valores=nomes)
             endereco,pendencia=segmentar_endereco([l.texto for l in enderecos])
             if pendencia:
                 acc.ressalva(pendencia,enderecos[0]if enderecos else r['linha'],unidade=u,

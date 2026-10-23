@@ -328,7 +328,9 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             raise HTTPException(409, 'PROCESSAMENTO_NAO_CONCLUIDO')
         r = job['resultado']
         return JSONResponse({'resumo': r['resumo'], 'avisos': r['avisos'], 'comparacao': r['comparacao'],
-            'ocorrencias': r['ocorrencias'], 'decisoes': r['decisoes'], 'autoriza_cobranca': False},
+            'ocorrencias': r['ocorrencias'], 'decisoes': r['decisoes'],
+            'politica_cadastral': r['politica_cadastral'], 'reavaliacoes_historicas': r['reavaliacoes_historicas'],
+            'autoriza_cobranca': False, 'permite_exportacao_operacional': False},
             headers={'Content-Disposition': f'attachment; filename="inconsistencias_{id_[:8]}.json"'})
 
     @app.get('/api/processamentos/{id_}/operacional.xlsx')

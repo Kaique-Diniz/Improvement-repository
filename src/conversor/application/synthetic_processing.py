@@ -5,7 +5,6 @@ from pydantic import ValidationError
 
 from conversor.domain.billing_evaluation import EntradaSimulacao, SolicitacaoSimulacao
 from conversor.domain.canonical import Ocorrencia
-from conversor.domain.documents import resolver_documento
 from conversor.domain.synthetic_processing import (
     CandidatoCadastroSimulado, ProjecaoProcessamentoSintetico,
     RetencaoCadastroSimulado, SolicitacaoProcessamentoSintetico,
@@ -19,8 +18,8 @@ from .ports import ErroAplicacao
 
 
 def _entrada_com_revisoes(entrada, processamento_id):
-    # Política restrita ao incremento 4.3B.1, confirmada pelo responsável:
-    # CPF/CNPJ inválido exige revisão; ausente continua somente alerta.
+    # Identidade do registro é necessária; CPF/CNPJ é contato opcional.
+    # Invalidade/ausência documental geram alertas no resultado da leitura.
     extras = []
     for unidade in entrada.lote.unidades:
         titulares = [p for p in entrada.lote.pessoas if p.unidade_id == unidade.id]
@@ -31,10 +30,6 @@ def _entrada_com_revisoes(entrada, processamento_id):
             pessoa = titulares[0]
             if not pessoa.nome.strip():
                 problemas.append(('NOME_TITULAR_AUSENTE_43B1', pessoa.origem, ()))
-            documento = resolver_documento(pessoa)
-            if 'DOCUMENTO_INVALIDO' in documento.codigos:
-                problemas.append(('DOCUMENTO_INVALIDO_REQUER_REVISAO_43B1',
-                                  pessoa.documento_origem or pessoa.origem, documento.evidencias))
         for codigo, origem, evidencias in problemas:
             identidade = sha256(bytes_canonicos([processamento_id, unidade.id, codigo])).hexdigest()
             extras.append(Ocorrencia(id='revisao_sintetica:' + identidade,

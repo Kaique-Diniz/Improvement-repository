@@ -4,6 +4,8 @@ from pydantic import Field
 from .base import Modelo
 from .canonical import EvidenciaDocumento, Pessoa, documento_validado
 
+CONTATO_UNIDADE = 'contato_unidade'
+
 
 class ResolucaoDocumento(Modelo):
     valor: str = Field(pattern=r"^(?:[0-9]{11}|[0-9]{14})?$", repr=False,
@@ -17,7 +19,7 @@ def evidencias_documento(pessoa: Pessoa) -> tuple[EvidenciaDocumento, ...]:
     fontes = list(pessoa.evidencias_documentais)
     if pessoa.documento is not None:
         principal = EvidenciaDocumento(documento=pessoa.documento, origem=pessoa.documento_origem or pessoa.origem,
-                                      titular_id=pessoa.id)
+                                      titular_id=None if pessoa.relacao_unidade == CONTATO_UNIDADE else pessoa.id)
         if principal not in fontes:
             fontes.append(principal)
     return tuple(fontes)
@@ -33,7 +35,11 @@ def resolver_documento(pessoa: Pessoa) -> ResolucaoDocumento:
     if any(not valor for _, valor in validos):
         codigos.append("DOCUMENTO_INVALIDO")
     conflito = len(unicos) > 1
-    associacao_pendente = any(valor and f.titular_id != pessoa.id for f, valor in validos)
+    # Cadastro por unidade não atribui o documento a nenhum dos nomes. O vínculo
+    # é o registro canônico da unidade, conferido no cruzamento das fontes.
+    associacao_pendente = any(valor and f.titular_id != pessoa.id and not (
+        pessoa.relacao_unidade == CONTATO_UNIDADE and f.titular_id is None)
+        for f, valor in validos)
     if conflito:
         codigos.append("DOCUMENTOS_CONFLITANTES")
     if associacao_pendente:

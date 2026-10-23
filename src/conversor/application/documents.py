@@ -18,7 +18,8 @@ def ocorrencias_documentais(pessoa: Pessoa, *, processamento_id: str) -> tuple[O
         legado = Ocorrencia(
             id=id_documental_legado(processamento_id=processamento_id, unidade_id=pessoa.unidade_id, codigo=codigo),
             processamento_id=processamento_id, codigo=codigo,
-            gravidade='critico' if codigo in ('DOCUMENTOS_CONFLITANTES', 'DOCUMENTO_TITULAR_NAO_CONFIRMADO') else 'alerta',
+            gravidade=('critico' if codigo in ('DOCUMENTOS_CONFLITANTES', 'DOCUMENTO_TITULAR_NAO_CONFIRMADO')
+                       else 'informativo' if codigo == 'DOCUMENTO_AUSENTE' else 'alerta'),
             escopo='registro', registro_id=pessoa.unidade_id, origem=pessoa.documento_origem or pessoa.origem,
             evidencias_documentais=resolucao.evidencias)
         conteudo = {'identificacao_versao': 'documento-2.0', 'pessoa_id': pessoa.id,

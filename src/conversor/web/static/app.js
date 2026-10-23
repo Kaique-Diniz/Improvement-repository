@@ -1,5 +1,6 @@
 const $ = id => document.getElementById(id);
 let atual = null, aguardando = false;
+const financeiro = {elegivel_na_simulacao:'Elegível por regra',excluido:'Não elegível por regra',pendente_revisao:'Indeterminada',bloqueado:'Bloqueada'};
 const nomes = {elegivel:'Elegível na prévia',nao_elegivel:'Não elegível',revisao:'Revisão necessária'};
 async function api(url, options={}) {
   const r = await fetch(url, options);
@@ -59,23 +60,45 @@ function desenharTabela() {
   if(!atual)return;
   const filtro=$('filtro').value,busca=$('busca').value.trim().toLowerCase();
   const ds=atual.decisoes.filter(d=>(filtro==='todas'||d.situacao===filtro)&&(!busca||[d.bloco,d.unidade,d.cota].join(' ').toLowerCase().includes(busca)));
-  $('linhas').replaceChildren(...ds.map(d=>{const tr=elemento('tr');const unidade=elemento('td',d.bloco+' / '+d.unidade);const cota=elemento('td',d.cota);cota.append(elemento('small',d.vencimento.split('-').reverse().join('/')));const valor=elemento('td',new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(d.valor)));const estado=elemento('td');estado.append(elemento('span',nomes[d.situacao],'status '+d.situacao));const motivo=elemento('td',d.motivos.map(motivoLegivel).join(' · ')||'Condições avaliadas','motivo');const detalhe=elemento('td');const b=elemento('button','Detalhes','secundario');b.onclick=()=>{abrirDetalhes(d);};detalhe.append(b);tr.append(unidade,cota,valor,estado,motivo,detalhe);return tr;}));
+  $('linhas').replaceChildren(...ds.map(d=>{
+    const tr=elemento('tr');
+    const unidade=elemento('td',d.bloco+' / '+d.unidade);
+    const cota=elemento('td',d.cota);cota.append(elemento('small',d.vencimento.split('-').reverse().join('/')));
+    const valor=elemento('td',new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(d.valor)));
+    const regra=elemento('td',financeiro[d.situacao_financeira]||d.situacao_financeira);
+    const contato=elemento('td',contatoLegivel(d));
+    const documental=elemento('td',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join(' · '):'Sem conflito documental');
+    const estado=elemento('td');estado.append(elemento('span',nomes[d.situacao],'status '+d.situacao));
+    const motivo=elemento('td',d.motivos.map(motivoLegivel).join(' · ')||'Condições avaliadas','motivo');
+    const detalhe=elemento('td');const b=elemento('button','Detalhes','secundario');b.onclick=()=>abrirDetalhes(d);detalhe.append(b);
+    tr.append(unidade,cota,valor,regra,contato,documental,estado,motivo,detalhe);return tr;
+  }));
   $('contagem').textContent=ds.length+' de '+atual.decisoes.length+' cotas · Valores originais, sem recalcular encargos';
 }
 $('filtro').onchange=desenharTabela;$('busca').oninput=desenharTabela;$('fechar').onclick=()=>$('detalhes').close();
 configurar().catch(()=>{});
 
 function motivoLegivel(c) {
-  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Titularidade diverge entre fontes',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Documento sem associação comprovada ao titular',DOCUMENTO_INVALIDO:'Documento inválido: revisão necessária',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Inventário histórico ausente ou divergente: resultado retido',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
+  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Titularidade diverge entre fontes',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Inventário histórico ausente ou divergente: resultado retido',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
   return textos[c]||c.toLowerCase().replaceAll('_',' ');
+}
+function contatoLegivel(d) {
+  const docs={disponivel:'CPF/CNPJ disponível no registro da unidade',ausente:'CPF/CNPJ não informado (opcional)',invalido:'CPF/CNPJ inválido: ficará vazio',revisao:'CPF/CNPJ em revisão'};
+  return (docs[d.contato.documento]||d.contato.documento)+' · Telefone '+(d.contato.telefone?'disponível':'não informado')+' · E-mail '+(d.contato.email?'disponível':'não informado');
 }
 function abrirDetalhes(d) {
   const box=$('detalhes-legiveis');box.replaceChildren();
   box.append(elemento('h3',d.condominio+' · '+d.bloco+' / '+d.unidade),elemento('p','Cota '+d.cota+' · Vencimento '+d.vencimento.split('-').reverse().join('/')+' · '+nomes[d.situacao]));
+  box.append(elemento('h3','Elegibilidade financeira'),elemento('p',financeiro[d.situacao_financeira]||d.situacao_financeira));
+  box.append(elemento('h3','Informações de contato da unidade'),elemento('p',contatoLegivel(d)));
+  for(const m of d.alertas_cadastrais)box.append(elemento('p',motivoLegivel(m)));
+  box.append(elemento('h3','Pendências documentais'),elemento('p',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join('; '):'Sem conflito documental. Vários nomes não atribuem o documento a cada pessoa.'));
+  box.append(elemento('h3','Impedimentos para exportação'),elemento('p',d.bloqueios.length?d.bloqueios.map(motivoLegivel).join('; '):'Sem retenção específica desta cota para a prévia.'));
+  box.append(elemento('p','Exportação operacional indisponível em todos os casos.'));
   for(const m of d.motivos)box.append(elemento('p',motivoLegivel(m)));
   box.append(elemento('h3','Composição original'));
   for(const c of d.componentes)box.append(elemento('p',c.descricao_original+' · R$ '+c.valor+' · página '+c.origem.pagina+', linha '+c.origem.linha));
   box.append(elemento('p','Competência: '+(d.competencia||'não informada na fonte; preservada em branco')));
-  box.append(elemento('p','Documento: '+(d.documento.estado.length?d.documento.estado.map(motivoLegivel).join('; '):'validado na fonte associada')));
+  box.append(elemento('p','Documento: '+(d.documento.estado.length?d.documento.estado.map(motivoLegivel).join('; '):'disponível no registro da unidade, sem atribuição individual')));
   $('json-detalhes').textContent=JSON.stringify(d,null,2);$('detalhes').showModal();
 }

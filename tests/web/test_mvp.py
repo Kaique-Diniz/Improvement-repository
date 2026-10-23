@@ -58,7 +58,11 @@ def test_demo_completo_upload_leitura_AB_excel_e_comparacao(client, modo, linhas
     if modo == 'B':
         assert sum(all(c.value is None for c in row[24:30]) for row in rows[1:]) == 1
     assert client.get('/api/processamentos/'+r['id']+'/operacional.xlsx').status_code == 409
-    assert client.get('/api/processamentos/'+r['id']+'/inconsistencias.json').status_code == 200
+    relatorio = client.get('/api/processamentos/'+r['id']+'/inconsistencias.json')
+    assert relatorio.status_code == 200
+    assert relatorio.json()['politica_cadastral'] == 'cadastro_por_unidade@1'
+    assert relatorio.json()['reavaliacoes_historicas'] == []
+    assert relatorio.json()['permite_exportacao_operacional'] is False
     book.close()
 
 

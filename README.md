@@ -81,8 +81,12 @@ sem catálogo privado. Não copie os originais ou esse catálogo para o Git.
   atesto. O fluxo autorizativo anterior e seus contratos não foram relaxados.
   O novo caso de uso chama as funções **puras diagnósticas** do mesmo motor e
   grava `autoriza_cobranca=false`, `permite_exportacao_operacional=false`.
-- Habita/VG retém todo o lote. Titularidades/documentos FL e documento inválido
-  continuam em revisão. CPF/CNPJ ausente gera alerta e fica vazio.
+- Habita/VG retém todo o lote. Divergências reais entre fontes e documentos
+  válidos conflitantes continuam em revisão. Cadastro é por unidade: múltiplos
+  nomes e um CPF/CNPJ não são conflito, nem atribuem o documento a cada nome.
+  Documento ausente ou inválido fica vazio com aviso/alerta, sem bloqueio.
+  A interface separa elegibilidade financeira, contatos, pendências documentais
+  e retenções da prévia. Reclassificações justificadas conservam o histórico.
 - Os identificadores de origem são usados nos campos de cedente/contrato/dívida
   **do arquivo de teste**. Codificação operacional desses campos e homologação
   integral easyCollector permanecem pendentes. Competência ausente não é inferida.
@@ -127,7 +131,7 @@ Referência do diagnóstico real: **2026-10-22**, modo B, selecionados explicita
 | Conjunto | Leitura | Confronto financeiro | Retenções e arquivo de teste |
 |---|---|---|---|
 | TREE / Habita | 112 unidades, 769 cotas; valores/componentes/vencimentos preservados | 63 valores originais coincidentes com os vínculos técnicos da referência | Todas as 769 cotas retidas por bloqueio do lote; sem XLSX |
-| PLAZA / FL + Cadastro | 50 unidades, 115 cotas; cadastro complementar sem incluir as outras unidades | 69 valores originais coincidentes | 34 unidades em revisão (99 cotas retidas); 16 cotas não elegíveis nas demais; modo B gera **16 linhas exclusivamente cadastrais**, Y:AD vazias |
+| PLAZA / FL + Cadastro | 50 unidades, 115 cotas; cadastro complementar sem incluir as outras unidades | 69 valores originais coincidentes | Após correção cadastral: 17 unidades em revisão (82 cotas retidas); 33 cotas não elegíveis nas demais; modo B gera **33 linhas exclusivamente cadastrais**, Y:AD vazias |
 
 As condições financeiras puras indicam 138 cotas TREE e 69 FL potencialmente
 selecionáveis nessa referência, **antes dos bloqueios**. Nenhuma é liberada como
@@ -137,8 +141,14 @@ registrada como formatação; o XLSX de saída continua estritamente A:AD.
 A comparação cadastral/formatos e a ausência de vínculos de algumas linhas são
 ressalvas explícitas; as 132 correspondências monetárias não homologam o Excel.
 
-Regressão: **1.146 testes aprovados**, 1.086 regulares (incluindo 14 novos testes
-HTTP/integração essenciais) + 60 explícitos de homologação sintética; oito
+Correção cadastral conferida em 23/10/2026 com a mesma referência: as retenções
+passaram de 34 para 17 unidades e de 99 para 82 cotas. Preservados os 205 registros
+históricos, inclusive os dois registros de conflito documental, e todos os 115
+boletos. As 17 unidades restantes têm divergências entre fontes, sem substituição
+automática de nomes; não são bloqueadas apenas pela presença de múltiplos nomes.
+
+Regressão: **1.179 testes aprovados**, 1.119 regulares (incluindo 14 testes
+HTTP/integração e 33 regressões de cadastro por unidade) + 60 explícitos de homologação sintética; oito
 verificações de schemas passaram. Smoke test Chromium passou em login, filtro,
 detalhes, download, bloqueio operacional e viewport móvel, sem erro JavaScript.
 Os originais, históricos, aprovações e planos anteriores não foram modificados.

@@ -28,11 +28,14 @@ def main():
         page.locator('#demo').click()
         page.locator('#resultado').wait_for(state='visible',timeout=60000)
         assert page.locator('#linhas tr').count()==3
+        for coluna in ('Elegibilidade financeira', 'Contatos da unidade', 'Pendências documentais', 'Resultado da prévia'):
+            assert page.get_by_role('columnheader',name=coluna,exact=True).is_visible()
         assert page.locator('#operacional').is_disabled()
         page.select_option('#filtro','nao_elegivel')
         assert page.locator('#linhas tr').count()==1
         page.get_by_role('button',name='Detalhes',exact=True).click()
         assert page.locator('#detalhes').is_visible()
+        assert page.locator('#detalhes-legiveis').get_by_role('heading',name='Informações de contato da unidade').is_visible()
         page.get_by_role('button',name='Fechar',exact=True).click()
         page.select_option('#filtro','todas')
         with page.expect_download() as download:page.locator('#download').click()
