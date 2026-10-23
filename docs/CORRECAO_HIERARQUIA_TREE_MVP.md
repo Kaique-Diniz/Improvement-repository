@@ -72,8 +72,9 @@ para compatibilidade; usar `boleto`, `cota_id` e `cotas[]` nas novas consultas.
 Campos antigos de contagem por regra continuam contadores de boletos; a interface
 usa os novos campos explícitos. Auditoria mantém a versão diagnóstica aplicada.
 
-**1.259 testes aprovados**: 1.199 regulares e 60 suítes explícitas, com 16 novos
-casos sintéticos. Oito verificações de schemas aprovadas. Casos: dez centavos
+**1.262 testes aprovados**: 1.202 regulares e 60 suítes explícitas, incluindo os
+16 casos da hierarquia e três casos adicionais de escopo do subtotal. Oito
+verificações de schemas aprovadas. Casos: dez centavos
 numa unidade; veto por único boleto, inclusive recente; A/AJ/J; múltiplos vetos;
 componente isolado de centavo; dia 30/31; unidades independentes; continuidade;
 modos A/B; bloqueio técnico e apontamento inconclusivo. Chromium: expansão de
@@ -84,3 +85,103 @@ Detalhes por unidade, documentos e resultados reais ficam exclusivamente na áre
 privada. Permanecem pendentes o subtotal Habita/VG, a homologação dos identificadores
 TREE e a compatibilidade integral de importação. Sem Fase 5, CRM, push ou merge.
 Sistema **não homologado para produção**.
+
+## Consolidação e investigação direta Habita/VG
+
+Branch de revisão: `fix/mvp-consolidado-habita-vg`. `f40ea8e` (remoção individual
+dos arquivos) já é ancestral de `67dfce2` (hierarquia TREE), assim como `c11d487`
+(identificadores PLAZA). Não há duas versões concorrentes da interface a mesclar:
+a versão integrada já contém as três correções. Não foi realizado merge ou push.
+
+Conferência direta do PDF privado, com extração de texto e coordenadas, sem OCR ou
+inferência de valores:
+
+- **149 páginas**, 112 unidades, 769 boletos e **2.082 componentes**. Recontagem
+  independente confrontou os cinco valores monetários, vencimentos, quantidades
+  de componentes e suas páginas/linhas com o canônico. Nenhuma diferença.
+- **95 fechamentos explícitos de unidade** e **326 de boleto** reconciliados. São
+  os fechamentos impressos, não o número de unidades ou boletos conferidos.
+  As 33 continuidades estão preservadas.
+- Bloco VG: **15 unidades e 120 boletos**. Outros blocos: **649 boletos**.
+- Na página **149**, linha de layout **15**, o PDF contém literalmente
+  `Total do Bloco VG:`; na linha **17**, contém quantidade de unidades e
+  `Total Geral:`. Coordenadas verticais dos rótulos: 419,07 e 404,90 pontos,
+  respectivamente, abaixo do fechamento da última unidade. Não há outros
+  subtotais de bloco impressos nesse arquivo.
+- O **total geral coincide exatamente com a soma dos 769 boletos nas cinco
+  colunas**: original, multa, atualização monetária, juros e total atualizado.
+  O valor rotulado VG repete esse total geral; não coincide com a soma dos 120
+  boletos VG. Sua diferença é exatamente a soma dos outros 649 boletos.
+
+**Conclusão:** não foi comprovado erro de extração nem divergência aritmética dos
+boletos com o total geral. Existe uma inconsistência documental de escopo: a
+rotulagem atribui ao VG valores do condomínio inteiro. A hipótese de um fechamento
+geral rotulado com o último bloco é compatível com os números e a posição, mas
+isso não comprova a semântica do gerador. O leitor não confundiu os dois rótulos;
+ambos existem separadamente na fonte. Reinterpretar silenciosamente o primeiro
+como geral retiraria uma retenção crítica sem evidência suficiente.
+
+**Bloqueio mantido**, sem alterar o leitor, os valores ou o histórico. Para
+resolver essa pendência, é necessária evidência do escopo do fechamento no
+relatório de origem ou um relatório com subtotal VG explicitamente reconciliado.
+Não se exige nova resposta sobre as regras financeiras já definidas. Cálculos
+monetários detalhados e localizações por registro permanecem exclusivamente em
+`/workspace/validacao-privada-fase3/mvp/consolidacao_investigacao_vg/`.
+
+### Reprocessamento integrado — 23/10/2026
+
+| Indicador TREE | Modo A | Modo B |
+|---|---:|---:|
+| Cotas/unidades | 112 | 112 |
+| Boletos | 769 | 769 |
+| Cotas vetadas | 79 | 79 |
+| Boletos selecionados financeiramente | 63 | 63 |
+| Dívidas efetivamente produzidas | 0 | 0 |
+| Cadastros adicionais efetivamente produzidos | 0 | 0 |
+| Dívidas previstas, retidas | 63 | 63 |
+| Cadastros adicionais previstos, retidos | 0 | 103 |
+| Cotas / boletos retidos tecnicamente | 112 / 769 | 112 / 769 |
+
+Os **63/63** boletos coincidem com a referência por unidade, identificador,
+vencimento e valor. A interface conserva a seleção financeira, os motivos de veto
+e `SUBTOTAL_BLOCO_DIVERGENTE` como impedimento técnico, inclusive nos detalhes de
+cada retenção. Não foi gerado XLSX TREE.
+
+Reprocessamento com histórico preservou as **904 ocorrências históricas**
+integralmente, além do canônico byte a byte. Hashes das fontes e do histórico não
+mudaram. Upload comum também foi exercitado no Chromium com os documentos reais,
+sem catálogo, nos dois modos, sem capturas contendo dados pessoais.
+
+PLAZA, upload comum com Cadastro atual, nos dois modos: **50 unidades, 115 boletos,
+69 dívidas; modo B acrescenta 46 cadastros**. Canônico e XLSX de teste permanecem
+idênticos byte a byte aos anteriores, preservando as parcelas, os identificadores,
+as 30 colunas e os valores. Isso não resolve conflitos históricos conhecidos nem
+autoriza exportação operacional.
+
+Três testes sintéticos adicionais verificam: subtotal VG exclusivo correto;
+subtotal VG repetindo o geral sem remoção automática do bloqueio; e subtotal
+repetindo um geral aritmeticamente incorreto, que continua rejeitado. Chromium
+também repetiu remoção dos três inputs, troca PLAZA → TREE na mesma sessão,
+substituição da referência, invalidação de prévias/downloads, teclado e mobile.
+Sem erros de JavaScript. Nenhum teste nativo do Windows foi executado.
+
+### Atualização Windows após autorização de publicação
+
+Os commits continuam locais. **Não executar a atualização esperando estas
+correções na `main` antes da publicação autorizada.** Pare o servidor com Ctrl+C,
+abra o PowerShell na pasta do projeto e, com a árvore de trabalho limpa, execute
+após a integração autorizada no GitHub:
+
+```powershell
+git status --short
+git switch main
+git pull --ff-only origin main
+.\.venv\Scripts\python.exe -m pip install -e ".[web,test]"
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe -m conversor.web --private-dir "C:\ConversorPrivado\mvp"
+```
+
+Use o diretório privado já adotado na instalação em lugar do caminho ilustrativo.
+Confira então TREE e PLAZA com referência 23/10/2026 e modos A/B. Habita/VG deve
+continuar retido enquanto a ambiguidade documental persistir. Sem exportação
+operacional, CRM, novas fases ou homologação para produção.

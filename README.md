@@ -6,7 +6,7 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-## Correção atual — cota, boletos e componentes TREE
+## Versão integrada — remoção de arquivos, hierarquia TREE e conferência VG
 
 No TREE, **cota = unidade**, reunindo todos os seus boletos. Um boleto de original
 R$ 0,01 ou com A/AJ/J veta o conjunto; somente depois se aplica o prazo individual
@@ -16,8 +16,17 @@ com unidades expansíveis e identificação dos boletos causadores.
 Validação privada: **112 cotas, 769 boletos, 63 selecionados em 15 contratos**,
 coincidentes financeiramente com a referência. O bloqueio Habita/VG mantém zero
 dívidas geradas. PLAZA preservado, inclusive os XLSX de teste byte a byte.
-**1.259 testes aprovados**, oito schemas; nenhuma publicação desta correção.
+Os botões × e a codificação PLAZA estão incluídos na mesma linha de histórico,
+sem conflito entre as correções. Conferência direta do PDF: o rótulo VG na página
+149 repete o total geral reconciliado, mas diverge dos 120 boletos do próprio VG.
+Não foi comprovado erro de extração que permita retirar essa retenção por escopo
+documental ambíguo; o leitor e os valores permanecem inalterados.
+
+**1.262 testes aprovados**, oito schemas; uploads reais A/B e regressão funcional
+no Chromium, sem erros JavaScript. Nenhum push ou merge desta consolidação.
 Veja o [comparativo, causas, evidências e limites](docs/CORRECAO_HIERARQUIA_TREE_MVP.md).
+As [instruções de atualização Windows após publicação autorizada](docs/CORRECAO_HIERARQUIA_TREE_MVP.md#atualização-windows-após-autorização-de-publicação)
+não pressupõem que os commits locais já estejam disponíveis na `main` do GitHub.
 
 ## Histórico — identificadores do template PLAZA
 
