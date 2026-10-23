@@ -284,7 +284,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     fora_vigencia = pedido.data_ref < date.fromisoformat(perfil['vigente_de'])
     decisoes, linhas, linhas_info, previa = [], [], [], []
 
-    def prever(tipo, u, base, *, decisao=None, divida=None, bloqueios=()):
+    def prever(tipo, u, base, *, decisao=None, divida=None, bloqueios=(), parcela_final=None):
         # Somente visualização. Nunca encaminha linhas retidas ao escritor XLSX
         # nem contorna a validação documental do DTO de exportação.
         pessoa = base['pessoa']
@@ -294,9 +294,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             dto = LinhaExportacao(**base, tipo=tipo, divida=divida)
             valores = [v.isoformat() if isinstance(v, date) else format(v, '.2f') if isinstance(v, Decimal) else v
                        for v in materializar(dto).valores]
+            if tipo == 'divida' and parcela_final is None:
+                valores[27] = ''  # Projeção retida não recebe número final.
         previa.append({'tipo': tipo, 'unidade_id': u.id, 'bloco': u.bloco_original, 'unidade': u.unidade_original,
             'boleto_id': decisao['id'] if decisao else None, 'cota': decisao['cota'] if decisao else None,
             'bloqueada': bool(bloqueios), 'motivos': sorted(set(bloqueios)), 'valores': valores,
+            'parcela_final': parcela_final, 'numeracao_pendente': tipo == 'divida' and parcela_final is None,
             'campos_retidos_por_conflito_documental': conflito_documental})
     for b in lote.boletos:
         u = unidades[b.unidade_id]
@@ -338,7 +341,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                         'telefone': bool(pessoa and pessoa.contato.telefones),
                         'email': bool(pessoa and pessoa.contato.emails)},
             'pendencias_documentais': pendencias_documentais,
-            'alertas_cadastrais': list(documento.codigos) if documento and not documento.bloqueante else [],
+            'alertas_cadastrais': sorted(set((list(documento.codigos) if documento and not documento.bloqueante else []) +
+                [o.codigo for o in efetivas if not o.bloqueante and o.registro_id == u.id and o.codigo in (
+                    'DIVERGENCIA_NOME_ENTRE_FONTES','MARCADOR_ADMINISTRATIVO_NO_CABECALHO','CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA')])),
             'impedimentos_exportacao_operacional': sorted(set(motivos + ['EXPORTACAO_OPERACIONAL_INDISPONIVEL'])),
             'bloqueios': motivos})
     # Projeção A/B por unidade: nenhuma cota excluída derruba as outras.
@@ -352,15 +357,27 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         pessoa_saida = Pessoa.model_validate(pessoa.model_dump() | {'contato': contato})
         base = dict(processamento_id=processamento_id, registro_id=u.id,
                     nm_cedente_cedente=perfil['nome'], cedente=u.chave_normalizada, pessoa=pessoa_saida)
-        for d in ds:
+        boletos_por_id = {b.id: b for b in lote.boletos if b.unidade_id == u.id}
+        ordenadas = sorted(ds, key=lambda d: (boletos_por_id[d['id']].vencimento,
+                                              boletos_por_id[d['id']].identificador, d['id']))
+        parcela = 0
+        for d in ordenadas:
             if d['situacao_financeira'] != 'elegivel_na_simulacao':
                 continue
-            boleto = next(b for b in lote.boletos if b.id == d['id'])
+            boleto = boletos_por_id[d['id']]
+            parcela_final = None
+            if d['situacao'] == 'elegivel':
+                parcela += 1
+                parcela_final = parcela
+            nome_divida = boleto.identificador
+            if boleto.competencia:
+                ano,mes = boleto.competencia.split('-')
+                nome_divida = f'COTA {mes}/{ano}' + (f' - {parcela_final}' if parcela_final else '')
             divida = DividaExportacao(contrato=u.chave_normalizada, produto=perfil['nome'],
-                nome_divida=boleto.identificador, parcela=1, vencimento=boleto.vencimento,
+                nome_divida=nome_divida, parcela=parcela_final or 1, vencimento=boleto.vencimento,
                 valor=boleto.composicao.total_original) if boleto.composicao.total_original > 0 else None
             bloqueios = d['bloqueios'] or (['CONDICAO_INDETERMINADA'] if d['situacao'] == 'revisao' else [])
-            prever('divida', u, base, decisao=d, divida=divida, bloqueios=bloqueios)
+            prever('divida', u, base, decisao=d, divida=divida, bloqueios=bloqueios,parcela_final=parcela_final)
             if d['situacao'] == 'elegivel':
                 linhas.append(LinhaExportacao(**base, tipo='divida', divida=divida))
                 linhas_info.append({'tipo': 'divida', 'unidade_id': u.id, 'boleto_id': boleto.id})
@@ -399,7 +416,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                       if estado_historico == 'nao_disponivel' else 'Histórico vinculado ou verificação de integridade registrada.')},
         'previa_template': {'colunas': list(Template(id='previa', nome='Universal', versao='1.0').cabecalhos_fisicos),
                            'linhas': previa, 'somente_conferencia': True, 'exportacao_operacional': False},
-        'politica_cadastral': 'cadastro_por_unidade@1',
+        'politica_cadastral': 'cadastro_por_unidade@2',
         'reavaliacoes_historicas': reavaliacoes,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
             'Arquivo de teste usa identificadores de origem para cedente/contrato/dívida; codificação operacional do easyCollector ainda não homologada.',

@@ -44,7 +44,8 @@ O arquivo real possui **espaço final** no cabeçalho `NM_DIVIDA_CEDENTE ` da co
 ## Contratos de preenchimento
 - A planilha sempre possui os **30 campos em mesma ordem** e a aba `Dados`.
 - Campos de cadastro sem valor conhecido permanecem vazios, sem valores fabricados.
-- `CPF` permanece o nome literal da coluna C: aceita CPF ou CNPJ válido do registro da unidade, sem exigir associação individual quando houver vários nomes. Ausência/invalidade -> vazio + aviso informativo/alerta, sem bloqueio. Documentos válidos conflitantes ou divergências reais entre fontes exigem revisão com auditoria; múltiplos nomes isoladamente não são conflito.
+- `CPF` permanece o nome literal da coluna C: aceita CPF ou CNPJ válido do registro da unidade, sem exigir associação individual quando houver vários nomes. Ausência/invalidade -> vazio + aviso informativo/alerta, sem bloqueio. Documentos válidos conflitantes e identidade estrutural ambígua exigem revisão; nomes distintos entre fontes são informativos, com preferência cadastral após vínculo inequívoco da unidade.
+- `NU_PARCELA`: sequência 1..N por unidade/contrato, considerando somente dívidas efetivamente incluídas, em ordem de vencimento e identificador estável. Com competência comprovada, `NM_DIVIDA_CEDENTE` usa `COTA MM/AAAA - N`; sem competência, identificador da fonte. Em projeções retidas a parcela final fica vazia; linhas cadastrais conservam Y:AD vazias.
 - CPF e CNPJ são sempre gravados como texto literal, formato `@`, nunca números. CEP, telefone, DDD, CEDENTE e códigos com zeros também preservam representação textual. Nunca completar documentos inválidos por inferência.
 - `VENCIMENTO`: data reconhecível/importável no Excel; confirmar convenção de serial e formato com destino.
 - `VL_PARCELA`: número monetário com precisão de centavos, não string formatada com `R$`.

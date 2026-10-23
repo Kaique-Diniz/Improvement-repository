@@ -134,13 +134,13 @@ def test_habita_contatos_ausentes_alertam_sem_mudar_financeiro(remover_linha):
     assert lote.boletos[0].composicao.total_original == ler('habita').boletos[0].composicao.total_original
 
 
-def test_prefixo_de_nome_nao_autoriza_substituicao_de_titular():
+def test_nome_cadastral_preferencial_nao_exige_correspondencia_textual():
     from conversor.application.cadastro import cruzar_cadastro
     fl = ler('fl')
     cadastro = ler('cadastro', trocar(cadastro_paginas(), 'TITULAR SINTETICO', 'TITULAR'))
     unido = cruzar_cadastro(fl, cadastro)
-    assert unido.pessoas[0].nome == fl.pessoas[0].nome
+    assert unido.pessoas[0].nome == cadastro.pessoas[0].nome
     assert unido.boletos == fl.boletos
-    assert any(r.codigo == 'TITULAR_DIVERGENTE' and r.gravidade == 'critico' for r in unido.ressalvas)
+    assert any(r.codigo == 'DIVERGENCIA_NOME_ENTRE_FONTES' and r.gravidade == 'informativo' for r in unido.ressalvas)
     assert not resolver_documento(unido.pessoas[0]).bloqueante
-    assert resultado_leitura(unido, processamento_id='divergencia').bloqueante
+    assert not resultado_leitura(unido, processamento_id='divergencia').bloqueante

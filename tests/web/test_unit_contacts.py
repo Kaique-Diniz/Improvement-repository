@@ -107,16 +107,18 @@ def test_duas_mascaras_do_mesmo_documento_nao_sao_dois_documentos(tmp_path):
     assert not r['resumo'].get('revisao', 0)
 
 
-def test_diferenca_real_entre_nomes_de_fontes_nao_escolhe_titular(tmp_path):
+def test_nomes_diferentes_preferem_cadastro_sem_afirmar_titularidade(tmp_path):
     dados = documentos('OUTRA PESSOA SINTETICA / TERCEIRA PESSOA SINTETICA')
     financeiro, cad = lotes(dados)
     unido = cruzar_cadastro(financeiro, cad)
-    assert unido.pessoas[0].nome == financeiro.pessoas[0].nome
-    evidencia = next(r for r in unido.ressalvas if r.codigo == 'TITULAR_DIVERGENTE')
+    assert unido.pessoas[0].nome == cad.pessoas[0].nome
+    evidencia = next(r for r in unido.ressalvas if r.codigo == 'DIVERGENCIA_NOME_ENTRE_FONTES')
     assert evidencia.valores_originais == (NOME, cad.pessoas[0].nome)
     assert len({o.sha256 for o in evidencia.origens}) == 2
     r = executar(tmp_path, dados)
-    assert all(d['situacao'] == 'revisao' and 'TITULAR_DIVERGENTE' in d['bloqueios'] for d in r['decisoes'] if d['bloco'] == 'A')
+    assert not r['resumo'].get('revisao',0)
+    assert all(not d['bloqueios'] for d in r['decisoes'])
+    assert all('DIVERGENCIA_NOME_ENTRE_FONTES' in d['alertas_cadastrais'] for d in r['decisoes'] if d['bloco']=='A')
 
 
 def legado(cad, codigo, *, origem=None, id_='legado_sintetico'):
@@ -166,13 +168,14 @@ def test_nao_reclassifica_historico_sem_prova_ou_bloqueios_diferentes(tmp_path, 
     assert all(o.model_dump(mode='json') in r['ocorrencias'] for o in historico)
 
 
-def test_reclassificar_falso_multiplo_nao_remove_divergencia_real(tmp_path):
+def test_reclassificar_falso_multiplo_preserva_aviso_de_nomes(tmp_path):
     dados = documentos('OUTRA PESSOA SINTETICA / TERCEIRA PESSOA SINTETICA')
     _, cad = lotes(dados)
     old = legado(cad, 'TITULAR_MULTIPLO_OU_NAO_SEGMENTADO')
     r = executar(tmp_path, dados, historico=(old,))
     assert len(r['reavaliacoes_historicas']) == 1
-    assert all('TITULAR_DIVERGENTE' in d['bloqueios'] and old.codigo not in d['bloqueios'] for d in r['decisoes'] if d['bloco'] == 'A')
+    assert not r['resumo'].get('revisao',0)
+    assert all(old.codigo not in d['bloqueios'] for d in r['decisoes'])
 
 
 def test_nomes_nao_vinculam_documento_explicitamente_atribuido_a_outro_registro(pessoa):

@@ -1,8 +1,8 @@
-"""Cruzamento canônico por condomínio + bloco/torre + unidade, sem prioridade implícita."""
+"""Cruzamento estrutural: cadastro preferencial para contatos, financeiro preservado."""
 from collections import Counter
-from conversor.domain.canonical import Endereco, EvidenciaDocumento, LoteCanonico, Pessoa, RessalvaLeitura, documento_validado
-from conversor.domain.documents import CONTATO_UNIDADE, evidencias_documento, resolver_documento
-from conversor.domain.identity import chave_unidade, nomes_compativeis
+from conversor.domain.canonical import Endereco, LoteCanonico, RessalvaLeitura, documento_validado
+from conversor.domain.documents import CONTATO_UNIDADE, resolver_documento
+from conversor.domain.identity import chave_unidade
 from conversor.readers.text_support import ErroLeitura
 from .enrichment import complementar_cadastro
 
@@ -33,26 +33,14 @@ def cruzar_cadastro(lote: LoteCanonico, cadastro: LoteCanonico) -> LoteCanonico:
         complementar=cadastradas[c.id]
         if c.id!=u.id:raise ErroLeitura('NORMALIZADORES_DE_UNIDADE_INCOMPATIVEIS')
         ressalvas.extend(r for r in cadastro.ressalvas if r.registro_id==c.id)
-        try:
-            pequeno=LoteCanonico(unidades=(u,),boletos=(),pessoas=(atual,))
-            key=(u.condominio_id,u.bloco_original,u.unidade_original)
-            unido=complementar_cadastro(pequeno,{key:complementar},Endereco())
-            pessoas.append(unido.pessoas[0])
-            if complementar.relacao_unidade == CONTATO_UNIDADE:
-                ressalvas.append(RessalvaLeitura(codigo='CADASTRO_POR_UNIDADE_CONFERIDO',gravidade='informativo',
-                    registro_id=u.id,origens=(atual.origem,complementar.origem),
-                    valores_originais=(atual.nome,complementar.nome)))
-        except ErroLeitura as erro:
-            if erro.codigo!='TITULAR_DIVERGENTE':raise
-            # Não escolhe o titular do Cadastro. Mantém ambos os nomes e documentos
-            # na auditoria e impede a resolução automática do registro afetado.
-            fontes=list(evidencias_documento(atual))
-            fontes.extend(EvidenciaDocumento(documento=e.documento,origem=e.origem,titular_id=None)
-                          for e in evidencias_documento(complementar))
-            pessoas.append(Pessoa.model_validate(atual.model_dump()|{'evidencias_documentais':tuple(fontes),
-                'relacao_unidade':CONTATO_UNIDADE if complementar.relacao_unidade == CONTATO_UNIDADE else atual.relacao_unidade}))
-            ressalvas.append(RessalvaLeitura(codigo='TITULAR_DIVERGENTE',gravidade='critico',registro_id=u.id,
-                origens=(atual.origem,complementar.origem),valores_originais=(atual.nome,complementar.nome)))
+        pequeno=LoteCanonico(unidades=(u,),boletos=(),pessoas=(atual,))
+        key=(u.condominio_id,u.bloco_original,u.unidade_original)
+        unido=complementar_cadastro(pequeno,{key:complementar},Endereco(),politica_titular='cadastro_por_unidade')
+        pessoas.append(unido.pessoas[0])
+        ressalvas.extend(unido.ressalvas)
+        ressalvas.append(RessalvaLeitura(codigo='CADASTRO_POR_UNIDADE_CONFERIDO',gravidade='informativo',
+            registro_id=u.id,origens=(atual.origem,complementar.origem),
+            valores_originais=(atual.nome,complementar.nome)))
     return LoteCanonico(unidades=lote.unidades,boletos=lote.boletos,pessoas=tuple(pessoas),ressalvas=tuple(ressalvas))
 
 
@@ -98,13 +86,13 @@ def reavaliar_pendencias_cadastrais(lote: LoteCanonico, historico, *, cadastro: 
             doc = resolver_documento(raw)
             origens = (raw.origem, unidades[o.registro_id].origem)
         else:
-            if prova is None or o.registro_id in criticas:
+            if prova is None or (o.registro_id in criticas and o.codigo != 'TITULAR_DIVERGENTE'):
                 continue
-            if p.relacao_unidade != CONTATO_UNIDADE or len(prova.valores_originais) != 2 or not nomes_compativeis(*prova.valores_originais):
+            if p.relacao_unidade != CONTATO_UNIDADE or len(prova.valores_originais) != 2:
                 continue
             doc = resolver_documento(p)
             origens = prova.origens
-            if doc.bloqueante or local(o.origem) not in {local(e) for e in origens}:
+            if (doc.bloqueante and o.codigo != 'TITULAR_DIVERGENTE') or local(o.origem) not in {local(e) for e in origens}:
                 continue
         if o.codigo == 'DOCUMENTO_TITULAR_NAO_CONFIRMADO':
             if not o.evidencias_documentais or not doc.valor:
@@ -115,8 +103,8 @@ def reavaliar_pendencias_cadastrais(lote: LoteCanonico, historico, *, cadastro: 
                    for e in o.evidencias_documentais):
                 continue
         resultado.append({'ocorrencia_id': o.id, 'codigo_original': o.codigo,
-            'registro_id': o.registro_id, 'politica': 'cadastro_por_unidade@1',
+            'registro_id': o.registro_id, 'politica': 'cadastro_por_unidade@2',
             'efeito': 'nao_bloqueante_na_releitura',
-            'fundamento': 'Múltiplos nomes não exigem atribuir o documento único a um titular; fontes da unidade conferidas.',
+            'fundamento': 'Vínculo estrutural da unidade conferido. Diferenças de nomes são informativas; Cadastro preferencial sem afirmar titularidade jurídica.',
             'origens_conferidas': [e.model_dump(mode='json') for e in origens]})
     return resultado

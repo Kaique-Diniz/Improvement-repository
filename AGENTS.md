@@ -26,7 +26,8 @@ O repositório implementa o **Conversor Inteligente de Inadimplência**. Instru�
 
 ## Interface de exportação
 - A aba `Dados` exige 30 colunas na ordem documentada em `04_DICIONARIO_TEMPLATE.md`.
-- A coluna literal `CPF` aceita CPF válido (11 dígitos) ou CNPJ válido (14), sempre como texto com zeros iniciais. Documento é opcional: ausência -> vazio e aviso informativo; invalidade -> vazio e alerta. Cadastro por unidade aceita múltiplos nomes e um documento único sem atribuí-lo individualmente. Documentos válidos conflitantes e divergências reais entre fontes exigem revisão com fontes na auditoria; nunca misturar unidades.
+- A coluna literal `CPF` aceita CPF válido (11 dígitos) ou CNPJ válido (14), sempre como texto com zeros iniciais. Documento é opcional: ausência -> vazio e aviso informativo; invalidade -> vazio e alerta. Cadastro por unidade aceita múltiplos nomes e um documento único sem atribuí-lo individualmente. Com vínculo inequívoco por administradora + condomínio + torre/bloco + unidade, preferir os contatos do Cadastro Geral e registrar diferenças de nomes como informativas. Documentos válidos conflitantes e identidade estrutural ambígua exigem revisão; nunca misturar unidades.
+- No MVP, numerar somente dívidas efetivamente incluídas, por unidade/contrato, em vencimento crescente e desempate por identificador estável. Retidas e excluídas não consomem números. Competência comprovada: `COTA MM/AAAA - N`; ausente: identificador da fonte, sem inferência mensal.
 - Separar valores originais de saldos cumulativos, juros e multas.
 - Não modificar o template fonte in-place.
 
