@@ -6,9 +6,45 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-## Pausa para validação do ambiente real
+## Correção consolidada atual — cadastro, parcelas e notificações
 
-O responsável autorizou o commit, push e merge desta entrega em 23/10/2026.
+Com identidade inequívoca por administradora + condomínio + torre/bloco + unidade,
+o Cadastro Geral é preferencial para NOME e contatos. Diferenças de nomes são
+informativas, com ambas as fontes na auditoria privada, sem afirmar titularidade
+jurídica. Documentos válidos conflitantes e ambiguidades estruturais seguem retidos.
+Marcadores de notificação FL são separados somente no cabeçalho da unidade.
+
+`NU_PARCELA` conta apenas dívidas incluídas, por contrato, em vencimento crescente
+e desempate por identificador estável. Competência comprovada gera `COTA MM/AAAA - N`;
+competência ausente conserva o identificador original. Linhas retidas não consomem
+parcelas e aparecem sem numeração final na prévia. Y:AD cadastrais continuam vazias.
+
+Rodada integrada com os dois PDFs PLAZA privados, upload comum sem catálogo,
+referência **23/10/2026**. Fontes e os 115 boletos financeiros permaneceram intactos.
+
+| Resultado | Antes, modo B | Agora, modo B | Agora, modo A |
+|---|---:|---:|---:|
+| Unidades / cotas | 50 / 115 | 50 / 115 | 50 / 115 |
+| Elegíveis / não elegíveis pela régua | 69 / 46 | 69 / 46 | 69 / 46 |
+| Cotas retidas | 82 | 0 | 0 |
+| Dívidas no XLSX de teste | 0 | 69 | 69 |
+| Cadastros adicionais | 33 | 46 | 0 |
+
+Oito marcadores administrativos separados; nove diferenças de nomes restantes
+viraram avisos informativos. Sequências conferidas em seis contratos com múltiplas
+dívidas e entre prévia/XLSX. Os 205 registros históricos foram preservados: 17
+motivos antigos de nomes reavaliados, sem remover os dois conflitos documentais.
+Sem histórico, a análise se limita às fontes enviadas; não atesta ausência de
+pendências anteriores. Testes sintéticos cobrem vencimentos repetidos, mudança de
+ano, retenções, conflitos, ausência cadastral e exclusões TREE em A/B.
+
+Regressão atual: **1.219 testes**, incluindo 33 novos casos e 60 testes explícitos
+de homologação sintética; oito verificações de schemas. Exportação operacional
+continua indisponível. Esta correção ainda aguarda publicação autorizada.
+
+## Histórico — pausa para validação do ambiente real
+
+O responsável autorizou o commit, push e merge da entrega anterior em 23/10/2026.
 O desenvolvimento de novas funcionalidades fica temporariamente interrompido
 para testar o ambiente real com o MVP existente. Essa publicação não aprova
 planos, não remove bloqueios nem libera exportação operacional ou produção.
@@ -101,10 +137,12 @@ campos com conflito documental ficam indisponíveis até revisão.
   atesto. O fluxo autorizativo anterior e seus contratos não foram relaxados.
   O novo caso de uso chama as funções **puras diagnósticas** do mesmo motor e
   grava `autoriza_cobranca=false`, `permite_exportacao_operacional=false`.
-- Habita/VG retém todo o lote. Divergências reais entre fontes e documentos
+- Habita/VG retém todo o lote. Identidade estrutural ambígua e documentos
   válidos conflitantes continuam em revisão. Cadastro é por unidade: múltiplos
   nomes e um CPF/CNPJ não são conflito, nem atribuem o documento a cada nome.
   Documento ausente ou inválido fica vazio com aviso/alerta, sem bloqueio.
+  Diferenças de nomes são informativas; contatos do Cadastro são preferenciais
+  quando a unidade estiver inequivocamente vinculada, sem inferir titularidade.
   A interface separa elegibilidade financeira, contatos, pendências documentais
   e retenções da prévia. Reclassificações justificadas conservam o histórico.
 - Os identificadores de origem são usados nos campos de cedente/contrato/dívida
@@ -144,7 +182,7 @@ O teste confere login, filtro, detalhes, download, bloqueio operacional e layout
 móvel; grava capturas sintéticas em `/tmp`, sem registrar a chave. Se não houver
 Chromium instalado, instale um navegador compatível no seu ambiente.
 
-## Resultado verificado neste ambiente — 22/10/2026
+## Histórico do diagnóstico anterior — antes da correção consolidada
 
 Referência do diagnóstico real: **2026-10-22**, modo B, selecionados explicitamente.
 
@@ -203,7 +241,7 @@ executada nesta preparação. Fase 5 não iniciada; sem homologação de produç
 **Fase 4 — incremento 4.3B.2A implementado exclusivamente com dados sintéticos:** integração entre inventário reconciliado, aprovação de planos, motor existente, decisões A/B e persistência auditável, sem XLSX operacional. Veja [implementação, demonstração e limites](docs/INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md). O [4.3B.1](docs/INCREMENTO_4_3B_1_TREE_SINTETICO.md) foi aceito tecnicamente e registrado em commit próprio. Atestos humanos e aprovação dos planos reais continuam pendentes. Branch `feature/fase-4-motor-cobranca`; sem início do 4.3B.2B ou da Fase 5.
 **Arquitetura da Fase 4:** [modelo JSON, decisões e incrementos](docs/ARQUITETURA_MOTOR_FASE4.md). O laboratório sintético anterior não constitui motor geral aprovado nem homologação do Excel.
 **Correção do 4.3A:** aprovada tecnicamente pelo responsável; colisões FL reconciliadas com mapa completo do legado e assinatura técnica privada. Bloqueios operacionais e atesto humano pendente preservados. Veja [causa comprovada, contratos e revalidação FL/Habita](docs/CORRECAO_IDENTIDADES_AUDITORIA_4_3A.md).
-**Regressão atual:** 1.132 testes aprovados (1.111 anteriores + 21 novos puros de prioridade 1/0), com schemas históricos preservados. São 1.072 testes regulares e 60 explícitos; oito geradores de schemas conferidos. Não representam aprovação das prioridades ou homologação de planos reais.
+**Regressão naquela preparação:** 1.132 testes aprovados (1.111 anteriores + 21 novos puros de prioridade 1/0), com schemas históricos preservados. São 1.072 testes regulares e 60 explícitos; oito geradores de schemas conferidos. Não representam aprovação das prioridades ou homologação de planos reais.
 
 **Requisitos de negócio revisados, somente documentação:** consulte a
 [matriz atual dos oito IDs](docs/MATRIZ_NEGOCIO_PRELIMINAR_8_REGRAS.md), as

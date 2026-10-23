@@ -244,14 +244,13 @@ def test_cruzamento_canonico_por_condominio_torre_e_unidade():
         cruzar_cadastro(devedor,ler('cadastro',condominio='outra_identidade'))
 
 
-def test_cruzamento_nao_aplica_prioridade_laboratorial_a_titular_divergente():
+def test_cruzamento_aplica_preferencia_cadastral_a_nomes_diferentes():
     devedor=ler('fl');cadastro=ler('cadastro',trocar(cadastro_paginas(),'TITULAR SINTETICO','OUTRO TITULAR'))
     unido=cruzar_cadastro(devedor,cadastro)
     r=resultado_leitura(unido,processamento_id='exec_real')
-    assert any(o.codigo=='TITULAR_DIVERGENTE'and o.bloqueante for o in r.ocorrencias)
-    assert unido.pessoas[0].nome==devedor.pessoas[0].nome
-    # O documento pertence ao registro da unidade; a divergência entre nomes
-    # continua bloqueante, sem inventar associação a um titular individual.
+    assert any(o.codigo=='DIVERGENCIA_NOME_ENTRE_FONTES'and not o.bloqueante for o in r.ocorrencias)
+    assert unido.pessoas[0].nome==cadastro.pessoas[0].nome
+    # Documento do registro da unidade; nomes divergentes são informativos.
     assert resolver_documento(unido.pessoas[0]).valor == '00000000191'
 
 

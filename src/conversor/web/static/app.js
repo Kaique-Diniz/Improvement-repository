@@ -65,6 +65,7 @@ function mostrarPrevia() {
   $('previa-cabecalho').replaceChildren(head);
   $('previa-linhas').replaceChildren(...p.linhas.map(l=>{
     const tr=elemento('tr'),identidade=elemento('td',(l.bloqueada?'RETIDA':'Prévia sem retenção')+' · '+l.tipo+' · '+l.bloco+'/'+l.unidade+(l.cota?' · Cota '+l.cota:''));
+    if(l.numeracao_pendente)identidade.append(elemento('small','Numeração final pendente: linha retida não consome parcela.'));
     if(l.motivos.length)identidade.append(elemento('small',l.motivos.map(motivoLegivel).join('; ')));
     if(!l.valores)identidade.append(elemento('small','Campos indisponíveis até resolução das pendências.'));
     tr.append(identidade,...(l.valores||Array(30).fill('—')).map(v=>elemento('td',String(v))));return tr;
@@ -82,6 +83,7 @@ function desenharTabela() {
     const valor=elemento('td',new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(d.valor)));
     const regra=elemento('td',financeiro[d.situacao_financeira]||d.situacao_financeira);
     const contato=elemento('td',contatoLegivel(d));
+    if(d.alertas_cadastrais.includes('DIVERGENCIA_NOME_ENTRE_FONTES'))contato.append(elemento('small','Nomes diferentes: contato preferencial do Cadastro, sem retenção por esse motivo.'));
     const documental=elemento('td',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join(' · '):'Sem conflito documental');
     const estado=elemento('td');estado.append(elemento('span',nomes[d.situacao],'status '+d.situacao));
     const motivo=elemento('td',d.motivos.map(motivoLegivel).join(' · ')||'Condições avaliadas','motivo');
@@ -94,7 +96,7 @@ $('filtro').onchange=desenharTabela;$('busca').oninput=desenharTabela;$('fechar'
 configurar().catch(()=>{});
 
 function motivoLegivel(c) {
-  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Titularidade diverge entre fontes',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Histórico conhecido não pôde ser validado: revisão necessária',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
+  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Divergência histórica de nomes: conferir reavaliação',MARCADOR_ADMINISTRATIVO_NO_CABECALHO:'Marcador administrativo separado do nome; preservado na auditoria',CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA:'Contato cadastral ausente complementado com a fonte de inadimplência',DIVERGENCIA_NOME_ENTRE_FONTES:'Nomes diferentes entre fontes (informativo); contato do Cadastro Geral preferencial',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Histórico conhecido não pôde ser validado: revisão necessária',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
   return textos[c]||c.toLowerCase().replaceAll('_',' ');
 }
 function contatoLegivel(d) {

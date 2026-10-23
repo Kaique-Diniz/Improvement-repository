@@ -60,7 +60,7 @@ def test_demo_completo_upload_leitura_AB_excel_e_comparacao(client, modo, linhas
     assert client.get('/api/processamentos/'+r['id']+'/operacional.xlsx').status_code == 409
     relatorio = client.get('/api/processamentos/'+r['id']+'/inconsistencias.json')
     assert relatorio.status_code == 200
-    assert relatorio.json()['politica_cadastral'] == 'cadastro_por_unidade@1'
+    assert relatorio.json()['politica_cadastral'] == 'cadastro_por_unidade@2'
     assert relatorio.json()['reavaliacoes_historicas'] == []
     assert relatorio.json()['permite_exportacao_operacional'] is False
     book.close()
@@ -183,6 +183,12 @@ def test_upload_novo_preserva_conflitos_reais_e_exibe_linhas_retidas(client, cen
         files={role:(role+'.pdf',content)for role,content in dados.items()if role!='referencia'}))
     data=r['resultado']
     assert data['historico_tecnico']['estado']=='nao_disponivel'
+    if cenario=='divergencia_de_nomes':
+        assert not data['resumo'].get('revisao',0) and data['resumo']['elegivel']==2
+        avisos=[o for o in data['ocorrencias']if o['codigo']=='DIVERGENCIA_NOME_ENTRE_FONTES']
+        assert avisos and all(o['gravidade']=='informativo'for o in avisos)
+        assert all(not l['bloqueada']for l in data['previa_template']['linhas'])
+        return
     assert data['resumo']['revisao']==2 and data['resumo']['elegivel']==1
     codigo='DOCUMENTOS_CONFLITANTES'if cenario=='conflito_documental'else'TITULAR_DIVERGENTE'
     assert all(codigo in d['bloqueios']for d in data['decisoes']if d['bloco']=='A')

@@ -1,5 +1,8 @@
 """FL W002A: componentes assinados e saldo por unidade; continuidade contextual."""
+import json
 import re
+
+from conversor.domain.canonical import RessalvaLeitura
 
 from .real_support import AcervoReal, Bilhete, MOEDA, PDFReal, ZERO, data_real, falhar
 from .text_support import LinhaFonte, VALOR_BRL, dinheiro_brl
@@ -7,6 +10,34 @@ from .text_support import LinhaFonte, VALOR_BRL, dinheiro_brl
 UNIDADE=re.compile(r'^(\d{4})\s+TORRE\s+(\w+)\s*-\s*(.+)$')
 INICIO=re.compile(r'^(\d{2}/\d{2}/\d{2})\s+(\d{2}/\d{4})\s+(\d+)\s+(.*)$')
 CAUDA=re.compile(r'('+VALOR_BRL+r')\s+('+VALOR_BRL+r')\s*$')
+NOTIFICACAO = r'\d+\s*(?:[º°ª]|[oa]\.?)\s+Notifica[cç][aã]o'
+MARCADOR = re.compile(NOTIFICACAO, re.I)
+SUFIXO_ADMINISTRATIVO = re.compile(r'(.+?)\s+('+NOTIFICACAO+r')$', re.I)
+
+
+def nome_do_cabecalho(fonte, pagina, unidade):
+    """Só o cabeçalho de unidade; não modifica descrições ou notas financeiras."""
+    candidatos = [(linha,x,y,m) for linha,x,y in fonte.fragmentos[pagina-1]
+                  if (m := UNIDADE.fullmatch(linha.texto.strip())) and (m[1],m[2]) == (unidade[1],unidade[2])]
+    if len(candidatos) > 1:
+        falhar('CABECALHO_UNIDADE_AMBIGUO')
+    nome = unidade[3].strip()
+    marcadores = []
+    if candidatos:
+        linha,x,y,m = candidatos[0]
+        separados = [(l,xx,yy) for l,xx,yy in fonte.fragmentos[pagina-1]
+                     if abs(yy-y) < 1 and 450 <= xx < 600 and xx > x and MARCADOR.fullmatch(l.texto.strip())]
+        if separados:
+            base = m[3].strip()
+            combinado = ' '.join([base] + [l.texto.strip() for l,_,_ in separados])
+            if ' '.join(nome.split()) not in {' '.join(base.split()), ' '.join(combinado.split())}:
+                falhar('CABECALHO_UNIDADE_AMBIGUO',linha)
+            nome = base
+            marcadores = separados
+        elif sufixo := SUFIXO_ADMINISTRATIVO.fullmatch(nome):
+            nome = sufixo[1].strip()
+            marcadores = [(LinhaFonte(linha.pagina,linha.numero,sufixo[2]),x,y)]
+    return nome, marcadores
 
 
 class LeitorFLReal:
@@ -15,6 +46,7 @@ class LeitorFLReal:
     def ler(self,conteudo,*,contexto):
         fonte=PDFReal(conteudo,contexto,coordenadas=True);fonte.validar_condominio('fl')
         acc=AcervoReal(fonte);atual=None;ativo=None;saldos={};pendente=[];item_pendente=False;notas=False;fechado=False
+        marcadores_cabecalho = set()
         for pi,page in enumerate(fonte.paginas,1):
             footer=fonte.rodape_validado(pi)
             for linha in page:
@@ -32,9 +64,19 @@ class LeitorFLReal:
                 if fechado:falhar('CONTEUDO_APOS_FECHAMENTO',linha)
                 if m:=UNIDADE.fullmatch(s):
                     if item_pendente:falhar('COMPOSICAO_INCOMPLETA',linha)
-                    atual=acc.unidade(m[2],m[1],m[3].strip(),linha)
+                    nome,marcadores = nome_do_cabecalho(fonte,pi,m)
+                    atual=acc.unidade(m[2],m[1],nome,linha)
+                    marcadores_cabecalho = {(pi,l.texto.strip()) for l,_,_ in marcadores}
+                    for l,x,y in marcadores:
+                        origem = fonte.origem(l).model_copy(update={
+                            'identificador':f'fl_cabecalho_fragmento_p{pi}_l{l.numero}'})
+                        acc.ressalvas.append(RessalvaLeitura(codigo='MARCADOR_ADMINISTRATIVO_NO_CABECALHO',
+                            gravidade='informativo',registro_id=atual.id,origens=(fonte.origem(linha),origem),
+                            valores_originais=(linha.texto,l.texto,json.dumps({'x':x,'y':y,'namespace':'fragmentos_pdf'}))))
                     if atual.id in saldos:falhar('UNIDADE_REPETIDA_NAO_RECONCILIADA',linha)
                     ativo=None;pendente=[];notas=False;continue
+                if ativo is None and (pi,s) in marcadores_cabecalho:
+                    continue
                 if m:=INICIO.fullmatch(s):
                     if atual is None:falhar('BOLETO_SEM_UNIDADE',linha)
                     if item_pendente:falhar('COMPOSICAO_INCOMPLETA',linha)
