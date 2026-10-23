@@ -4,6 +4,7 @@ Opcional: pip install playwright==1.56.0; informar Chromium já instalado.
 Não registra a chave, cookies ou dados de documentos no terminal.
 """
 import argparse
+from hashlib import sha256
 import json
 from pathlib import Path
 
@@ -49,6 +50,10 @@ def main():
         page.select_option('#filtro','todas')
         with page.expect_download() as download:page.locator('#download').click()
         assert download.value.suggested_filename.startswith('TESTE_LOCAL_NAO_IMPORTAR_')
+        with page.expect_download() as manifesto:page.locator('#manifesto').click()
+        dados_manifesto=json.loads(Path(manifesto.value.path()).read_text())
+        assert dados_manifesto['arquivo']['sha256']==sha256(Path(download.value.path()).read_bytes()).hexdigest()
+        assert not dados_manifesto['permite_exportacao_operacional']
         page.screenshot(path=str(args.captura),full_page=True)
         page.set_viewport_size({'width':390,'height':844})
         assert page.evaluate('document.documentElement.scrollWidth<=window.innerWidth')
@@ -56,7 +61,7 @@ def main():
         assert not errors
         print(json.dumps({'login':True,'exemplo_sintetico':True,'filtros':True,
             'cotas_e_boletos_separados':True,'expansao_componentes':True,
-            'detalhes':True,'download_xlsx':True,'operacional_desativado':True,
+            'detalhes':True,'download_xlsx':True,'manifesto_vinculado_ao_xlsx':True,'operacional_desativado':True,
             'mobile_sem_overflow':True,'erros_javascript':0},ensure_ascii=False))
         browser.close()
 

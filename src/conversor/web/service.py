@@ -35,6 +35,7 @@ from conversor.export.identifiers import selecionar_perfil
 from conversor.export.xlsx import escrever_xlsx
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
+from conversor.readers.habita_closing import conferir_fechamento_habita
 from conversor.readers.operational import GRAMATICAS, RegistroLeitores, validar_assinatura_para_leitura
 from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
@@ -315,6 +316,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(historico)
     reavaliacoes = reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
+    fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
+        if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
+    reconciliadas_diagnostico = set(fechamento['ocorrencias_preservadas']) if fechamento else set()
     entrada = EntradaSimulacao(lote=lote, fatos=(), ocorrencias_anteriores=(), coberturas_apontamentos=coberturas)
     config = configurar(perfil, ctx.formato_id)
     progresso('Avaliando condições e bloqueios no motor existente')
@@ -322,7 +326,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     unidades = {u.id: u for u in lote.unidades}
     avaliacoes_unidade = {u.id: avaliar_regras(config, entrada, pedido.data_ref, u) for u in lote.unidades}
     identidades = set(unidades) | {b.id for b in lote.boletos} | {p.id for p in lote.pessoas}
-    efetivas = [o for o in ocorrencias if o.id not in reavaliadas]
+    # Dispensa estritamente diagnóstica. Canônico, gravidade e histórico permanecem
+    # intactos; o motor e a autorização operacional não recebem essa dispensa.
+    efetivas = [o for o in ocorrencias if o.id not in reavaliadas | reconciliadas_diagnostico]
     globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
     fora_vigencia = pedido.data_ref < date.fromisoformat(perfil['vigente_de'])
     decisoes, linhas, linhas_info, previa = [], [], [], []
@@ -393,7 +399,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'alertas_cadastrais': sorted(set((list(documento.codigos) if documento and not documento.bloqueante else []) +
                 [o.codigo for o in efetivas if not o.bloqueante and o.registro_id == u.id and o.codigo in (
                     'DIVERGENCIA_NOME_ENTRE_FONTES','MARCADOR_ADMINISTRATIVO_NO_CABECALHO','CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA')])),
-            'impedimentos_exportacao_operacional': sorted(set(motivos + ['EXPORTACAO_OPERACIONAL_INDISPONIVEL'])),
+            'impedimentos_exportacao_operacional': sorted(set(motivos +
+                (['SUBTOTAL_BLOCO_DIVERGENTE'] if reconciliadas_diagnostico else []) + ['EXPORTACAO_OPERACIONAL_INDISPONIVEL'])),
+            'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
+            'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
     cotas = projetar_cotas(lote, decisoes, avaliacoes_unidade)
     # Uma cota/unidade vetada não afeta outras unidades; linhas são por boleto.
@@ -447,6 +456,21 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         escrever_xlsx(linhas, Template(id='mvp_teste', nome='Universal local', versao='1.0'),
                       output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx', data_ref=pedido.data_ref,
                       titulo='TESTE LOCAL DIAGNOSTICO - NAO IMPORTAR - SEM APROVACAO OPERACIONAL')
+    aviso_fechamento = ('Habita/VG: o subtotal impresso diverge do VG calculado e repete o total geral. '
+        'Reconciliação integral comprovada somente para XLSX DIAGNÓSTICO LOCAL. A ocorrência crítica '
+        'original permanece preservada; confira o fechamento. Exportação operacional e importação no CRM proibidas.')
+    manifesto = {'versao': 'manifesto_xlsx_diagnostico@1', 'processamento_id': processamento_id,
+        'finalidade': 'DIAGNOSTICO_LOCAL_NAO_IMPORTAR', 'autoriza_cobranca': False,
+        'permite_exportacao_operacional': False, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
+        'fontes': fontes, 'configuracao_hash': sha256(PERFIS_PATH.read_bytes()).hexdigest(),
+        'fechamento_habita': fechamento, 'ocorrencias_criticas_preservadas':
+            [o.model_dump(mode='json') for o in ocorrencias if o.bloqueante],
+        'aviso': aviso_fechamento if reconciliadas_diagnostico else 'Somente diagnóstico local. Não importar no CRM.',
+        'arquivo': {'nome': 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
+            'sha256': sha256((output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx').read_bytes()).hexdigest(),
+            'linhas_divida': sum(l.tipo == 'divida' for l in linhas),
+            'linhas_cadastrais': sum(l.tipo == 'cadastral' for l in linhas),
+            'colunas': 30, 'aba': 'Dados'} if linhas else None}
     resumo = dict(Counter(d['situacao'] for d in decisoes))
     resumo.update(unidades=len(lote.unidades), cotas=len(lote.unidades), boletos=len(lote.boletos),
                   cotas_elegiveis_pela_regua=sum(c['situacao_financeira'] == 'elegivel' for c in cotas),
@@ -466,6 +490,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                   indeterminadas_pela_regua=sum(d['situacao_financeira'] not in ('elegivel_na_simulacao', 'excluido') for d in decisoes),
                   cadastros_adicionais=sum(l.tipo == 'cadastral' for l in linhas),
                   linhas_teste=len(linhas), ocorrencias=len(ocorrencias))
+    resumo['anomalias_globais_reconciliadas_diagnostico'] = int(bool(reconciliadas_diagnostico))
     resultado = {'id': processamento_id, 'condominio': perfil['nome'], 'perfil': perfil['id'],
         'administradora': perfil['administradora'], 'reconhecimento': 'identificado_para_diagnostico',
         'formato_homologado_producao': False, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
@@ -485,9 +510,11 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'uso': 'diagnostico_nao_operacional', 'evidencia': perfil_saida.evidencia.model_dump(mode='json') if perfil_saida else None,
             'unidades': identificadores, 'pendentes': sum(i['estado'] == 'provisorio' for i in identificadores.values())},
         'reavaliacoes_historicas': reavaliacoes,
+        'fechamento_habita': fechamento, 'manifesto_diagnostico': manifesto,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
             'Codificação de integração apenas para teste; unidades sem mapa explícito conservam identificadores provisórios. Importação no easyCollector não homologada.',
-            'Competências ausentes permanecem ausentes; nenhum dado pessoal é inventado.'],
+            'Competências ausentes permanecem ausentes; nenhum dado pessoal é inventado.'] +
+            ([aviso_fechamento] if reconciliadas_diagnostico else []),
         'cotas': cotas, 'hierarquia': 'condominio_bloco_unidade_cota_boletos_componentes@1',
         'decisoes': decisoes, 'linhas_teste': linhas_info,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
@@ -501,6 +528,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 'codigo': erro.codigo, 'referencia_nao_e_gabarito_absoluto': True,
                 'limite': 'Não foi possível confrontar esta referência. A análise do PDF e os bloqueios permanecem preservados.'}
         resultado['fontes'].append({'papel': 'referencia', 'sha256': sha256(referencia).hexdigest()})
+    escrever_json(output / 'manifesto_diagnostico.json', manifesto)
     escrever_json(output / 'auditoria.json', resultado)
     escrever_json(output / 'canonico.json', lote.model_dump(mode='json'))
     return resultado

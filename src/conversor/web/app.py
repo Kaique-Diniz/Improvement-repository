@@ -341,8 +341,17 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             'politica_cadastral': r['politica_cadastral'], 'reavaliacoes_historicas': r['reavaliacoes_historicas'],
             'historico_tecnico': r['historico_tecnico'], 'previa_template': r['previa_template'],
             'codificacao_template': r['codificacao_template'],
+            'fechamento_habita': r['fechamento_habita'], 'manifesto_diagnostico': r['manifesto_diagnostico'],
             'autoriza_cobranca': False, 'permite_exportacao_operacional': False},
             headers={'Content-Disposition': f'attachment; filename="inconsistencias_{id_[:8]}.json"'})
+
+    @app.get('/api/processamentos/{id_}/manifesto-diagnostico.json')
+    def manifesto(id_: str, request: Request):
+        job = job_do_usuario(id_, request)
+        if job['estado'] != 'concluido':
+            raise HTTPException(409, 'PROCESSAMENTO_NAO_CONCLUIDO')
+        return FileResponse(job['path'] / 'manifesto_diagnostico.json',
+            filename=f'MANIFESTO_DIAGNOSTICO_NAO_IMPORTAR_{id_[:8]}.json', media_type='application/json')
 
     @app.get('/api/processamentos/{id_}/operacional.xlsx')
     def operacional(id_: str, request: Request):

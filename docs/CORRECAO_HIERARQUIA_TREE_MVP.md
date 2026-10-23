@@ -1,5 +1,61 @@
 # Correção da hierarquia TREE no MVP
 
+## Atualização funcional — XLSX diagnóstico com fechamento reconciliado
+
+A decisão posterior autoriza dispensa **somente para o diagnóstico local** da
+anomalia Habita/VG comprovada. O leitor continua produzindo a ocorrência crítica
+original, preservada com seu ID, fonte e gravidade; o canônico e as 904 ocorrências
+históricas não mudam. Não há dispensa operacional nem alteração de plano ou régua.
+
+A conferência adicional exige o leitor Habita real validado, uma única anomalia
+global de subtotal, bloco VG existente e outros blocos presentes; inventário
+completo de unidades, boletos, componentes, vencimentos e suas localizações;
+fechamentos explícitos corretos; cinco colunas monetárias reconciliadas; subtotal
+terminal VG repetindo o total geral na última página, seguido do fechamento geral
+com quantidade de unidades; diferença exatamente igual aos demais blocos.
+Hash, versão, página e linha vinculam as ocorrências atuais/históricas. Outra
+origem, colisão de ID, condição incompleta ou divergência diferente mantém retenção.
+
+Não se presume que o rótulo esteja correto. Mantêm-se separadamente VG impresso,
+VG calculado e total geral. A regra é aplicada ao fluxo diagnóstico do TREE,
+sem alterar o bloqueio do leitor ou o motor geral. A referência permanece opcional,
+conforme decisão expressa do responsável. Outros bloqueios globais e individuais
+continuam efetivos; cadastros com documentos válidos conflitantes não entram.
+
+Reprocessamento real, **23/10/2026**, confirmado também por upload comum no Chromium:
+
+| Resultado | TREE A | TREE B | PLAZA A | PLAZA B |
+|---|---:|---:|---:|---:|
+| Cotas/unidades | 112 | 112 | 50 | 50 |
+| Boletos | 769 | 769 | 115 | 115 |
+| Dívidas no XLSX diagnóstico | 63 | 63 | 69 | 69 |
+| Cadastros adicionais | 0 | 103 | 0 | 46 |
+
+TREE conserva 79 cotas vetadas e 15 cotas elegíveis. **63/63** pares unidade/boleto,
+vencimentos e valores coincidem com a referência, com mesmas dívidas nos modos A/B.
+Conferidos os 2.082 componentes, as 33 continuidades, NU_PARCELA por contrato,
+aba Dados, 30 colunas, CPF/CNPJ textual e Y:AD cadastrais vazias. Competências
+ausentes não foram inferidas. PLAZA conserva canônico e XLSX idênticos byte a byte.
+
+O botão **Manifesto do diagnóstico** entrega um JSON separado, autenticado e
+isolado por sessão, contendo fontes, data, modo, verificações, valores de fechamento,
+ocorrências críticas preservadas e hash do XLSX correspondente. Detalhes reais e
+manifestos permanecem privados. O relatório de inconsistências inclui a mesma
+conferência. A interface mostra a anomalia global e as linhas disponíveis para
+teste, sem classificar os 769 boletos como problemas individuais.
+
+**1.286 testes aprovados** (1.226 regulares + 60 explícitos), incluindo 24 novos
+casos sintéticos; oito verificações de schemas. Testados reconciliação, continuidade,
+adulteração, inventário parcial, outras críticas, conflitos reais entre documentos
+sintéticos válidos, rastreabilidade histórica, determinismo, manifesto e isolamento
+HTTP. Navegador: downloads reais A/B, referência opcional, manifesto/hash, filtros,
+remoção de arquivos, mesma sessão e mobile, sem erros de JavaScript. Testes no
+Linux/Python 3.12; não há homologação nativa do Windows ou de produção.
+
+Os registros seguintes documentam a investigação e a retenção **anteriores** à
+autorização desta dispensa diagnóstica. Instruções Windows ao final; publicação
+desta correção depende de autorização posterior. Sem push, merge, Fase 5 ou CRM.
+
 ## Causa e alcance
 
 O leitor já vinculava os boletos à unidade correta. A falha estava na orquestração
@@ -182,6 +238,7 @@ git pull --ff-only origin main
 ```
 
 Use o diretório privado já adotado na instalação em lugar do caminho ilustrativo.
-Confira então TREE e PLAZA com referência 23/10/2026 e modos A/B. Habita/VG deve
-continuar retido enquanto a ambiguidade documental persistir. Sem exportação
+Confira então TREE e PLAZA com referência 23/10/2026 e modos A/B. Habita/VG continua
+crítico para operação; somente a reconciliação integral permite o XLSX diagnóstico.
+Se a conferência falhar, o lote permanece retido também para teste. Sem exportação
 operacional, CRM, novas fases ou homologação para produção.

@@ -14,7 +14,7 @@ def boleto(numero, *, valor='10.00', apontamento=None, vencimento='01/09/26', co
         'componentes':componentes or [(valor,'1.00' if encargos else '0.00','0.00','0.00')]}
 
 
-def pdf_unidades(unidades, *, continuidade=False, subtotal_divergente=False):
+def pdf_unidades(unidades, *, continuidade=False, subtotal_divergente=False, fechamento_vg=False):
     """Cada unidade em página própria; continuação repete o mesmo boleto na próxima."""
     pages=[];geral=[Decimal('0.00')]*5
     def valores(cs):
@@ -52,6 +52,8 @@ def pdf_unidades(unidades, *, continuidade=False, subtotal_divergente=False):
             errado=total_unidade.copy();errado[0]+=Decimal('1.00');errado[4]+=Decimal('1.00')
             rows.append(fin('Total do Bloco '+bloco+':',errado,y));y-=25
         if ui==len(unidades)-1:
+            if fechamento_vg:
+                rows.append(fin('Total do Bloco VG:',geral,y));y-=25
             rows.append(fin(f'Quantidade de unidades inadimplentes no condominio: {len(unidades)} Total Geral:',geral,y))
         pages.append(rows)
     return pdf_posicionado([[(x,y,t+' ') for x,y,t in sorted(rows,key=lambda a:(-a[1],a[0]))] for rows in pages])

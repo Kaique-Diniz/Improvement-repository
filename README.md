@@ -14,15 +14,29 @@ R$ 0,01 ou com A/AJ/J veta o conjunto; somente depois se aplica o prazo individu
 com unidades expansíveis e identificação dos boletos causadores.
 
 Validação privada: **112 cotas, 769 boletos, 63 selecionados em 15 contratos**,
-coincidentes financeiramente com a referência. O bloqueio Habita/VG mantém zero
-dívidas geradas. PLAZA preservado, inclusive os XLSX de teste byte a byte.
+coincidentes financeiramente com a referência. TREE agora permite **63 dívidas
+no XLSX diagnóstico**, e no modo B acrescenta **103 cadastros**, após reconciliação
+integral do fechamento Habita/VG. A ocorrência crítica original permanece intacta
+para operação. PLAZA preservado, inclusive os XLSX de teste byte a byte.
 Os botões × e a codificação PLAZA estão incluídos na mesma linha de histórico,
 sem conflito entre as correções. Conferência direta do PDF: o rótulo VG na página
 149 repete o total geral reconciliado, mas diverge dos 120 boletos do próprio VG.
-Não foi comprovado erro de extração que permita retirar essa retenção por escopo
-documental ambíguo; o leitor e os valores permanecem inalterados.
+O leitor, seus bloqueios e os valores permanecem inalterados. A dispensa é
+exclusivamente diagnóstica: confronta os lançamentos e suas origens, os cinco
+totais monetários, o VG calculado, os demais blocos, a posição terminal e a
+vinculação da ocorrência. Sem comprovação integral, mantém retenção. Outras
+críticas e conflitos individuais não são dispensados. Referência é opcional.
+Baixe também o **Manifesto do diagnóstico**, que registra a anomalia, as ocorrências
+críticas e o SHA-256 do XLSX. Não importar esses arquivos no CRM.
 
-**1.262 testes aprovados**, oito schemas; uploads reais A/B e regressão funcional
+Para testar o pacote de código no Windows antes da publicação, extraia em uma
+nova pasta, crie o venv com `py -3.12 -m venv .venv`, instale com
+`.\.venv\Scripts\python.exe -m pip install -e ".[web]"` e inicie com
+`.\.venv\Scripts\python.exe -m conversor.web --private-dir "C:\ConversorPrivado\mvp"`,
+substituindo o exemplo pelo diretório privado já usado. Não mova fontes privadas
+para a pasta do código. Pare o servidor anterior antes de iniciar essa versão.
+
+**1.286 testes aprovados**, oito schemas; uploads reais A/B e regressão funcional
 no Chromium, sem erros JavaScript. Nenhum push ou merge desta consolidação.
 Veja o [comparativo, causas, evidências e limites](docs/CORRECAO_HIERARQUIA_TREE_MVP.md).
 As [instruções de atualização Windows após publicação autorizada](docs/CORRECAO_HIERARQUIA_TREE_MVP.md#atualização-windows-após-autorização-de-publicação)

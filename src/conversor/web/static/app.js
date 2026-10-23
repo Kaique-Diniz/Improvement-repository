@@ -20,7 +20,8 @@ function atualizarArquivo(id) {
 }
 function limparResultado() {
   atual=null;$('resultado').hidden=true;$('erro').hidden=true;$('progresso').hidden=true;$('vazio').hidden=false;
-  for(const id of ['download','inconsistencias']) { $(id).hidden=true;$(id).removeAttribute('href'); }
+  for(const id of ['download','inconsistencias','manifesto']) { $(id).hidden=true;$(id).removeAttribute('href'); }
+  $('fechamento-global').hidden=true;$('fechamento-global').replaceChildren();
   for(const id of ['linhas','grupos-cotas','previa-linhas','previa-cabecalho','resumo','avisos','comparacao','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
   $('cotas-agrupadas').open=false;
   $('previa-template').open=false;
@@ -84,13 +85,19 @@ function mostrar() {
   $('contexto').textContent=r.administradora+' · '+r.condominio+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
   const stats=[['Unidades / cotas',r.resumo.cotas],['Boletos extraídos',r.resumo.boletos],['Cotas elegíveis pela régua',r.resumo.cotas_elegiveis_pela_regua],['Cotas excluídas por veto coletivo',r.resumo.cotas_excluidas_por_veto],['Boletos selecionados pela régua',r.resumo.boletos_selecionados_pela_regua],['Boletos fora do prazo',r.resumo.boletos_nao_selecionados_prazo],['Cotas retidas tecnicamente',r.resumo.cotas_retidas],['Boletos retidos tecnicamente',r.resumo.boletos_retidos],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
   if(r.resumo.indeterminadas_pela_regua)stats.push(['Boletos indeterminados pela régua',r.resumo.indeterminadas_pela_regua]);
+  stats.push(['Dívidas disponíveis só para teste',r.resumo.dividas_efetivamente_geradas]);
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
+  const reconciliado=r.fechamento_habita?.estado==='reconciliado_somente_diagnostico';
+  $('fechamento-global').hidden=!r.fechamento_habita||r.fechamento_habita.estado==='nao_aplicavel';
+  if(reconciliado)$('fechamento-global').replaceChildren(elemento('strong','Habita/VG · Anomalia global de fechamento reconciliado'),elemento('p','O subtotal impresso repete o total geral e diverge do VG calculado. Todos os lançamentos e o total geral foram conferidos. A ocorrência crítica original permanece na auditoria. A dispensa vale somente para XLSX diagnóstico; não representa problema individual dos boletos nem liberação operacional. Confira o manifesto.'));
+  else if(r.fechamento_habita?.estado==='nao_reconciliado')$('fechamento-global').replaceChildren(elemento('strong','Fechamento global não reconciliado · Lote retido'),elemento('p','A divergência de subtotal não atende às condições da dispensa diagnóstica. É uma retenção global; não significa que cada boleto tenha um erro individual. Consulte o relatório e o manifesto.'));
   const historicos={nao_disponivel:'Sem histórico anterior (informativo)',carregado:'Histórico anterior carregado',vazio_inventariado:'Histórico conferido sem ocorrências anteriores',divergente:'Histórico conhecido ausente ou divergente: revisão necessária',exemplo_sintetico:'Exemplo sintético'};
   $('historico-tecnico').textContent=(historicos[r.historico_tecnico.estado]||r.historico_tecnico.estado)+' · '+r.historico_tecnico.aviso;
   if(r.resumo.boletos_retidos) $('avisos').prepend(elemento('p','Há boletos retidos tecnicamente, inclusive os selecionados pela régua. Um veto financeiro e um impedimento técnico são situações distintas; os bloqueios continuam preservados.'));
   $('download').hidden=!r.arquivo_teste_disponivel;$('download').href='/api/processamentos/'+r.id+'/arquivo-teste.xlsx';$('sem-excel').hidden=r.arquivo_teste_disponivel;
   $('inconsistencias').hidden=false;$('inconsistencias').href='/api/processamentos/'+r.id+'/inconsistencias.json';
+  $('manifesto').hidden=false;$('manifesto').href='/api/processamentos/'+r.id+'/manifesto-diagnostico.json';
   $('comparacao').hidden=!r.comparacao;
   if(r.comparacao){$('comparacao').replaceChildren(elemento('h3','Confronto com a referência'),elemento('p','A referência é um resultado esperado, não um gabarito absoluto. Nenhuma diferença altera os dados extraídos.'),elemento('pre',JSON.stringify(r.comparacao.resumo,null,2)),elemento('p',r.comparacao.limite));}
   desenharTabela();mostrarCotas();mostrarPrevia();
@@ -139,6 +146,7 @@ function desenharTabela() {
     if(d.alertas_cadastrais.includes('DIVERGENCIA_NOME_ENTRE_FONTES'))contato.append(elemento('small','Nomes diferentes: contato preferencial do Cadastro, sem retenção por esse motivo.'));
     const documental=elemento('td',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join(' · '):'Sem conflito documental');
     const estado=elemento('td');estado.append(elemento('span',nomes[d.situacao],'status '+d.situacao));
+    if(d.apto_xlsx_diagnostico)estado.append(elemento('small','Disponível exclusivamente para XLSX diagnóstico'));
     const motivo=elemento('td',d.motivos.map(motivoLegivel).join(' · ')||'Condições avaliadas','motivo');
     const detalhe=elemento('td');const b=elemento('button','Detalhes','secundario');b.onclick=()=>abrirDetalhes(d);detalhe.append(b);
     tr.append(unidade,cota,valor,regra,contato,documental,estado,motivo,detalhe);return tr;
@@ -160,6 +168,7 @@ function preencherDetalhes(d,box) {
   box.replaceChildren();
   box.append(elemento('h3',d.condominio+' · '+d.bloco+' / '+d.unidade),elemento('p','Boleto '+d.boleto+' · Vencimento '+d.vencimento.split('-').reverse().join('/')+' · '+nomes[d.situacao]));
   box.append(elemento('h3','Elegibilidade financeira'),elemento('p',financeiro[d.situacao_financeira]||d.situacao_financeira));
+  if(d.anomalia_global_reconciliada)box.append(elemento('h3','Anomalia global de fechamento'),elemento('p','Habita/VG integralmente reconciliado para diagnóstico local. Ocorrência original preservada; não é uma pendência individual deste boleto. Não autoriza exportação operacional.'));
   const cota=atual.cotas.find(c=>c.id===d.cota_id);
   if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>'página '+o.pagina+', linha '+o.linha).join('; ')));
   box.append(elemento('h3','Informações de contato da unidade'),elemento('p',contatoLegivel(d)));
