@@ -260,14 +260,15 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificador
 
 def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
              cadastro=None, referencia=None, historico=None, origem='upload',
-             mapeamento_referencia=None, estado_historico=None, progresso=lambda etapa: None):
+             mapeamento_referencia=None, estado_historico=None, progresso=lambda etapa: None,
+             perfis_saida=None):
     progresso('Reconhecendo formato e condomínio')
     perfil, codigo, leitor = reconhecer(conteudo)
     if pedido.condominio != 'auto' and pedido.condominio != perfil['id']:
         raise ErroLeitura('SELECAO_DIVERGENTE_DO_CABECALHO')
     progresso('Extraindo unidades, cotas e composições')
     lote, ctx = ler(conteudo, perfil, codigo, leitor, 'inadimplencia')
-    saida_bytes = PERFIS_SAIDA_PATH.read_bytes()
+    saida_bytes = Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()
     perfil_saida = selecionar_perfil(json.loads(saida_bytes), administradora_id=perfil['administradora_id'],
                                      condominio_id=perfil['condominio_id'])
     identificadores, codigos = {}, {}
@@ -332,6 +333,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
     fora_vigencia = pedido.data_ref < date.fromisoformat(perfil['vigente_de'])
     decisoes, linhas, linhas_info, previa = [], [], [], []
+    rotulos_template, enderecos_template = {}, {}
 
     def prever(tipo, u, base, *, decisao=None, divida=None, bloqueios=(), parcela_final=None):
         # Somente visualização. Nunca encaminha linhas retidas ao escritor XLSX
@@ -412,8 +414,14 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         if pessoa is None:
             continue
         identificacao = identificadores[u.id]
+        endereco_atual = pessoa.contato.endereco
+        endereco_saida, estado_endereco = (perfil_saida.preencher_endereco(endereco_atual)
+            if perfil_saida else (endereco_atual, 'sem_endereco_configurado'))
+        enderecos_template[u.id] = {'estado': estado_endereco,
+            'evidencia': perfil_saida.endereco_padrao.evidencia.model_dump(mode='json')
+                if perfil_saida and perfil_saida.endereco_padrao and estado_endereco == 'endereco_explicito_configurado' else None}
         contato = Contato.model_validate(pessoa.contato.model_dump() | {
-            'endereco': pessoa.contato.endereco.model_dump() | {'complemento': identificacao['complemento']}})
+            'endereco': endereco_saida.model_dump() | {'complemento': identificacao['complemento']}})
         pessoa_saida = Pessoa.model_validate(pessoa.model_dump() | {'contato': contato})
         base = dict(processamento_id=processamento_id, registro_id=u.id,
                     nm_cedente_cedente=identificacao['nome_cedente'], cedente=identificacao['cedente'], pessoa=pessoa_saida)
@@ -430,9 +438,17 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 parcela += 1
                 parcela_final = parcela
             nome_divida = boleto.identificador
-            if boleto.competencia:
+            base_rotulo = 'identificador_origem'
+            if perfil_saida and perfil_saida.rotulo_divida == 'vencimento_apresentacao':
+                base_rotulo = 'vencimento_apresentacao'
+                nome_divida = f'COTA {boleto.vencimento:%m/%Y}' + (f' - {parcela_final}' if parcela_final else '')
+            elif boleto.competencia:
+                base_rotulo = 'competencia_comprovada'
                 ano,mes = boleto.competencia.split('-')
                 nome_divida = f'COTA {mes}/{ano}' + (f' - {parcela_final}' if parcela_final else '')
+            rotulos_template[boleto.id] = {'rotulo': nome_divida, 'base': base_rotulo,
+                'identificador_origem': boleto.identificador, 'competencia': boleto.competencia,
+                'vencimento': boleto.vencimento.isoformat(), 'origens': [o.model_dump(mode='json') for o in boleto.origens]}
             divida = DividaExportacao(contrato=identificacao['contrato'], produto=identificacao['produto'],
                 nome_divida=nome_divida, parcela=parcela_final or 1, vencimento=boleto.vencimento,
                 valor=boleto.composicao.total_original) if boleto.composicao.total_original > 0 else None
@@ -453,7 +469,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     output.mkdir(mode=0o700, parents=True, exist_ok=True)
     if linhas:
         progresso('Gerando o arquivo de teste com as 30 colunas')
-        escrever_xlsx(linhas, Template(id='mvp_teste', nome='Universal local', versao='1.0'),
+        escrever_xlsx(linhas, Template(id='mvp_teste', nome='Universal local', versao='1.1', espaco_final_coluna_27=False),
                       output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx', data_ref=pedido.data_ref,
                       titulo='TESTE LOCAL DIAGNOSTICO - NAO IMPORTAR - SEM APROVACAO OPERACIONAL')
     aviso_fechamento = ('Habita/VG: o subtotal impresso diverge do VG calculado e repete o total geral. '
@@ -463,6 +479,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'finalidade': 'DIAGNOSTICO_LOCAL_NAO_IMPORTAR', 'autoriza_cobranca': False,
         'permite_exportacao_operacional': False, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
         'fontes': fontes, 'configuracao_hash': sha256(PERFIS_PATH.read_bytes()).hexdigest(),
+        'perfil_saida_sha256': sha256(saida_bytes).hexdigest(),
         'fechamento_habita': fechamento, 'ocorrencias_criticas_preservadas':
             [o.model_dump(mode='json') for o in ocorrencias if o.bloqueante],
         'aviso': aviso_fechamento if reconciliadas_diagnostico else 'Somente diagnóstico local. Não importar no CRM.',
@@ -502,7 +519,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'historico_tecnico': {'estado': estado_historico, 'registros_carregados': len(historico or ()),
             'aviso': ('Sem histórico anterior: análise limitada aos documentos enviados; não comprova ausência de pendências anteriores.'
                       if estado_historico == 'nao_disponivel' else 'Histórico vinculado ou verificação de integridade registrada.')},
-        'previa_template': {'colunas': list(Template(id='previa', nome='Universal', versao='1.0').cabecalhos_fisicos),
+        'previa_template': {'colunas': list(Template(id='previa', nome='Universal', versao='1.1', espaco_final_coluna_27=False).cabecalhos_fisicos),
                            'linhas': previa, 'somente_conferencia': True, 'exportacao_operacional': False},
         'politica_cadastral': 'cadastro_por_unidade@2',
         'codificacao_template': {'perfil_id': perfil_saida.id if perfil_saida else None,
@@ -510,6 +527,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'uso': 'diagnostico_nao_operacional', 'evidencia': perfil_saida.evidencia.model_dump(mode='json') if perfil_saida else None,
             'unidades': identificadores, 'pendentes': sum(i['estado'] == 'provisorio' for i in identificadores.values())},
         'reavaliacoes_historicas': reavaliacoes,
+        'rotulos_template': rotulos_template, 'enderecos_template': enderecos_template,
         'fechamento_habita': fechamento, 'manifesto_diagnostico': manifesto,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
             'Codificação de integração apenas para teste; unidades sem mapa explícito conservam identificadores provisórios. Importação no easyCollector não homologada.',

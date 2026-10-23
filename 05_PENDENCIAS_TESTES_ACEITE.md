@@ -76,7 +76,7 @@ Atestos e aprovação de planos continuam pendentes; subtotal VG permanece crít
 | P03 | Novos formatos podem ser criados pela operação? | Inicialmente técnico/config JSON; futuro assistente visual | Antes da fase 7 |
 | P04 | CPF de empresa/único CNPJ, proprietário múltiplo, titular divergente? | CPF/CNPJ válido como texto; ausência/invalidade -> vazio + alerta; conflito/vínculo pendente -> revisão humana auditada | Antes da homologação de cadastros |
 | P05 | Alterações entre cadastro geral e inadimplência com datas distintas? | Gerar ocorrência, não substituir automaticamente titular | Antes da fase 3 |
-| P06 | Cabeçalho `NM_DIVIDA_CEDENTE ` com espaço final? | Compatibilidade fiel ao arquivo-base até teste contra importador | Antes da fase 5 |
+| P06 | Cabeçalho AA | Resolvido para novas saídas diagnósticas MVP: literal `NM_DIVIDA_CEDENTE`, sem espaço, conforme solicitação posterior; preservar reprodução histórica. Compatibilidade operacional integral ainda pendente | Antes da fase 5 |
 | P07 | Modalidade judicial e exceções específicas: importação vs negociação? | Definido: prazos judiciais não filtram o Excel; medidas posteriores cabem ao CRM. TREE: cota = unidade; centavo ou A/AJ/J em qualquer boleto veta todos os boletos dessa unidade, sem atingir outras unidades | Não exigir marcos de 60/90; preservar campos próprios e evidências dos boletos causadores |
 | P08 | Quais casos devem bloquear lote todo vs somente registro? | Matriz explícita com tipo/severidade/escopo | Antes da fase 4 |
 | P09 | Política de retenção e acesso a PDFs/CPFs? | Pasta temporária protegida com prazo definido, sem salvar conteúdo em logs | Antes da produção |

@@ -61,7 +61,8 @@ def test_fechamento_reconciliado_disponibiliza_so_diagnostico_preservando_eviden
     assert len(rows)==dividas+cadastros
     assert sum(all(v is None for v in row[24:30])for row in rows)==cadastros
     assert [row[27]for row in rows if row[24]is not None]==[1,2,1]
-    assert {row[26]for row in rows if row[24]is not None}=={'99000001','99000002','99000003'}
+    assert {row[26]for row in rows if row[24]is not None}=={'COTA 09/2026 - 1','COTA 09/2026 - 2'}
+    assert {v['identificador_origem']for v in r['rotulos_template'].values()}=={'99000001','99000002','99000003'}
     wb.close()
 
 

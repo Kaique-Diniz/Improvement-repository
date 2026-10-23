@@ -39,13 +39,14 @@ Arquivo: `TEMPLATE - PLAZA_MAYOR_IPIRANGA_outubro_2026(1).xlsx`. Aba: **Dados**.
 | 30 | `VL_PARCELA` | Valor original da parcela, sem juros/multa quando regra assim determinar | Vazio em linha cadastral |
 
 ## Observação de compatibilidade de cabeçalho
-O arquivo real possui **espaço final** no cabeçalho `NM_DIVIDA_CEDENTE ` da coluna AA. O nome lógico canônico é `NM_DIVIDA_CEDENTE`, sem espaço. **Pendente:** testar se o importador de destino exige o espaço final; não alterar uma nomenclatura de integração sem validação.
+O arquivo-base histórico possui **espaço final** no cabeçalho AA. Por solicitação expressa posterior, as novas saídas diagnósticas do MVP usam o literal `NM_DIVIDA_CEDENTE`, sem espaço, mantendo as 30 posições. O parâmetro histórico continua disponível para reprodução; não se altera um template já armazenado ou assinado. A compatibilidade operacional integral do importador permanece pendente.
 
 ## Contratos de preenchimento
 - A planilha sempre possui os **30 campos em mesma ordem** e a aba `Dados`.
 - Campos de cadastro sem valor conhecido permanecem vazios, sem valores fabricados.
 - `CPF` permanece o nome literal da coluna C: aceita CPF ou CNPJ válido do registro da unidade, sem exigir associação individual quando houver vários nomes. Ausência/invalidade -> vazio + aviso informativo/alerta, sem bloqueio. Documentos válidos conflitantes e identidade estrutural ambígua exigem revisão; nomes distintos entre fontes são informativos, com preferência cadastral após vínculo inequívoco da unidade.
 - `NU_PARCELA`: sequência 1..N por unidade/contrato, considerando somente dívidas efetivamente incluídas, em ordem de vencimento e identificador estável. Com competência comprovada, `NM_DIVIDA_CEDENTE` usa `COTA MM/AAAA - N`; sem competência, identificador da fonte. Em projeções retidas a parcela final fica vazia; linhas cadastrais conservam Y:AD vazias.
+- Exceção explícita de apresentação do perfil diagnóstico TREE: `rotulo_divida=vencimento_apresentacao` usa mês/ano do vencimento e a sequência final. Isso não cria competência. O ID original do boleto, a data utilizada, a base do rótulo e as origens permanecem na auditoria. Sem essa configuração, prevalece a política anterior.
 - CPF e CNPJ são sempre gravados como texto literal, formato `@`, nunca números. CEP, telefone, DDD, CEDENTE e códigos com zeros também preservam representação textual. Nunca completar documentos inválidos por inferência.
 - No MVP diagnóstico, `src/conversor/web/perfis_saida.json` declara os cinco identificadores por administradora/condomínio, com mapa explícito de torres, largura da unidade, versão e evidência documental. Não altera a identidade canônica nem a régua. Configuração PLAZA corroborada na referência: nome cedente `FL`, produto `PLAZA MAYOR`, código da torre + unidade em quatro posições e complemento `UNI{unidade}-BL{torre}`. Sem mapa comprovado, identificação provisória e pendência explícita; nenhuma conversão automática de letras em números ou aprovação operacional.
 - `VENCIMENTO`: data reconhecível/importável no Excel; confirmar convenção de serial e formato com destino.

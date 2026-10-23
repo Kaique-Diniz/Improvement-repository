@@ -51,7 +51,7 @@ def test_demo_completo_upload_leitura_AB_excel_e_comparacao(client, modo, linhas
     book = load_workbook(BytesIO(download.content))
     rows = list(book['Dados'].iter_rows())
     assert len(rows) == linhas + 1
-    assert tuple(c.value for c in rows[0]) == Template(id='t',nome='t',versao='1').cabecalhos_fisicos
+    assert tuple(c.value for c in rows[0]) == Template(id='t',nome='t',versao='1.1',espaco_final_coluna_27=False).cabecalhos_fisicos
     docs = [row[2] for row in rows[1:]]
     assert {c.value for c in docs} == {'00000000191','00000000000191'}
     assert all(c.data_type == 's' and c.number_format == '@' for c in docs)

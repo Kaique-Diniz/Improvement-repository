@@ -168,6 +168,8 @@ function preencherDetalhes(d,box) {
   box.replaceChildren();
   box.append(elemento('h3',d.condominio+' · '+d.bloco+' / '+d.unidade),elemento('p','Boleto '+d.boleto+' · Vencimento '+d.vencimento.split('-').reverse().join('/')+' · '+nomes[d.situacao]));
   box.append(elemento('h3','Elegibilidade financeira'),elemento('p',financeiro[d.situacao_financeira]||d.situacao_financeira));
+  const rotulo=atual.rotulos_template?.[d.id];
+  if(rotulo)box.append(elemento('h3','Rótulo apresentado no template'),elemento('p',rotulo.rotulo+(rotulo.base==='vencimento_apresentacao'?' · Mês/ano do vencimento somente para apresentação; não informa competência.':'')),elemento('p','Identificador original do boleto: '+rotulo.identificador_origem));
   if(d.anomalia_global_reconciliada)box.append(elemento('h3','Anomalia global de fechamento'),elemento('p','Habita/VG integralmente reconciliado para diagnóstico local. Ocorrência original preservada; não é uma pendência individual deste boleto. Não autoriza exportação operacional.'));
   const cota=atual.cotas.find(c=>c.id===d.cota_id);
   if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>'página '+o.pagina+', linha '+o.linha).join('; ')));

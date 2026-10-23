@@ -19,7 +19,7 @@ class Template(Modelo):
     versao: Texto
     nome_aba: Literal["Dados"] = "Dados"
     colunas_logicas: tuple[str, ...] = COLUNAS
-    espaco_final_coluna_27: bool = True  # fidelidade ao arquivo-base; P06 aberta
+    espaco_final_coluna_27: bool = True  # padrão histórico; novas saídas MVP usam False explicitamente
 
     @model_validator(mode="after")
     def contrato(self):

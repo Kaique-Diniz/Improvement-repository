@@ -128,7 +128,9 @@ def test_prazo_individual_componentes_legendas_e_parcelas_sem_veto(tmp_path,modo
     rows=[l for l in r['previa_template']['linhas']if l['tipo']=='divida']
     assert [l['cota']for l in rows]==['99000002','99000003']
     assert [l['valores'][27]for l in rows]==[1,2]
-    assert [l['valores'][26]for l in rows]==['99000002','99000003'] # competência ausente
+    assert [l['valores'][26]for l in rows]==['COTA 08/2026 - 1','COTA 09/2026 - 2']
+    assert all(d['competencia'] is None for d in r['decisoes'])
+    assert r['rotulos_template'][rows[0]['boleto_id']]['identificador_origem']=='99000002'
     assert next(d for d in r['decisoes']if d['boleto']=='99000002')['valor']=='10.01'
 
 

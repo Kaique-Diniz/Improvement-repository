@@ -97,11 +97,12 @@ def habita(codigo=None, centavo=False):
     return pdf_posicionado(pages)
 
 
-def test_sem_competencia_preserva_identificador_sem_inventar_mes(tmp_path):
+def test_rotulo_tree_por_vencimento_preserva_identificador_e_competencia_ausente(tmp_path):
     r=executar(tmp_path,habita(),modo='A')
     assert len(r['linhas_teste'])==1 and r['decisoes'][0]['competencia']is None
     l=r['previa_template']['linhas'][0]
-    assert l['valores'][26]==r['decisoes'][0]['cota'] and l['valores'][27]==1
+    assert l['valores'][26]=='COTA 09/2026 - 1' and l['valores'][27]==1
+    assert r['rotulos_template'][r['decisoes'][0]['id']]['identificador_origem']==r['decisoes'][0]['cota']
 
 
 @pytest.mark.parametrize('codigo,centavo', [('A',False),('AJ',False),('J',False),(None,True)])

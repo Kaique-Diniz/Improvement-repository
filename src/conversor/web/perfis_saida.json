@@ -8,16 +8,63 @@
     "nome_cedente": "FL",
     "produto": "PLAZA MAYOR",
     "largura_unidade": 4,
-    "torres": {"A": "1", "B": "2", "C": "3", "D": "4", "E": "5", "F": "6", "G": "7"},
+    "torres": {
+      "A": "1",
+      "B": "2",
+      "C": "3",
+      "D": "4",
+      "E": "5",
+      "F": "6",
+      "G": "7"
+    },
     "evidencia": {
       "arquivo": "TEMPLATE - PLAZA_MAYOR_IPIRANGA_outubro_2026.xlsx",
       "sha256": "c9e83fd1894dabcde6297bb995b0fae97fe027a012d4b410b025928d8f41b6cd",
       "aba": "Dados",
       "celulas": {
-        "nome_cedente": "A2:A113", "produto": "Z2:Z70",
-        "cedente": "B2:B113", "complemento": "G2:G113", "contrato": "Y2:Y70",
-        "torre_A": "G113", "torre_B": "G112", "torre_C": "G111", "torre_D": "G110",
-        "torre_E": "G109", "torre_F": "G108", "torre_G": "G107"
+        "nome_cedente": "A2:A113",
+        "produto": "Z2:Z70",
+        "cedente": "B2:B113",
+        "complemento": "G2:G113",
+        "contrato": "Y2:Y70",
+        "torre_A": "G113",
+        "torre_B": "G112",
+        "torre_C": "G111",
+        "torre_D": "G110",
+        "torre_E": "G109",
+        "torre_F": "G108",
+        "torre_G": "G107"
+      }
+    }
+  },
+  {
+    "id": "tree_identificadores_diagnosticos",
+    "versao": "1.0",
+    "uso": "diagnostico_nao_operacional",
+    "administradora_id": "adm_habita",
+    "condominio_id": "cond_habita",
+    "nome_cedente": "HABITACIONAL_2",
+    "produto": "TREE MORUMBI",
+    "largura_unidade": 4,
+    "torres": {
+      "1": "01",
+      "2": "02",
+      "DEP": "DEP"
+    },
+    "codificador": "bloco_unidade_sufixo",
+    "sufixo_cedente": "TREE MORUMBI",
+    "rotulo_divida": "vencimento_apresentacao",
+    "evidencia": {
+      "arquivo": "TREE MORUMBI_OUTUBRO 2026.xlsx",
+      "sha256": "75c6820f3d4e13081d31378b975785a1b89cedb4a7497020dfd0691a6b894df6",
+      "aba": "Dados",
+      "celulas": {
+        "nome_cedente": "A2:A64",
+        "cedente": "B2:B64",
+        "complemento": "G2:G64",
+        "contrato": "Y2:Y64",
+        "rotulo_vencimento_parcela": "AA2:AC64",
+        "blocos_comprovados": "G2:G64 (01, 02, DEP); VG sem evidencia"
       }
     }
   }

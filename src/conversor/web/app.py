@@ -106,12 +106,17 @@ class RegistroPrivado:
         return json.loads(self.ler_arquivo(caso['mapeamento_referencia']))
 
 
-def criar_app(raiz: Path, *, acesso=None, catalogo=None):
+def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
     raiz = Path(raiz)
     raiz.mkdir(mode=0o700, parents=True, exist_ok=True)
     if raiz.is_symlink():
         raise RuntimeError('AREA_PRIVADA_NAO_PODE_SER_LINK')
     _area_fora_do_git(raiz)
+    if perfis_saida is not None:
+        perfis_saida = Path(perfis_saida)
+        if perfis_saida.is_symlink():
+            raise RuntimeError('PERFIL_PRIVADO_NAO_PODE_SER_LINK')
+        _area_fora_do_git(perfis_saida.parent)
     os.chmod(raiz, 0o700)
     (raiz / 'processamentos').mkdir(mode=0o700, exist_ok=True)
     os.chmod(raiz / 'processamentos', 0o700)
@@ -234,6 +239,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
                     historico=historico, origem=origem,
                     estado_historico=estado_historico,
                     mapeamento_referencia=mapeamento,
+                    perfis_saida=perfis_saida,
                     progresso=lambda etapa: job.update(etapa=etapa))
                 with lock:
                     job.update(estado='concluido', resultado=result)
@@ -342,6 +348,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             'historico_tecnico': r['historico_tecnico'], 'previa_template': r['previa_template'],
             'codificacao_template': r['codificacao_template'],
             'fechamento_habita': r['fechamento_habita'], 'manifesto_diagnostico': r['manifesto_diagnostico'],
+            'rotulos_template': r['rotulos_template'], 'enderecos_template': r['enderecos_template'],
             'autoriza_cobranca': False, 'permite_exportacao_operacional': False},
             headers={'Content-Disposition': f'attachment; filename="inconsistencias_{id_[:8]}.json"'})
 

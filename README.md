@@ -8,6 +8,30 @@ puramente documentais anteriores. Os registros abaixo dessa seção são histór
 
 ## Versão integrada — remoção de arquivos, hierarquia TREE e conferência VG
 
+**Ajuste atual do template TREE:** perfil explícito de identificadores: cedente
+`HABITACIONAL_2`; complemento `BL{codigo}-UNI{unidade de 4 dígitos}`; CEDENTE e
+contrato acrescentam `-TREE MORUMBI`. Mapa comprovado: `1→01`, `2→02`, `DEP→DEP`.
+VG mantém identificação provisória e aviso, pois não consta na referência.
+O rótulo `COTA MM/AAAA - N` usa vencimento apenas para apresentação; competência
+continua ausente e o boleto original fica na auditoria. AA literal sem espaço final.
+
+Endereço do prédio não é copiado automaticamente da referência. Para configuração
+explícita, copie `src/conversor/web/perfis_saida.json` para uma pasta privada fora
+do Git e acrescente `endereco_padrao` ao perfil desejado, com `endereco` e
+`evidencia` (arquivo, SHA-256, aba/registro e células/campos). O modelo é testado
+com dados fictícios em `tests/web/test_tree_template.py`. Inicie com
+`--perfis-saida "C:\ConversorPrivado\perfis_saida.json"`. Só preenche endereço
+integralmente ausente; dados atuais, inclusive parciais, permanecem intactos.
+Nenhum endereço real foi ativado ou incluído no repositório.
+
+Validação deste ajuste: **1.297 testes aprovados**, oito schemas. TREE continua
+com 63 dívidas A/B e 103 cadastros B; identificadores e rótulos coincidem em 63/63
+linhas. PLAZA mantém todos os dados; única mudança no seu XLSX é AA sem espaço.
+As quatro diferenças de telefone foram conferidas no PDF e não exigem troca de
+contatos: três posições diferentes e um telefone de oito dígitos sem DDD.
+Fontes, canônico, decisões, parcelas, valores e bloqueios permanecem preservados.
+Sem push ou merge deste ajuste. Os números abaixo documentam entregas anteriores.
+
 No TREE, **cota = unidade**, reunindo todos os seus boletos. Um boleto de original
 R$ 0,01 ou com A/AJ/J veta o conjunto; somente depois se aplica o prazo individual
 `>30` dias. A interface separa contagens, veto financeiro e retenção técnica,

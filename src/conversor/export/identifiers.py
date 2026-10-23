@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import Field, model_validator
 
 from conversor.domain.base import Hash, Id, Modelo, Texto
-from conversor.domain.canonical import Unidade
+from conversor.domain.canonical import Endereco, Unidade
 from conversor.readers.text_support import ErroLeitura
 
 
@@ -14,6 +14,17 @@ class EvidenciaCodificacao(Modelo):
     sha256: Hash
     aba: Texto
     celulas: dict[str, Texto]
+
+
+class EnderecoPadrao(Modelo):
+    endereco: Endereco
+    evidencia: EvidenciaCodificacao
+
+    @model_validator(mode='after')
+    def endereco_explicito(self):
+        if not self.endereco.logradouro.strip() or self.endereco.complemento:
+            raise ValueError('ENDERECO_PADRAO_EXIGE_LOGRADOURO_SEM_COMPLEMENTO_DE_UNIDADE')
+        return self
 
 
 class PerfilIdentificadores(Modelo):
@@ -27,14 +38,21 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo'] = 'torre_unidade'
+    sufixo_cedente: Texto | None = None
+    rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
+    endereco_padrao: EnderecoPadrao | None = None
 
     @model_validator(mode='after')
     def mapa_explicito(self):
+        codigo = r'[0-9]{1,6}' if self.codificador == 'torre_unidade' else r'[A-Z0-9]{1,6}'
         if not self.torres or any(not k or k != k.strip().upper() or
-                                 not re.fullmatch(r'[0-9]{1,6}', v) for k, v in self.torres.items()):
+                                 not re.fullmatch(codigo, v) for k, v in self.torres.items()):
             raise ValueError('MAPEAMENTO_DE_TORRES_INVALIDO')
         if len(set(self.torres.values())) != len(self.torres):
             raise ValueError('CODIGOS_DE_TORRES_CONFLITANTES')
+        if (self.codificador == 'bloco_unidade_sufixo') != (self.sufixo_cedente is not None):
+            raise ValueError('SUFIXO_INCOMPATIVEL_COM_CODIFICADOR')
         return self
 
     def codificar(self, unidade: Unidade, *, administradora_id: str) -> tuple[str, str]:
@@ -50,7 +68,19 @@ class PerfilIdentificadores(Modelo):
         if len(numero) > self.largura_unidade:
             raise ErroLeitura('UNIDADE_FORA_DA_LARGURA_DOCUMENTADA')
         torre = self.torres[unidade.bloco_original]
+        if self.codificador == 'bloco_unidade_sufixo':
+            complemento = f'BL{torre}-UNI{numero}'
+            return f'{complemento}-{self.sufixo_cedente}', complemento
         return torre + numero, f'UNI{numero}-BL{torre}'
+
+    def preencher_endereco(self, atual: Endereco) -> tuple[Endereco, str]:
+        if self.endereco_padrao is None:
+            return atual, 'sem_endereco_configurado'
+        # Não mistura partes de endereços nem substitui informação de fonte atual.
+        campos = atual.model_dump(exclude={'complemento'})
+        if any(v.strip() for v in campos.values()):
+            return atual, 'endereco_atual_preservado'
+        return self.endereco_padrao.endereco.model_copy(update={'complemento': atual.complemento}), 'endereco_explicito_configurado'
 
 
 def selecionar_perfil(dados, *, administradora_id, condominio_id):
