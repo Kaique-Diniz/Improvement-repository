@@ -112,10 +112,10 @@ Não habilita dados reais, XLSX ou autorização operacional.
 ## 6. CPF e contato
 - A **coluna literal `CPF` aceita CPF válido de 11 dígitos ou CNPJ válido de 14 dígitos**, conforme atualização geral aprovada em 21/10/2026. Validar os dígitos verificadores de acordo com o tipo; não retipar documento explícito para forçar validade.
 - Documento ausente ou inválido: exportar célula em branco e emitir alerta não bloqueante. Preservar valor bruto e fonte na auditoria protegida; não completar dígitos ou zeros que não constem na fonte.
-- Restrição adicional explicitamente confirmada para o **novo fluxo sintético 4.3B.1**: CPF/CNPJ inválido encaminha a unidade à revisão, sem dívida/cadastro automático; documento ausente continua somente alerta. Essa guarda preserva evidências e não altera o resolvedor histórico, os leitores ou o contrato do template. O incremento não exporta XLSX.
+- A correção funcional do MVP substitui a restrição anterior do incremento 4.3B.1: CPF/CNPJ ausente ou inválido não bloqueia a análise financeira nem o cadastro. Ausência produz aviso informativo e invalidade produz alerta, ambos com célula vazia.
 - Preservar zeros à esquerda de CPF e CNPJ usando texto literal e formato `@` no Excel; nunca números. Normalizar somente pontuação permitida antes da validação.
 - Telefones/e-mails opcionais. Até 5 pares DDD/FONE e 3 e-mails; não inventar.
-- Identificações de vários titulares/corresponsáveis exigem regras claras de identificação por unidade. Unidade ou nome isolado não prova associação de documento ao titular. Não substituir automaticamente CPF por CNPJ ou vice-versa. Dois documentos válidos distintos para o mesmo titular bloqueiam resolução automática e exportação desse cadastro; encaminhar à revisão humana, com todas as evidências e fontes. Associação não confirmada também bloqueia. Não escolher fonte mais recente ou Cadastro como prioridade implícita.
+- Cadastro por unidade pode conter vários nomes e um único CPF/CNPJ válido. Preservar os nomes no campo NOME, sem criar pessoas ou dívidas adicionais; o documento pertence ao registro da unidade, sem atribuição individual. `/` não é conflito. Dois documentos válidos distintos e conflitantes para a mesma unidade exigem revisão. Divergências de nomes entre fontes continuam em revisão quando não forem apenas nomes completos adicionais explicitamente apresentados no registro; não escolher titular silenciosamente. Cruzar sempre condomínio + torre/bloco + unidade, sem transportar documentos entre unidades.
 
 ## 7. CEDENTE e codificação de unidade
 - `CEDENTE` e `NM_CONTRATO_CEDENTE` podem ter padrões específicos por condomínio; não impor universalmente `BL00-UNI0000-NOME`.
@@ -136,7 +136,7 @@ Não habilita dados reais, XLSX ou autorização operacional.
 ## 9. Validação e bloqueios
 **Informativo:** telefone ausente, e-mail ausente.  
 **Alerta não bloqueante:** documento vazio/invalidado, campos cadastrais opcionais sem origem.
-**Crítico, bloquear registro ou arquivo conforme contaminação:** documentos válidos conflitantes, titularidade documental não confirmada, formato desconhecido, condomínio ambíguo, unidade ambígua, linha incompleta de boleto, soma inconsistente, duplicidade não reconciliada, campo requerido pelo destino incompatível, regra não validada.
+**Crítico, bloquear registro ou arquivo conforme contaminação:** documentos válidos conflitantes, vínculo entre registros/fontes não comprovado (múltiplos nomes isoladamente não são conflito), formato desconhecido, condomínio ambíguo, unidade ambígua, linha incompleta de boleto, soma inconsistente, duplicidade não reconciliada, campo requerido pelo destino incompatível, regra não validada.
 
 Não deve existir exportação de cobranças com valor presumido. Dados não verificáveis permanecem pendentes e rastreados.
 

@@ -116,7 +116,7 @@ def test_documento_v2_legado_preservado_sem_fusao_de_evidencias(integrado, orige
 
 
 @pytest.mark.parametrize('documento,situacao', [(None, 'elegivel_na_simulacao'),
-    ({'tipo': 'cpf', 'valor': '123'}, 'bloqueado')])
+    ({'tipo': 'cpf', 'valor': '123'}, 'elegivel_na_simulacao')])
 def test_ausencia_e_invalidade_de_documento_preservam_politica(integrado, documento, situacao):
     def editar(e):e['lote']['pessoas'][0]['documento'] = documento
     c = integrado(editar_entrada=editar)

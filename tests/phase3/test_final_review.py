@@ -142,4 +142,5 @@ def test_prefixo_de_nome_nao_autoriza_substituicao_de_titular():
     assert unido.pessoas[0].nome == fl.pessoas[0].nome
     assert unido.boletos == fl.boletos
     assert any(r.codigo == 'TITULAR_DIVERGENTE' and r.gravidade == 'critico' for r in unido.ressalvas)
-    assert resolver_documento(unido.pessoas[0]).bloqueante
+    assert not resolver_documento(unido.pessoas[0]).bloqueante
+    assert resultado_leitura(unido, processamento_id='divergencia').bloqueante

@@ -162,7 +162,7 @@ def test_cadastro_docs_validos_conflitantes_nao_escolhe_cpf_ou_cnpj():
     resolucao=resolver_documento(lote.pessoas[0])
     assert resolucao.bloqueante and not resolucao.valor
     assert len(resolucao.evidencias)==2
-    assert {'DOCUMENTOS_CONFLITANTES','DOCUMENTO_TITULAR_NAO_CONFIRMADO'}<=set(resolucao.codigos)
+    assert resolucao.codigos == ('DOCUMENTOS_CONFLITANTES',)
 
 
 def test_cadastro_torre_ausente_bloqueia():
@@ -250,7 +250,9 @@ def test_cruzamento_nao_aplica_prioridade_laboratorial_a_titular_divergente():
     r=resultado_leitura(unido,processamento_id='exec_real')
     assert any(o.codigo=='TITULAR_DIVERGENTE'and o.bloqueante for o in r.ocorrencias)
     assert unido.pessoas[0].nome==devedor.pessoas[0].nome
-    assert not resolver_documento(unido.pessoas[0]).valor
+    # O documento pertence ao registro da unidade; a divergência entre nomes
+    # continua bloqueante, sem inventar associação a um titular individual.
+    assert resolver_documento(unido.pessoas[0]).valor == '00000000191'
 
 
 def test_cruzamento_cpf_valido_conflitante_mantem_duas_fontes():

@@ -55,17 +55,18 @@ def test_unidade_somente_no_cadastro_complementar_nao_e_projetada(montar, unidad
 
 @pytest.mark.parametrize('modo', ['A', 'B'])
 @pytest.mark.parametrize('tipo,valor', [('cpf', '123'), ('cnpj', '00000000000000')])
-def test_documento_invalido_revisao_no_novo_fluxo_sem_apagar_alerta(montar, pessoa, tipo, valor, modo):
+def test_documento_invalido_alerta_sem_bloquear_cotas_ou_cadastro(montar, pessoa, tipo, valor, modo):
     c = montar(specs=[{'dias': 31}, {'dias': 30}], modo=modo)
     p = Pessoa.model_validate(pessoa.model_dump() | {'documento': Documento(tipo=tipo, valor=valor)})
     lote = LoteCanonico.model_validate(c.e.lote.model_dump() | {'pessoas': (p,)})
     c.e = EntradaSimulacao.model_validate(c.e.model_dump() | {'lote': lote})
     antes = hash_modelo(c.e)
     r = rodar(c)
-    assert all(d.situacao == 'bloqueado' and d.revisao_humana for d in r.relatorio_motor.boletos)
-    assert not r.boletos_divida and not r.candidatos_cadastrais
+    assert [d.situacao for d in r.relatorio_motor.boletos] == ['elegivel_na_simulacao', 'excluido']
+    assert r.boletos_divida == ('boleto_0',)
+    assert len(r.candidatos_cadastrais) == (1 if modo == 'B' else 0)
     codigos = {o.codigo for o in r.relatorio_motor.ocorrencias_anteriores}
-    assert 'DOCUMENTO_INVALIDO' in codigos and 'DOCUMENTO_INVALIDO_REQUER_REVISAO_43B1' in codigos
+    assert 'DOCUMENTO_INVALIDO' in codigos and 'DOCUMENTO_INVALIDO_REQUER_REVISAO_43B1' not in codigos
     assert hash_modelo(c.e) == antes and c.e.lote.pessoas[0].documento.valor == valor
 
 
