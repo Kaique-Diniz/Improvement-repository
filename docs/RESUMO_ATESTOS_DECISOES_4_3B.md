@@ -1,5 +1,28 @@
 # Fontes e decisões restantes — resumo para atesto humano
 
+**Prioridades confirmadas como decisões de negócio, sem aprovação de plano:**
+TREE: `tree_centavo`, `tree_apontamento_a`, `tree_apontamento_aj` e
+`tree_apontamento_j` = **1**; `tree_prazo_30` = **0**.
+PLAZA: `plaza_prazo_30` = **0**. Os números não precisam de nova confirmação
+de negócio. Exclusões afetam só a cota/componentes, com todas as justificativas
+simultâneas preservadas. Indeterminações relevantes exigem revisão e críticos
+prevalecem sobre prioridades financeiras. A/B é independente. Vigência de negócio
+mantida: início inclusivo **2026-09-10**, fim aberto até substituição/revogação
+expressa. Continuam pendentes a validação da aplicabilidade anterior à fonte de
+rótulo 20/10/2026, a divergência TREE unidade/cota, atestos e aprovação formal do
+conteúdo final dos planos. Não há assinatura, ativação ou autorização de simulação.
+
+Estado atual e atos restantes no [pacote consolidado](preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md).
+Os quadros anteriores abaixo mantêm seu contexto histórico quando mencionam
+prioridades/vigências ainda por definir; esses números e datas já foram decididos.
+
+**Consolidação posterior:** usar as
+[cinco fichas resumidas](preparacao_4_3B_2B/ATESTOS_CINCO_FONTES.md) e o
+[checklist A/B/C/D](preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md) na preparação do
+4.3B.2B. Usados somente metadados anteriores; não houve nova leitura/reconferência
+dos originais nesta tarefa. As afirmações de conferência abaixo se referem à
+etapa técnica histórica. Todos os campos humanos continuam não preenchidos.
+
 **Nenhum item humano está aprovado ou atestado por este documento.** Conferência
 automática é evidência técnica, não manifestação do responsável. Os cinco anexos
 autorizados tiveram seus hashes reconferidos nesta etapa; não foram alterados.

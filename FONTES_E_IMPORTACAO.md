@@ -50,16 +50,22 @@ do Git. A ficha privada de revisão registra hashes completos e versões dispon�
 o procedimento público está no
 [checklist de atesto](docs/ATESTO_HUMANO_FONTES_FASE4_3B.md).
 
-Um extrato autorizado e aplicável da régua ainda precisa ser identificado e
-vinculado às condições aplicáveis da matriz revisada. Não foi obtido novo material de régua
-nesta tarefa. Informação de acesso, credencial ou nota administrativa não deve
-ser transcrita para condição financeira. Não houve atesto humano nem início do
-4.3B, simulação financeira real ou exportação operacional.
+Após nova disponibilização do original, a régua foi incorporada separadamente
+ao inventário privado: **712.353 bytes**, SHA-256 esperado exato, fingerprint
+`c56349e33b54…`. Aba `RÉGUA DE COBRANÇA`: TREE linha 366 e PLAZA linha 329.
+Os [oito vínculos documentais e suas ressalvas](docs/preparacao_4_3B_2B/VIGENCIA_E_VERSOES.md)
+referenciam a fonte exata; hashes completos e linhas internas ficam no complemento
+privado, preservando os inventários históricos das cinco fontes. Informação de
+acesso/credencial ou nota administrativa não foi transcrita ou convertida em
+regra. Somente a régua foi lida nesta incorporação, sem reabrir os cinco anexos.
+Não houve atesto, aprovação/ativação, simulação financeira ou exportação operacional.
 
 Os [esclarecimentos posteriores do responsável](docs/ATUALIZACAO_REQUISITOS_EXTRAJUDICIAL_FASE4_3B.md)
 definiram requisitos extrajudiciais, não atestaram estas fontes. Não exigir
 prazos judiciais de 60/90 ou garantidora como filtros adicionais do Excel. O
-campo `Valor` ainda exige mapeamento comprovado à cota/componentes para a regra
-do centavo; cadastro antecipado é opção universal A/B por processamento, sem
-trazer automaticamente todo o Cadastro Geral. Fonte vigente, atestos humanos,
-prioridades, vigências e aprovação formal dos planos continuam pendentes.
+campo `Valor` já tem mapeamento técnico aceito em
+`Boleto.composicao.total_original`, sem confundir componente e encargos; atesto
+humano e vínculo ao futuro plano continuam pendentes; cadastro antecipado é opção universal A/B por processamento, sem
+trazer automaticamente todo o Cadastro Geral. Aplicabilidade/vigência operacional da fonte, atestos humanos,
+confirmação das prioridades propostas, vigências e aprovação formal dos planos
+continuam pendentes; 20/10/2026 não foi adotado como início de vigência.

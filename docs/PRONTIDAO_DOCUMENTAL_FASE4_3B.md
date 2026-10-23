@@ -1,5 +1,30 @@
 # Prontidão documental para revisão do incremento 4.3B
 
+**Prioridades confirmadas como decisões de negócio, sem aprovação de plano:**
+TREE: `tree_centavo`, `tree_apontamento_a`, `tree_apontamento_aj` e
+`tree_apontamento_j` = **1**; `tree_prazo_30` = **0**.
+PLAZA: `plaza_prazo_30` = **0**. Os números não precisam de nova confirmação
+de negócio. Exclusões afetam só a cota/componentes, com todas as justificativas
+simultâneas preservadas. Indeterminações relevantes exigem revisão e críticos
+prevalecem sobre prioridades financeiras. A/B é independente. Vigência de negócio
+mantida: início inclusivo **2026-09-10**, fim aberto até substituição/revogação
+expressa. Continuam pendentes a validação da aplicabilidade anterior à fonte de
+rótulo 20/10/2026, a divergência TREE unidade/cota, atestos e aprovação formal do
+conteúdo final dos planos. Não há assinatura, ativação ou autorização de simulação.
+
+Estado atual e atos restantes no [pacote consolidado](preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md).
+Os quadros anteriores abaixo mantêm seu contexto histórico quando mencionam
+prioridades/vigências ainda por definir; esses números e datas já foram decididos.
+
+## Consolidação posterior — aprovações para o 4.3B.2B
+
+4.3B.2A aceito tecnicamente pelo responsável, sujeito à revisão posterior do código.
+As [fichas e checklist consolidados](preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md)
+organizam somente as manifestações ainda necessárias, sem reabrir o negócio
+confirmado. Usados metadados/relatórios existentes; os cinco originais não foram
+abertos. Prioridades são propostas pendentes, vigência não é inferida, atestos
+humanos permanecem vazios. Sem execução/ativação real, Fase 5 ou liberação de críticos.
+
 ## Situação posterior — 4.3B.2A exclusivamente sintético
 
 O [relatório do incremento integrado](INCREMENTO_4_3B_2A_INTEGRACAO_SINTETICA.md)

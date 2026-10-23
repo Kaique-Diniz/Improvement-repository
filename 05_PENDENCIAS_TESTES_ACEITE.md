@@ -1,5 +1,18 @@
 # 05 — Pendências, decisões e plano de testes
 
+**Verificação técnica final:** [decisões comprovadas versus atos pendentes](docs/preparacao_4_3B_2B/VERIFICACAO_FINAL_E_DECISOES_HUMANAS.md).
+21 casos puros de prioridades adicionados; total de **1.132 testes aprovados**
+e oito verificações de schemas. Proposta 1/0 é compatível, mas não está aprovada.
+Régua candidata nominal de 20/10/2026 sem hash/vigência comprovados nos metadados
+consultados; nenhuma data foi inferida. Atestos humanos continuam não preenchidos.
+
+**Preparação atual de aprovações do 4.3B.2B:** fichas consolidadas TREE/PLAZA,
+proposta técnica de precedência, vigências não informadas e cinco fichas humanas
+em [prontidão/checklist](docs/preparacao_4_3B_2B/PRONTIDAO_E_CHECKLIST.md).
+Negócio já resolvido não é reapresentado como pergunta. Pendem manifestação
+formal, fonte/versionamento da régua, parâmetros técnicos e autorização futura;
+nenhuma decisão/ativação/liberação foi registrada nesta preparação.
+
 **Situação mais recente — 4.3B.2A:** integração exclusivamente sintética,
 persistência auditável, **1.111 testes aprovados** (1.027 anteriores + 84 novos)
 e oito conferências de schemas. Planos não aprovados/ativos ou inválidos são

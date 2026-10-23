@@ -1,5 +1,11 @@
 # Procedimento e checklist de atesto humano das fontes
 
+**Fichas atuais resumidas F01–F05:**
+[consolidação para o 4.3B.2B](preparacao_4_3B_2B/ATESTOS_CINCO_FONTES.md).
+Criadas somente de metadados/relatórios existentes, sem abrir os originais ou
+preencher decisões humanas. O procedimento detalhado e seus campos abaixo
+permanecem válidos; nenhuma nova conferência automática ou atesto é afirmado.
+
 Preparação documental autorizada em 22/10/2026. **Todos os itens humanos estão
 pendentes.** A conferência automática, a assinatura técnica e o aceite técnico do
 4.3A não preenchem este checklist. Nenhuma regra real é aprovada por este documento.
@@ -174,12 +180,16 @@ pelo hash e conteúdo, sem presumir equivalência pelo nome.
 
 ## Régua e evidências complementares esperadas
 
-O extrato autorizado vigente da Régua de Cobrança ainda precisa ser identificado
-e vinculado nesta preparação. A referência histórica a uma régua de 20/10/2026
-não comprova que sua versão atual foi disponibilizada e homologada neste conjunto.
+O original da Régua de Cobrança foi recebido posteriormente e identificado:
+712.353 bytes, SHA-256 esperado exato, fingerprint `c56349e33b54…`. Os
+[vínculos documentais das oito entradas](preparacao_4_3B_2B/VIGENCIA_E_VERSOES.md)
+apontam à aba `RÉGUA DE COBRANÇA`, linhas 366 (TREE) e 329 (PLAZA), na cópia
+privada protegida. Isso resolve identificação técnica, sem atestar humanamente
+a fonte, declarar vigência ou incluí-la automaticamente nos pacotes assinados.
 
-- [ ] Indicar a versão aplicável a cada condomínio, hash, vigência documental,
-      responsável e localização privada do extrato autorizado.
+- [ ] Conferir humanamente versão/hash/localização privada e vínculo pertinente
+      a cada condomínio já identificados; declarar aplicabilidade/vigência e
+      responsável, sem equiparar o rótulo 20/10/2026 a início de vigência.
 - [ ] Separar requisitos financeiros de acesso, credenciais e observações administrativas;
       não copiar a régua bruta para o Git nem interpretar seu texto automaticamente.
 - [ ] Vincular as condições extrajudiciais aplicáveis à régua revisada e às respostas
