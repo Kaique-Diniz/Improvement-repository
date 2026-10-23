@@ -25,11 +25,11 @@ from conversor.domain.audit_identity import ReconciliacaoOcorrencias
 from conversor.domain.base import Data, Modelo
 from conversor.domain.billing_evaluation import CoberturaApontamentos, EntradaSimulacao
 from conversor.domain.billing_rules import ClausulaCobranca, bytes_canonicos, hash_modelo
-from conversor.domain.canonical import Contato, Endereco, Origem, Pessoa
+from conversor.domain.canonical import Contato, Endereco, Ocorrencia, Origem, Pessoa
 from conversor.domain.documents import resolver_documento
 from conversor.domain.identity import chave_unidade
 from conversor.domain.template import Template
-from conversor.export.contract import DividaExportacao, LinhaExportacao
+from conversor.export.contract import DividaExportacao, LinhaExportacao, materializar
 from conversor.export.xlsx import escrever_xlsx
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
@@ -239,7 +239,7 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None):
 
 def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
              cadastro=None, referencia=None, historico=None, origem='upload',
-             mapeamento_referencia=None, progresso=lambda etapa: None):
+             mapeamento_referencia=None, estado_historico=None, progresso=lambda etapa: None):
     progresso('Reconhecendo formato e condomínio')
     perfil, codigo, leitor = reconhecer(conteudo)
     if pedido.condominio != 'auto' and pedido.condominio != perfil['id']:
@@ -257,6 +257,11 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
+    estado_historico = estado_historico or ('carregado' if historico else 'nao_disponivel')
+    if estado_historico == 'nao_disponivel':
+        ocorrencias.append(Ocorrencia(id='historico_info_' + sha256(processamento_id.encode()).hexdigest(),
+            processamento_id=processamento_id, codigo='HISTORICO_TECNICO_NAO_DISPONIVEL',
+            gravidade='informativo', escopo='processamento'))
     coberturas = ()
     if leitor == 'habita_composicao_real_v1':
         progresso('Conferindo o campo de apontamentos e continuidades')
@@ -277,7 +282,22 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     efetivas = [o for o in ocorrencias if o.id not in reavaliadas]
     globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
     fora_vigencia = pedido.data_ref < date.fromisoformat(perfil['vigente_de'])
-    decisoes, linhas, linhas_info = [], [], []
+    decisoes, linhas, linhas_info, previa = [], [], [], []
+
+    def prever(tipo, u, base, *, decisao=None, divida=None, bloqueios=()):
+        # Somente visualização. Nunca encaminha linhas retidas ao escritor XLSX
+        # nem contorna a validação documental do DTO de exportação.
+        pessoa = base['pessoa']
+        valores = None
+        conflito_documental = resolver_documento(pessoa).bloqueante
+        if not conflito_documental and (tipo == 'cadastral' or divida is not None):
+            dto = LinhaExportacao(**base, tipo=tipo, divida=divida)
+            valores = [v.isoformat() if isinstance(v, date) else format(v, '.2f') if isinstance(v, Decimal) else v
+                       for v in materializar(dto).valores]
+        previa.append({'tipo': tipo, 'unidade_id': u.id, 'bloco': u.bloco_original, 'unidade': u.unidade_original,
+            'boleto_id': decisao['id'] if decisao else None, 'cota': decisao['cota'] if decisao else None,
+            'bloqueada': bool(bloqueios), 'motivos': sorted(set(bloqueios)), 'valores': valores,
+            'campos_retidos_por_conflito_documental': conflito_documental})
     for b in lote.boletos:
         u = unidades[b.unidade_id]
         avaliacoes = avaliar_regras(config, entrada, pedido.data_ref, u, b)
@@ -333,14 +353,22 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         base = dict(processamento_id=processamento_id, registro_id=u.id,
                     nm_cedente_cedente=perfil['nome'], cedente=u.chave_normalizada, pessoa=pessoa_saida)
         for d in ds:
-            if d['situacao'] != 'elegivel':
+            if d['situacao_financeira'] != 'elegivel_na_simulacao':
                 continue
             boleto = next(b for b in lote.boletos if b.id == d['id'])
             divida = DividaExportacao(contrato=u.chave_normalizada, produto=perfil['nome'],
                 nome_divida=boleto.identificador, parcela=1, vencimento=boleto.vencimento,
-                valor=boleto.composicao.total_original)
-            linhas.append(LinhaExportacao(**base, tipo='divida', divida=divida))
-            linhas_info.append({'tipo': 'divida', 'unidade_id': u.id, 'boleto_id': boleto.id})
+                valor=boleto.composicao.total_original) if boleto.composicao.total_original > 0 else None
+            bloqueios = d['bloqueios'] or (['CONDICAO_INDETERMINADA'] if d['situacao'] == 'revisao' else [])
+            prever('divida', u, base, decisao=d, divida=divida, bloqueios=bloqueios)
+            if d['situacao'] == 'elegivel':
+                linhas.append(LinhaExportacao(**base, tipo='divida', divida=divida))
+                linhas_info.append({'tipo': 'divida', 'unidade_id': u.id, 'boleto_id': boleto.id})
+        if pedido.modo == 'B' and any(d['situacao_financeira'] == 'excluido' for d in ds):
+            pendencias = [m for d in ds if d['situacao'] == 'revisao' for m in d['bloqueios']]
+            if any(d['situacao'] == 'revisao' and not d['bloqueios'] for d in ds):
+                pendencias.append('CONDICAO_INDETERMINADA')
+            prever('cadastral', u, base, bloqueios=pendencias)
         if pedido.modo == 'B' and any(d['situacao'] == 'nao_elegivel' for d in ds) and not any(d['situacao'] == 'revisao' for d in ds):
             linhas.append(LinhaExportacao(**base, tipo='cadastral'))
             linhas_info.append({'tipo': 'cadastral', 'unidade_id': u.id})
@@ -353,6 +381,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                       titulo='TESTE LOCAL DIAGNOSTICO - NAO IMPORTAR - SEM APROVACAO OPERACIONAL')
     resumo = dict(Counter(d['situacao'] for d in decisoes))
     resumo.update(unidades=len(lote.unidades), cotas=len(lote.boletos),
+                  elegiveis_pela_regua=sum(d['situacao_financeira'] == 'elegivel_na_simulacao' for d in decisoes),
+                  nao_elegiveis_pela_regua=sum(d['situacao_financeira'] == 'excluido' for d in decisoes),
+                  indeterminadas_pela_regua=sum(d['situacao_financeira'] not in ('elegivel_na_simulacao', 'excluido') for d in decisoes),
                   cadastros_adicionais=sum(l.tipo == 'cadastral' for l in linhas),
                   linhas_teste=len(linhas), ocorrencias=len(ocorrencias))
     resultado = {'id': processamento_id, 'condominio': perfil['nome'], 'perfil': perfil['id'],
@@ -363,6 +394,11 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'aprovacao_formal_plano': False, 'autoriza_cobranca': False,
         'permite_exportacao_operacional': False, 'fontes': fontes, 'resumo': resumo,
         'registros_historicos_carregados': len(historico or ()),
+        'historico_tecnico': {'estado': estado_historico, 'registros_carregados': len(historico or ()),
+            'aviso': ('Sem histórico anterior: análise limitada aos documentos enviados; não comprova ausência de pendências anteriores.'
+                      if estado_historico == 'nao_disponivel' else 'Histórico vinculado ou verificação de integridade registrada.')},
+        'previa_template': {'colunas': list(Template(id='previa', nome='Universal', versao='1.0').cabecalhos_fisicos),
+                           'linhas': previa, 'somente_conferencia': True, 'exportacao_operacional': False},
         'politica_cadastral': 'cadastro_por_unidade@1',
         'reavaliacoes_historicas': reavaliacoes,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',

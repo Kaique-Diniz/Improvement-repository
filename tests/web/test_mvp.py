@@ -82,15 +82,25 @@ def test_upload_completo_com_historico_vazio_explicitamente_inventariado(tmp_pat
         assert r['resultado']['resumo']['cadastros_adicionais']==1
 
 
-def test_upload_sem_inventario_preserva_revisao_e_nao_libera_excel(client):
+@pytest.mark.parametrize('modo,linhas', [('A',2), ('B',3)])
+def test_upload_sem_inventario_informa_limite_sem_transformar_em_erro_financeiro(client, modo, linhas):
     demo=documentos_demo()
-    r=aguardar(client,client.post('/api/processamentos',data={'data_ref':'2026-10-21','modo':'B'},
+    r=aguardar(client,client.post('/api/processamentos',data={'data_ref':'2026-10-21','modo':modo},
         files={'inadimplencia':('nao_confiar_no_nome.pdf',demo['inadimplencia'])}))
     assert r['estado']=='concluido'
-    assert r['resultado']['resumo']['revisao']==3
-    assert r['resultado']['resumo']['linhas_teste']==0
-    assert all('INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE'in d['motivos']for d in r['resultado']['decisoes'])
-    assert client.get('/api/processamentos/'+r['id']+'/arquivo-teste.xlsx').status_code==409
+    data=r['resultado']
+    assert data['resumo']['elegivel']==2 and data['resumo']['nao_elegivel']==1
+    assert not data['resumo'].get('revisao',0)
+    assert data['resumo']['linhas_teste']==linhas
+    assert data['historico_tecnico']['estado']=='nao_disponivel'
+    avisos=[o for o in data['ocorrencias'] if o['codigo']=='HISTORICO_TECNICO_NAO_DISPONIVEL']
+    assert len(avisos)==1 and avisos[0]['gravidade']=='informativo'
+    assert all(not d['bloqueios']for d in data['decisoes'])
+    assert client.get('/api/processamentos/'+r['id']+'/arquivo-teste.xlsx').status_code==200
+    assert client.get('/api/processamentos/'+r['id']+'/operacional.xlsx').status_code==409
+    assert len(data['previa_template']['colunas'])==30
+    assert len(data['previa_template']['linhas'])==linhas
+    assert all(not l['bloqueada'] and len(l['valores'])==30 for l in data['previa_template']['linhas'])
 
 
 def test_sem_autenticacao_e_sessoes_isoladas(tmp_path):
@@ -162,3 +172,78 @@ def test_anotacao_extra_na_referencia_e_reportada_sem_mudar_o_template(tmp_path)
     output=load_workbook(tmp_path/'TESTE_LOCAL_NAO_IMPORTAR.xlsx')
     assert output['Dados'].max_column==30
     output.close()
+
+
+@pytest.mark.parametrize('cenario', ['conflito_documental','divergencia_de_nomes'])
+def test_upload_novo_preserva_conflitos_reais_e_exibe_linhas_retidas(client, cenario):
+    from tests.web.test_unit_contacts import documentos
+    dados = (documentos(docs=('00000000191','00000000272')) if cenario=='conflito_documental'
+             else documentos('OUTRA PESSOA SINTETICA'))
+    r=aguardar(client,client.post('/api/processamentos',data={'data_ref':'2026-10-21','modo':'B'},
+        files={role:(role+'.pdf',content)for role,content in dados.items()if role!='referencia'}))
+    data=r['resultado']
+    assert data['historico_tecnico']['estado']=='nao_disponivel'
+    assert data['resumo']['revisao']==2 and data['resumo']['elegivel']==1
+    codigo='DOCUMENTOS_CONFLITANTES'if cenario=='conflito_documental'else'TITULAR_DIVERGENTE'
+    assert all(codigo in d['bloqueios']for d in data['decisoes']if d['bloco']=='A')
+    previa=data['previa_template']['linhas']
+    retidas=[l for l in previa if l['bloco']=='A']
+    assert len(retidas)==2 and all(l['bloqueada']and codigo in l['motivos']for l in retidas)
+    assert len([l for l in retidas if l['tipo']=='cadastral'])==1
+    if cenario=='conflito_documental':assert all(l['valores']is None for l in retidas)
+    else:assert all(len(l['valores'])==30 for l in retidas)
+    assert all(not l['bloqueada']for l in previa if l['bloco']=='B')
+    wb=load_workbook(BytesIO(client.get('/api/processamentos/'+r['id']+'/arquivo-teste.xlsx').content))
+    assert wb['Dados'].max_row==2 and wb['Dados'].max_column==30
+    wb.close()
+    rel=client.get('/api/processamentos/'+r['id']+'/inconsistencias.json').json()
+    assert rel['previa_template']==data['previa_template'] and not rel['permite_exportacao_operacional']
+
+
+def catalogo_historico_sintetico(root):
+    """Registro técnico verificável, sem aprovação ou atesto de produção."""
+    from conversor.adapters.audit_history import reconstruir_reconciliacao
+    from conversor.domain.audit_identity import FonteHistorico
+    from conversor.domain.canonical import Ocorrencia
+    from conversor.web.service import ler, PERFIS
+    demo=documentos_demo()
+    lote,_=ler(demo['inadimplencia'],PERFIS['plaza'],'9999','fl_composicao_real_v1','inadimplencia')
+    o=Ocorrencia(id='bloqueio_previo',processamento_id='anterior_sintetico',codigo='DOCUMENTOS_CONFLITANTES',
+        gravidade='critico',escopo='registro',registro_id=lote.unidades[0].id,origem=lote.unidades[0].origem)
+    original=root/'ocorrencias.json';original.write_text(json.dumps([o.model_dump(mode='json')]))
+    fonte=FonteHistorico(arquivo={'arquivo_id':'historico_sintetico','caminho':str(original),
+        'sha256':sha256(original.read_bytes()).hexdigest(),'tamanho':original.stat().st_size,'papel':'evidencia'},
+        namespace='documental',produtor_id='fixture',produtor_versao='1',estrutura='lista_ocorrencias')
+    rec=reconstruir_reconciliacao(id_='rec_sintetica',condominio_id=PERFIS['plaza']['condominio_id'],ambiente='sintetico',fontes=(fonte,))
+    history=root/'historico.json';history.write_text(rec.model_dump_json())
+    def spec(path,content):
+        return {'path':str(path),'bytes':len(content),'sha256':sha256(content).hexdigest()}
+    caso={'id':'sintetico','perfil':'plaza','arquivos':{role:spec(root/(role+'.bin'),data)for role,data in demo.items()},
+        'historico':spec(history,history.read_bytes())|{'registros':1}}
+    (root/'fontes_autorizadas.json').write_text(json.dumps({'casos':[caso]}))
+    return demo,history
+
+
+@pytest.mark.parametrize('cenario',['carregado','arquivo_historico_ausente','cadastro_divergente','catalogo_corrompido'])
+def test_upload_nao_descarta_bloqueio_conhecido_ou_falha_de_integridade(tmp_path, cenario):
+    root=tmp_path/'privado';root.mkdir()
+    demo,history=catalogo_historico_sintetico(root)
+    if cenario=='arquivo_historico_ausente':history.unlink()
+    if cenario=='catalogo_corrompido':(root/'fontes_autorizadas.json').write_text('{')
+    if cenario=='cadastro_divergente':
+        from tests.web.test_unit_contacts import documentos
+        demo['cadastro']=documentos()['cadastro']
+    with TestClient(criar_app(root,acesso=KEY))as c:
+        c.post('/api/session',json={'chave':KEY})
+        r=aguardar(c,c.post('/api/processamentos',data={'data_ref':'2026-10-21','modo':'B'},
+            files={role:(role+'.pdf',data)for role,data in demo.items()if role!='referencia'}))
+        assert r['estado']=='concluido'
+        data=r['resultado']
+        assert data['historico_tecnico']['estado']==('carregado'if cenario=='carregado'else'divergente')
+        if cenario in ('carregado','cadastro_divergente'):
+            assert any(o['codigo']=='DOCUMENTOS_CONFLITANTES'and o['gravidade']=='critico'for o in data['ocorrencias'])
+            assert all('DOCUMENTOS_CONFLITANTES'in d['pendencias_documentais']for d in data['decisoes']if d['bloco']=='A')
+        if cenario!='carregado':
+            assert data['resumo']['revisao']==3 and not data['arquivo_teste_disponivel']
+            assert all('INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE'in d['bloqueios']for d in data['decisoes'])
+        assert not data['autoriza_cobranca']and not data['permite_exportacao_operacional']

@@ -31,6 +31,21 @@ uma pasta privada local **fora do checkout Git**. O caminho `/workspace/...`
 corresponde ao Codex Cloud. Não publique a porta sem proteção de rede/TLS adequada;
 o padrão é somente `127.0.0.1`.
 
+Para atualizar pelo pacote de código no Windows, pare o servidor com Ctrl+C,
+extraia o pacote em uma nova pasta e preserve a pasta privada anterior fora dela.
+Nessa nova pasta, execute no PowerShell (Python 3.12 instalado):
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.lock
+.\.venv\Scripts\python.exe -m pip install --no-build-isolation --no-deps -e .
+.\.venv\Scripts\python.exe -m conversor.web --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado"
+```
+
+Substitua o último caminho pela pasta privada que já utiliza, se diferente.
+Entre novamente e atualize a página com Ctrl+F5. Não é necessário cadastrar PDFs
+em inventário nem copiar o catálogo privado do Codex para analisar novos arquivos.
+
 Abra **http://127.0.0.1:8000**. Backend e frontend são servidos juntos; não é
 necessário Node, npm ou outro servidor de frontend. O processo fica ativo até
 Ctrl+C. Abra `acesso-local.txt`, dentro da pasta privada, em um editor local e
@@ -64,12 +79,17 @@ originais privados sem reenviá-los. Seus tamanhos/hashes, inventários históri
 são conferidos privadamente, preservando todas as evidências. Arquivos com
 integridade divergente não são processados por esse caminho.
 
-O catálogo privado `fontes_autorizadas.json` fica junto da chave; não é um catálogo
-de planos aprovados. Uma instalação nova não possui esses documentos. Upload sem
-histórico externo íntegro/vinculado continua sendo extraído e exibido, mas recebe
-revisão global e não libera XLSX. Isso evita perder bloqueios já conhecidos ao
-omitir Cadastro ou carregar parcialmente um pacote. O exemplo fictício funciona
-sem catálogo privado. Não copie os originais ou esse catálogo para o Git.
+O catálogo privado `fontes_autorizadas.json` é opcional. Upload novo sem histórico
+anterior é analisado normalmente e recebe um único aviso informativo: isso limita
+a conferência aos documentos enviados, sem atestar inexistência de pendências
+anteriores. Um histórico conhecido que não puder ser validado continua bloqueante;
+ocorrências anteriores carregadas não são descartadas. Não copie os originais ou
+esse catálogo para o Git.
+
+A interface separa os totais pela régua das retenções por leitura/cadastro e permite
+conferir as 30 colunas das linhas previstas, inclusive retidas. A identificação da
+conferência fica fora dessas 30 colunas. Linhas retidas não entram no XLSX de teste;
+campos com conflito documental ficam indisponíveis até revisão.
 
 ## Limites explícitos do MVP
 
@@ -147,7 +167,13 @@ históricos, inclusive os dois registros de conflito documental, e todos os 115
 boletos. As 17 unidades restantes têm divergências entre fontes, sem substituição
 automática de nomes; não são bloqueadas apenas pela presença de múltiplos nomes.
 
-Regressão: **1.179 testes aprovados**, 1.119 regulares (incluindo 14 testes
+Upload comum, sem catálogo, conferido com os dois PDFs PLAZA em 23/10/2026, modo B:
+50 unidades, 115 cotas; 69 elegíveis pela régua e 46 não elegíveis. Retidas 82 cotas
+de 17 unidades por divergências entre fontes; zero bloqueios por ausência de histórico.
+Prévia com 69 dívidas retidas, 13 cadastros retidos e 33 cadastros sem retenção.
+Validado também no navegador; não constitui teste nativo do Windows.
+
+Regressão: **1.186 testes aprovados**, 1.126 regulares (incluindo 21 testes
 HTTP/integração e 33 regressões de cadastro por unidade) + 60 explícitos de homologação sintética; oito
 verificações de schemas passaram. Smoke test Chromium passou em login, filtro,
 detalhes, download, bloqueio operacional e viewport móvel, sem erro JavaScript.

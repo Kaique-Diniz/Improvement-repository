@@ -208,7 +208,8 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             raise HTTPException(404, 'ANALISE_NAO_ENCONTRADA')
         return job
 
-    def iniciar(request, pedido, arquivos, *, historico=None, origem='upload', mapeamento=None, contexto=None):
+    def iniciar(request, pedido, arquivos, *, historico=None, origem='upload', mapeamento=None, contexto=None,
+                estado_historico='nao_disponivel'):
         with lock:
             if sum(j['estado'] == 'processando' for j in jobs.values()) >= 4:
                 raise HTTPException(429, 'AGUARDE_OS_PROCESSAMENTOS_EM_CURSO')
@@ -222,6 +223,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
                 'processamento_id': id_, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
                 'sessao_hash': sha256(request.cookies.get('conversor_session', '').encode()).hexdigest(),
                 'origem': origem, 'vinculos_fontes_historico_referencia': contexto,
+                'estado_historico': estado_historico,
                 'registros_historicos_recebidos': len(historico or ())})
             job = {'id': id_, 'owner': request.cookies.get('conversor_session'), 'estado': 'processando', 'path': path}
             jobs[id_] = job
@@ -230,6 +232,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
                 result = analisar(arquivos['inadimplencia'], pedido, processamento_id=id_, destino=path,
                     cadastro=arquivos.get('cadastro'), referencia=arquivos.get('referencia'),
                     historico=historico, origem=origem,
+                    estado_historico=estado_historico,
                     mapeamento_referencia=mapeamento,
                     progresso=lambda etapa: job.update(etapa=etapa))
                 with lock:
@@ -273,7 +276,8 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
                 if not content.startswith(b'PK' if role == 'referencia' else b'%PDF-'):
                     raise HTTPException(422, 'TIPO_DE_ARQUIVO_INVALIDO')
                 files[role] = content
-        history = bloqueio_historico()
+        history = ()
+        estado_historico = 'nao_disponivel'
         mapping = None
         case = None
         try:
@@ -281,14 +285,18 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             if case:
                 # Histórico crítico sempre carregado, mesmo sem Cadastro enviado.
                 history = registry.historico(case)
+                estado_historico = 'carregado' if history else 'vazio_inventariado'
                 mapping = registry.mapeamento(case, files)
                 for role in ('cadastro',):
                     if role in files and (role not in case['arquivos'] or
                             sha256(files[role]).hexdigest() != case['arquivos'][role]['sha256']):
-                        history = bloqueio_historico()
+                        history = tuple(history) + bloqueio_historico()
+                        estado_historico = 'divergente'
         except Exception:
-            history = bloqueio_historico()
-        return iniciar(request, p, files, historico=history, mapeamento=mapping, contexto=case)
+            history = tuple(history) + bloqueio_historico()
+            estado_historico = 'divergente'
+        return iniciar(request, p, files, historico=history, mapeamento=mapping, contexto=case,
+                       estado_historico=estado_historico)
 
     @app.post('/api/fontes-privadas/{caso_id}/processar')
     def processar_privado(caso_id: str, request: Request, data_ref: str = Form(...), modo: str = Form(...)):
@@ -299,13 +307,14 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
             mapping = registry.mapeamento(case, files)
         except Exception:
             raise HTTPException(409, 'FONTES_OU_HISTORICO_PRIVADOS_INDISPONIVEIS_OU_DIVERGENTES') from None
-        return iniciar(request, p, files, historico=history, origem='fonte_privada_autorizada', mapeamento=mapping, contexto=case)
+        return iniciar(request, p, files, historico=history, origem='fonte_privada_autorizada', mapeamento=mapping, contexto=case,
+                       estado_historico='carregado' if history else 'vazio_inventariado')
 
     @app.post('/api/exemplo')
     def exemplo(request: Request, data_ref: str = Form(...), modo: str = Form(...)):
         from .demo import documentos_demo
         p = pedido(data_ref, modo, 'plaza')
-        return iniciar(request, p, documentos_demo(), historico=(), origem='exemplo_sintetico')
+        return iniciar(request, p, documentos_demo(), historico=(), origem='exemplo_sintetico', estado_historico='exemplo_sintetico')
 
     @app.get('/api/processamentos/{id_}')
     def status(id_: str, request: Request):
@@ -330,6 +339,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None):
         return JSONResponse({'resumo': r['resumo'], 'avisos': r['avisos'], 'comparacao': r['comparacao'],
             'ocorrencias': r['ocorrencias'], 'decisoes': r['decisoes'],
             'politica_cadastral': r['politica_cadastral'], 'reavaliacoes_historicas': r['reavaliacoes_historicas'],
+            'historico_tecnico': r['historico_tecnico'], 'previa_template': r['previa_template'],
             'autoriza_cobranca': False, 'permite_exportacao_operacional': False},
             headers={'Content-Disposition': f'attachment; filename="inconsistencias_{id_[:8]}.json"'})
 

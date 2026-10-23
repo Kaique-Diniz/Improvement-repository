@@ -46,15 +46,30 @@ async function acompanhar(id) {
 function mostrar() {
   const r=atual;$('progresso').hidden=true;$('resultado').hidden=false;
   $('contexto').textContent=r.administradora+' · '+r.condominio+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
-  const stats=[['Unidades',r.resumo.unidades],['Cotas extraídas',r.resumo.cotas],['Elegíveis sem bloqueio',r.resumo.elegivel||0],['Não elegíveis',r.resumo.nao_elegivel||0],['Revisão necessária',r.resumo.revisao||0],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
+  const stats=[['Unidades',r.resumo.unidades],['Cotas extraídas',r.resumo.cotas],['Elegíveis pela régua',r.resumo.elegiveis_pela_regua],['Não elegíveis pela régua',r.resumo.nao_elegiveis_pela_regua],['Retidas na prévia',r.resumo.revisao||0],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
+  if(r.resumo.indeterminadas_pela_regua)stats.push(['Indeterminadas pela régua',r.resumo.indeterminadas_pela_regua]);
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
+  const historicos={nao_disponivel:'Sem histórico anterior (informativo)',carregado:'Histórico anterior carregado',vazio_inventariado:'Histórico conferido sem ocorrências anteriores',divergente:'Histórico conhecido ausente ou divergente: revisão necessária',exemplo_sintetico:'Exemplo sintético'};
+  $('historico-tecnico').textContent=(historicos[r.historico_tecnico.estado]||r.historico_tecnico.estado)+' · '+r.historico_tecnico.aviso;
   if(r.resumo.revisao) $('avisos').prepend(elemento('p','Há cotas retidas para revisão. Bloqueios de lote, unidade e identidade foram preservados.'));
   $('download').hidden=!r.arquivo_teste_disponivel;$('download').href='/api/processamentos/'+r.id+'/arquivo-teste.xlsx';$('sem-excel').hidden=r.arquivo_teste_disponivel;
   $('inconsistencias').href='/api/processamentos/'+r.id+'/inconsistencias.json';
   $('comparacao').hidden=!r.comparacao;
   if(r.comparacao){$('comparacao').replaceChildren(elemento('h3','Confronto com a referência'),elemento('p','A referência é um resultado esperado, não um gabarito absoluto. Nenhuma diferença altera os dados extraídos.'),elemento('pre',JSON.stringify(r.comparacao.resumo,null,2)),elemento('p',r.comparacao.limite));}
-  desenharTabela();
+  desenharTabela();mostrarPrevia();
+}
+function mostrarPrevia() {
+  const p=atual.previa_template,head=elemento('tr');
+  for(const label of ['Situação / origem',...p.colunas]) {const th=elemento('th',label);th.scope='col';head.append(th);}
+  $('previa-cabecalho').replaceChildren(head);
+  $('previa-linhas').replaceChildren(...p.linhas.map(l=>{
+    const tr=elemento('tr'),identidade=elemento('td',(l.bloqueada?'RETIDA':'Prévia sem retenção')+' · '+l.tipo+' · '+l.bloco+'/'+l.unidade+(l.cota?' · Cota '+l.cota:''));
+    if(l.motivos.length)identidade.append(elemento('small',l.motivos.map(motivoLegivel).join('; ')));
+    if(!l.valores)identidade.append(elemento('small','Campos indisponíveis até resolução das pendências.'));
+    tr.append(identidade,...(l.valores||Array(30).fill('—')).map(v=>elemento('td',String(v))));return tr;
+  }));
+  $('previa-contagem').textContent=p.linhas.length+' linhas previstas · '+p.linhas.filter(l=>l.bloqueada).length+' retidas · 30 colunas do template, além da identificação de conferência.';
 }
 function desenharTabela() {
   if(!atual)return;
@@ -79,7 +94,7 @@ $('filtro').onchange=desenharTabela;$('busca').oninput=desenharTabela;$('fechar'
 configurar().catch(()=>{});
 
 function motivoLegivel(c) {
-  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Titularidade diverge entre fontes',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Inventário histórico ausente ou divergente: resultado retido',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
+  const textos={tree_centavo:'Valor original de R$ 0,01: cota excluída',tree_apontamento_a:'Apontamento A: cota excluída',tree_apontamento_aj:'Apontamento AJ: cota excluída',tree_apontamento_j:'Apontamento J: cota excluída',tree_prazo_30:'Atraso superior a 30 dias, sem exclusões',plaza_prazo_30:'Atraso superior a 30 dias',tree_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',plaza_prazo_30_nao_atingido:'Prazo superior a 30 dias não atingido',SUBTOTAL_BLOCO_DIVERGENTE:'Subtotal do bloco divergente: lote retido',TITULAR_DIVERGENTE:'Titularidade diverge entre fontes',DOCUMENTOS_CONFLITANTES:'CPF/CNPJ conflitantes: revisão humana',DOCUMENTO_TITULAR_NAO_CONFIRMADO:'Vínculo documental entre registros exige revisão',DOCUMENTO_AUSENTE:'CPF/CNPJ não informado (opcional)',DOCUMENTO_INVALIDO:'CPF/CNPJ inválido: saída em branco com alerta',INVENTARIO_EXTERNO_AUSENTE_OU_DIVERGENTE:'Histórico conhecido não pôde ser validado: revisão necessária',CONDICAO_INDETERMINADA:'Evidência insuficiente para decidir'};
   return textos[c]||c.toLowerCase().replaceAll('_',' ');
 }
 function contatoLegivel(d) {
