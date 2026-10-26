@@ -1,5 +1,7 @@
 const $ = id => document.getElementById(id);
 let atual = null, aguardando = false, revisaoSelecao = 0;
+let catalogoCondominios=[], enderecoVersao=null, enderecoRevisao=0, carregandoEndereco=false, salvandoEndereco=false;
+const camposEndereco=['logradouro','numero','cep','bairro','cidade','uf'];
 const arquivos = ['inadimplencia','cadastro','referencia'];
 const financeiro = {elegivel_na_simulacao:'Elegível por regra',excluido:'Não elegível por regra',pendente_revisao:'Indeterminada',bloqueado:'Bloqueada'};
 const nomes = {elegivel:'Elegível na prévia',nao_elegivel:'Não elegível',revisao:'Revisão necessária'};
@@ -22,6 +24,7 @@ function limparResultado() {
   atual=null;$('resultado').hidden=true;$('erro').hidden=true;$('progresso').hidden=true;$('vazio').hidden=false;
   for(const id of ['download','inconsistencias','manifesto']) { $(id).hidden=true;$(id).removeAttribute('href'); }
   $('fechamento-global').hidden=true;$('fechamento-global').replaceChildren();
+  $('endereco-resultado').replaceChildren();
   for(const id of ['linhas','grupos-cotas','previa-linhas','previa-cabecalho','resumo','avisos','comparacao','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
   $('cotas-agrupadas').open=false;
   $('previa-template').open=false;
@@ -43,7 +46,8 @@ for(const id of arquivos) {
 $('converter').addEventListener('change',selecaoAlterada);
 function bloquear(b) {
   aguardando=b;document.querySelectorAll('#app button').forEach(x=>x.disabled=b||x.hasAttribute('data-sempre-desativado'));
-  document.querySelectorAll('#converter input,#converter select').forEach(x=>x.disabled=b);
+  document.querySelectorAll('#converter input,#converter select,#cadastro-condominio-form input,#cadastro-condominio-form select').forEach(x=>x.disabled=b);
+  $('salvar-endereco').disabled=b||carregandoEndereco||salvandoEndereco||enderecoVersao===null;
 }
 function falhar(e) {
   const mensagem=e.message==='CADASTRO_DE_OUTRO_CONDOMINIO'?'O Cadastro complementar pertence a outro condomínio. Remova-o pelo × ou selecione o cadastro correspondente ao PDF de inadimplência.':e.message;
@@ -54,7 +58,51 @@ async function configurar() {
   $('casos').replaceChildren();
   for(const caso of c.fontes_privadas) { const b=elemento('button',caso.nome,'secundario');b.type='button';b.onclick=()=>executar('privado',caso.id);$('casos').append(b); }
   $('fontes-privadas').hidden=!c.fontes_privadas.length;
+  catalogoCondominios=c.condominios;
+  const admins=[...new Map(c.condominios.map(p=>[p.administradora_id,p.administradora])).entries()];
+  $('endereco-administradora').replaceChildren(...admins.map(([id,nome])=>new Option(nome,id)));
+  await selecionarCondominioEndereco();
 }
+
+function endpointEndereco(){return '/api/condominios/'+encodeURIComponent($('endereco-administradora').value)+'/'+encodeURIComponent($('endereco-condominio').value)+'/endereco';}
+async function selecionarCondominioEndereco(condominioId) {
+  const ps=catalogoCondominios.filter(p=>p.administradora_id===$('endereco-administradora').value);
+  $('endereco-condominio').replaceChildren(...ps.map(p=>new Option(p.nome,p.condominio_id)));
+  if(condominioId)$('endereco-condominio').value=condominioId;
+  await carregarEndereco();
+}
+async function carregarEndereco() {
+  const revisao=++enderecoRevisao;carregandoEndereco=true;enderecoVersao=null;$('salvar-endereco').disabled=true;
+  camposEndereco.forEach(k=>{$('endereco-'+k).value='';$('endereco-'+k).disabled=true;});
+  $('endereco-cadastro-status').textContent='Consultando endereço…';
+  try {
+    const d=await api(endpointEndereco());if(revisao!==enderecoRevisao)return;
+    enderecoVersao=d.versao;camposEndereco.forEach(k=>$('endereco-'+k).value=d.endereco[k]||'');
+    const fonte=d.origem==='perfil_privado_existente'?'Configuração privada existente; será preservada.':d.cadastrado?'Fornecido pelo usuário · versão '+d.versao+' · '+new Date(d.atualizado_em).toLocaleString('pt-BR'): 'Endereço não cadastrado';
+    $('endereco-cadastro-status').textContent=fonte;$('endereco-cadastro-resumo').textContent=d.condominio+' · '+(d.cadastrado?'Endereço cadastrado':'Endereço não cadastrado');
+  } catch(e){if(revisao===enderecoRevisao)$('endereco-cadastro-status').textContent='Não foi possível consultar o cadastro. Recarregue antes de salvar.';}
+  finally {if(revisao===enderecoRevisao){carregandoEndereco=false;camposEndereco.forEach(k=>$('endereco-'+k).disabled=aguardando);$('salvar-endereco').disabled=aguardando||salvandoEndereco||enderecoVersao===null;}}
+}
+$('endereco-administradora').onchange=()=>selecionarCondominioEndereco();
+$('endereco-condominio').onchange=()=>carregarEndereco();
+$('recarregar-endereco').onclick=()=>carregarEndereco();
+$('endereco-uf').oninput=()=>{$('endereco-uf').value=$('endereco-uf').value.toUpperCase();};
+$('cadastro-condominio-form').addEventListener('submit',async e=>{
+  e.preventDefault();if(aguardando||carregandoEndereco||salvandoEndereco||enderecoVersao===null)return;
+  const admin=$('endereco-administradora').value,cond=$('endereco-condominio').value;
+  const endereco=Object.fromEntries(camposEndereco.map(k=>[k,$('endereco-'+k).value.trim()]));endereco.cep=endereco.cep.replace(/[^0-9]/g,'');
+  salvandoEndereco=true;bloquear(true);$('endereco-cadastro-status').textContent='Salvando endereço…';
+  try {
+    const d=await api(endpointEndereco(),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({endereco,versao_esperada:enderecoVersao})});
+    enderecoVersao=d.versao;$('endereco-cadastro-status').textContent='Endereço salvo · versão '+d.versao+'. Será usado nas próximas análises.';
+    $('endereco-cadastro-resumo').textContent=d.condominio+' · Endereço cadastrado';
+    if(atual?.administradora_id===admin&&atual?.condominio_id===cond){revisaoSelecao++;limparResultado();$('selecao-aviso').hidden=false;$('selecao-aviso').textContent='Endereço atualizado. Faça uma nova análise para gerar a prévia e os downloads com o cadastro atual.';}
+  }catch(err){
+    const conflito=err.message==='ENDERECO_ALTERADO_POR_OUTRA_SESSAO';
+    $('endereco-cadastro-status').textContent=conflito?'Outra sessão atualizou este endereço. Recarregue o cadastro antes de editar novamente.':'Não foi possível salvar. Confira os campos e recarregue o cadastro.';
+    if(conflito)enderecoVersao=null;
+  }finally{salvandoEndereco=false;bloquear(false);}
+});
 $('login-form').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/session',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chave:$('chave').value})});$('chave').value='';$('login-error').textContent='';await configurar();}catch(err){$('login-error').textContent=err.message;}});
 $('sair').onclick=async()=>{await api('/api/session',{method:'DELETE'});location.reload();};
 async function executar(tipo,id) {
@@ -88,6 +136,11 @@ function mostrar() {
   stats.push(['Dívidas disponíveis só para teste',r.resumo.dividas_efetivamente_geradas]);
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
+  const endereco=r.endereco_condominio;
+  $('endereco-resultado').replaceChildren(elemento('p',endereco?.cadastrado?'Endereço do condomínio cadastrado; origem e configuração registradas na auditoria.':'Endereço não cadastrado. O diagnóstico pode continuar normalmente.'));
+  const cadastrar=elemento('button',endereco?.cadastrado?'Conferir endereço do condomínio':'Cadastrar endereço','secundario');cadastrar.type='button';
+  cadastrar.onclick=async()=>{$('endereco-administradora').value=r.administradora_id;await selecionarCondominioEndereco(r.condominio_id);$('cadastro-condominios').open=true;$('cadastro-condominios').scrollIntoView({behavior:'smooth'});$('endereco-logradouro').focus();};
+  $('endereco-resultado').append(cadastrar);
   const reconciliado=r.fechamento_habita?.estado==='reconciliado_somente_diagnostico';
   $('fechamento-global').hidden=!r.fechamento_habita||r.fechamento_habita.estado==='nao_aplicavel';
   if(reconciliado)$('fechamento-global').replaceChildren(elemento('strong','Habita/VG · Anomalia global de fechamento reconciliado'),elemento('p','O subtotal impresso repete o total geral e diverge do VG calculado. Todos os lançamentos e o total geral foram conferidos. A ocorrência crítica original permanece na auditoria. A dispensa vale somente para XLSX diagnóstico; não representa problema individual dos boletos nem liberação operacional. Confira o manifesto.'));
@@ -177,7 +230,11 @@ function preencherDetalhes(d,box) {
   for(const m of d.alertas_cadastrais)box.append(elemento('p',motivoLegivel(m)));
   const endereco=atual.enderecos_template?.[d.unidade_id];
   if(endereco?.estado==='endereco_explicito_configurado')box.append(elemento('p','Endereço padrão configurado explicitamente para este condomínio; origem registrada na auditoria.'));
-  if(endereco?.alertas?.length)box.append(elemento('p','Endereço atual preservado sem combinar campos com o padrão. Confira as divergências na auditoria.'));
+  if(endereco?.alertas?.length){
+    box.append(elemento('h3','Conferência do endereço'),elemento('p','Endereço atual preservado sem combinar campos com o padrão.'));
+    const padrao=atual.endereco_condominio?.configuracao?.endereco||{};
+    for(const k of camposEndereco)if((endereco.endereco_origem?.[k]||'')!==(padrao[k]||''))box.append(elemento('p',k.toUpperCase()+' · Fonte atual: '+(endereco.endereco_origem?.[k]||'não informado')+' · Padrão cadastrado: '+(padrao[k]||'não informado')));
+  }
   box.append(elemento('h3','Pendências documentais'),elemento('p',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join('; '):'Sem conflito documental. Vários nomes não atribuem o documento a cada pessoa.'));
   box.append(elemento('h3','Impedimentos para exportação'),elemento('p',d.bloqueios.length?d.bloqueios.map(motivoLegivel).join('; '):'Sem retenção técnica específica deste boleto para a prévia.'));
   box.append(elemento('p','Exportação operacional indisponível em todos os casos.'));

@@ -6,7 +6,44 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-## Correção cadastral atual — endereço privado e telefones sem DDD
+## Cadastro permanente de endereços pela interface
+
+Depois de entrar, abra **Dados do condomínio**, selecione administradora e
+condomínio, preencha os campos e clique em **Salvar endereço**. O CEP conserva
+zeros iniciais. O cadastro usa os IDs dos condomínios já reconhecidos pelo MVP,
+com seleção independente para cada administradora. Não é preciso editar JSON.
+
+O servidor mantém `enderecos_condominios.json` dentro de `--private-dir`, fora
+do Git, com gravação atômica, histórico de versões, data e identificação da
+sessão autenticada. A origem é **configuração fornecida pelo usuário**; não se
+fabrica evidência documental externa. O endereço sobrevive ao fechamento do
+navegador, ao reinício do servidor e à atualização do código. Continue utilizando
+o mesmo diretório privado ao atualizar a instalação.
+
+Perfis privados antigos continuam sendo lidos e exibidos, sem sobrescrita ou
+migração silenciosa. Ao salvar pela interface, o novo cadastro passa a fornecer
+somente o endereço, preservando mapas, identificadores e outros perfis existentes.
+Endereço ausente não impede análise. A aplicação mantém endereços atuais das
+unidades, inclusive parciais/divergentes, e oferece conferência nos detalhes;
+o complemento individual continua sendo gerado pelo codificador validado.
+
+Uma alteração do endereço invalida a prévia/downloads atuais desse condomínio e
+exige nova análise. Arquivos selecionados, data e modo A/B permanecem. Edições
+concorrentes com versão antiga são recusadas e pedem recarregar o cadastro.
+
+Validação: endereço TREE salvo uma única vez no navegador, processamentos reais
+A/B antes e depois de reiniciar o servidor. TREE **63 dívidas; modo B +103
+cadastros**. PLAZA **69 dívidas; modo B +46 cadastros**, sem receber endereço TREE.
+XLSX e canônicos idênticos aos anteriores, incluindo endereços aplicáveis,
+complementos e pares DDD/FONE. **1.338 testes aprovados** (1.278 + 60 explícitos),
+oito verificações de schemas e Chromium, com edição, invalidação de prévias e
+mobile. O teste de `git pull` utiliza repositórios temporários locais, sem push
+ou integração no GitHub do projeto. Não há homologação nativa do Windows.
+
+Sem push/merge desta funcionalidade, exportação operacional ou easyCollector.
+Os registros abaixo descrevem entregas anteriores.
+
+## Versão anterior — endereço privado e telefones sem DDD
 
 Habita preserva números identificados de 8/9 dígitos com DDD vazio e alerta
 informativo, sem inferir código de área. Pares completos existentes mantêm sua

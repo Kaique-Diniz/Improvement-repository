@@ -31,7 +31,7 @@ from conversor.domain.documents import resolver_documento
 from conversor.domain.identity import chave_unidade
 from conversor.domain.template import Template
 from conversor.export.contract import DividaExportacao, LinhaExportacao, materializar
-from conversor.export.identifiers import selecionar_perfil
+from conversor.export.identifiers import preencher_endereco, selecionar_perfil
 from conversor.export.xlsx import escrever_xlsx
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
@@ -261,7 +261,7 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificador
 def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
              cadastro=None, referencia=None, historico=None, origem='upload',
              mapeamento_referencia=None, estado_historico=None, progresso=lambda etapa: None,
-             perfis_saida=None):
+             perfis_saida=None, buscar_endereco=None):
     progresso('Reconhecendo formato e condomínio')
     perfil, codigo, leitor = reconhecer(conteudo)
     if pedido.condominio != 'auto' and pedido.condominio != perfil['id']:
@@ -271,6 +271,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     saida_bytes = Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()
     perfil_saida = selecionar_perfil(json.loads(saida_bytes), administradora_id=perfil['administradora_id'],
                                      condominio_id=perfil['condominio_id'])
+    endereco_cadastrado = buscar_endereco(perfil['administradora_id'], perfil['condominio_id']) if buscar_endereco else None
+    padrao_endereco = endereco_cadastrado or (perfil_saida.endereco_padrao if perfil_saida else None)
+    origem_endereco = ('cadastro_usuario' if endereco_cadastrado else 'perfil_privado_existente' if padrao_endereco else 'nao_cadastrado')
     identificadores, codigos = {}, {}
     for u in lote.unidades:
         cedente, complemento, estado, motivo = u.chave_normalizada, u.chave_normalizada, 'provisorio', 'PERFIL_SAIDA_NAO_CONFIGURADO'
@@ -415,11 +418,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             continue
         identificacao = identificadores[u.id]
         endereco_atual = pessoa.contato.endereco
-        endereco_saida, estado_endereco = (perfil_saida.preencher_endereco(endereco_atual)
-            if perfil_saida else (endereco_atual, 'sem_endereco_configurado'))
+        endereco_saida, estado_endereco = preencher_endereco(endereco_atual, padrao_endereco)
         conflitos_endereco, alertas_endereco = [], []
-        if perfil_saida and perfil_saida.endereco_padrao and estado_endereco == 'endereco_atual_preservado':
-            esperado = perfil_saida.endereco_padrao.endereco.model_dump(exclude={'complemento'})
+        if padrao_endereco and estado_endereco == 'endereco_atual_preservado':
+            esperado = padrao_endereco.endereco.model_dump(exclude={'complemento'})
             atual = endereco_atual.model_dump(exclude={'complemento'})
             normal = lambda s: ' '.join(s.split()).casefold()
             conflitos_endereco = [k for k in esperado if esperado[k] and atual[k] and normal(esperado[k]) != normal(atual[k])]
@@ -431,8 +433,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 d['alertas_cadastrais'] = sorted(set(d['alertas_cadastrais'] + alertas_endereco))
         enderecos_template[u.id] = {'estado': estado_endereco,
             'alertas': alertas_endereco, 'campos_conflitantes': conflitos_endereco,
-            'evidencia': perfil_saida.endereco_padrao.evidencia.model_dump(mode='json')
-                if perfil_saida and perfil_saida.endereco_padrao else None}
+            'endereco_origem': endereco_atual.model_dump(mode='json'),
+            'evidencia': padrao_endereco.evidencia.model_dump(mode='json') if padrao_endereco else None}
         contato = Contato.model_validate(pessoa.contato.model_dump() | {
             'endereco': endereco_saida.model_dump() | {'complemento': identificacao['complemento']}})
         pessoa_saida = Pessoa.model_validate(pessoa.model_dump() | {'contato': contato})
@@ -496,6 +498,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'fechamento_habita': fechamento, 'ocorrencias_criticas_preservadas':
             [o.model_dump(mode='json') for o in ocorrencias if o.bloqueante],
         'enderecos_template': enderecos_template,
+        'endereco_condominio': {'administradora_id': perfil['administradora_id'], 'condominio_id': perfil['condominio_id'],
+            'origem': origem_endereco, 'cadastrado': padrao_endereco is not None,
+            'configuracao': padrao_endereco.model_dump(mode='json') if padrao_endereco else None},
         'aviso': aviso_fechamento if reconciliadas_diagnostico else 'Somente diagnóstico local. Não importar no CRM.',
         'arquivo': {'nome': 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
             'sha256': sha256((output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx').read_bytes()).hexdigest(),
@@ -523,6 +528,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                   linhas_teste=len(linhas), ocorrencias=len(ocorrencias))
     resumo['anomalias_globais_reconciliadas_diagnostico'] = int(bool(reconciliadas_diagnostico))
     resultado = {'id': processamento_id, 'condominio': perfil['nome'], 'perfil': perfil['id'],
+        'administradora_id': perfil['administradora_id'], 'condominio_id': perfil['condominio_id'],
         'administradora': perfil['administradora'], 'reconhecimento': 'identificado_para_diagnostico',
         'formato_homologado_producao': False, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
         'origem_execucao': origem, 'configuracao_hash': sha256(PERFIS_PATH.read_bytes()).hexdigest(),
@@ -542,6 +548,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'unidades': identificadores, 'pendentes': sum(i['estado'] == 'provisorio' for i in identificadores.values())},
         'reavaliacoes_historicas': reavaliacoes,
         'rotulos_template': rotulos_template, 'enderecos_template': enderecos_template,
+        'endereco_condominio': manifesto['endereco_condominio'],
         'fechamento_habita': fechamento, 'manifesto_diagnostico': manifesto,
         'avisos': perfil['ressalvas'] + ['Prévia diagnóstica; não homologada para produção.',
             'Codificação de integração apenas para teste; unidades sem mapa explícito conservam identificadores provisórios. Importação no easyCollector não homologada.',

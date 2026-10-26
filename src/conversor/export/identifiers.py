@@ -2,7 +2,7 @@
 import re
 from typing import Annotated, Literal
 
-from pydantic import Field, model_validator
+from pydantic import AwareDatetime, Field, model_validator
 
 from conversor.domain.base import Hash, Id, Modelo, Texto
 from conversor.domain.canonical import Endereco, Unidade
@@ -16,9 +16,17 @@ class EvidenciaCodificacao(Modelo):
     celulas: dict[str, Texto]
 
 
+class OrigemEnderecoUsuario(Modelo):
+    tipo: Literal['configuracao_fornecida_pelo_usuario'] = 'configuracao_fornecida_pelo_usuario'
+    registro_id: Id
+    versao: Annotated[int, Field(strict=True, ge=1)]
+    registrado_em: AwareDatetime
+    sessao_sha256: Hash
+
+
 class EnderecoPadrao(Modelo):
     endereco: Endereco
-    evidencia: EvidenciaCodificacao
+    evidencia: EvidenciaCodificacao | OrigemEnderecoUsuario
 
     @model_validator(mode='after')
     def endereco_explicito(self):
@@ -74,13 +82,17 @@ class PerfilIdentificadores(Modelo):
         return torre + numero, f'UNI{numero}-BL{torre}'
 
     def preencher_endereco(self, atual: Endereco) -> tuple[Endereco, str]:
-        if self.endereco_padrao is None:
-            return atual, 'sem_endereco_configurado'
-        # Não mistura partes de endereços nem substitui informação de fonte atual.
-        campos = atual.model_dump(exclude={'complemento'})
-        if any(v.strip() for v in campos.values()):
-            return atual, 'endereco_atual_preservado'
-        return self.endereco_padrao.endereco.model_copy(update={'complemento': atual.complemento}), 'endereco_explicito_configurado'
+        return preencher_endereco(atual, self.endereco_padrao)
+
+
+def preencher_endereco(atual: Endereco, padrao: EnderecoPadrao | None) -> tuple[Endereco, str]:
+    if padrao is None:
+        return atual, 'sem_endereco_configurado'
+    # Não mistura partes de endereços nem substitui informação de fonte atual.
+    campos = atual.model_dump(exclude={'complemento'})
+    if any(v.strip() for v in campos.values()):
+        return atual, 'endereco_atual_preservado'
+    return padrao.endereco.model_copy(update={'complemento': atual.complemento}), 'endereco_explicito_configurado'
 
 
 def selecionar_perfil(dados, *, administradora_id, condominio_id):

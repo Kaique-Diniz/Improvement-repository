@@ -16,3 +16,8 @@
 .cota-grupo{margin:10px 0;padding:12px;border:1px solid var(--border);border-radius:6px;overflow-wrap:anywhere}
 .boleto-grupo{margin:8px 0;padding:9px;background:#f8fafc;border-radius:5px;font-size:12px}
 #cotas-agrupadas summary{cursor:pointer;font-size:12px;line-height:1.7}#grupos-cotas{max-height:650px;overflow:auto}
+.cadastro-condominio{margin-bottom:24px}.cadastro-condominio>summary{cursor:pointer;font-size:15px;font-weight:600;line-height:1.7}
+.cadastro-condominio>summary span{font-weight:400;margin-left:10px}.endereco-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;max-width:900px;margin-top:18px}
+.endereco-grid label{display:block;font-size:12px;font-weight:600}.endereco-grid input,.endereco-grid select{display:block;margin-top:6px}.endereco-largo{grid-column:1/-1}
+#endereco-cadastro-status{min-height:22px}#endereco-resultado button{font-size:11px;padding:5px 9px;margin:0 0 10px}
+@media(max-width:600px){.endereco-grid{grid-template-columns:1fr}.cadastro-condominio>summary span{display:block;margin-left:0}}

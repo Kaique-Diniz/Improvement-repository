@@ -17,14 +17,18 @@ from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from filelock import Timeout
 
 from conversor.adapters.private_json import escrever_json
+from conversor.adapters.condominium_addresses import RepositorioEnderecos
+from conversor.domain.base import Modelo
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
-from conversor.domain.canonical import Ocorrencia
+from conversor.domain.canonical import Endereco, Ocorrencia
+from conversor.export.identifiers import OrigemEnderecoUsuario, selecionar_perfil
 from conversor.readers.text_support import ErroLeitura
 from conversor.validacao_leitores import _area_fora_do_git
-from .service import LIMIT, PERFIS, PedidoDiagnostico, analisar
+from .service import LIMIT, PERFIS, PERFIS_SAIDA_PATH, PedidoDiagnostico, analisar
 
 MAX_REQUEST = 3 * LIMIT + 1024 * 1024
 
@@ -143,6 +147,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
     jobs, sessions, attempts = {}, {}, {}
     lock = threading.Lock()
     registry = RegistroPrivado(raiz, catalogo)
+    enderecos = RepositorioEnderecos(raiz)
     app.state.raiz = raiz
 
     @app.middleware('http')
@@ -204,8 +209,58 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
             privados = [{'id': c['id'], 'nome': PERFIS[c['perfil']]['nome']} for c in registry.listar()]
         except Exception:
             privados = []
-        return {'condominios': [{'id': p['id'], 'nome': p['nome'], 'administradora': p['administradora']} for p in PERFIS.values()],
+        return {'condominios': [{'id': p['id'], 'nome': p['nome'], 'administradora': p['administradora'],
+                                'administradora_id': p['administradora_id'], 'condominio_id': p['condominio_id']} for p in PERFIS.values()],
                 'fontes_privadas': privados, 'exportacao_operacional': False}
+
+    class SalvarEndereco(Modelo):
+        endereco: Endereco
+        versao_esperada: int = Field(strict=True, ge=0)
+
+    def perfil_condominio(administradora_id, condominio_id):
+        p = next((p for p in PERFIS.values() if (p['administradora_id'], p['condominio_id']) ==
+                  (administradora_id, condominio_id)), None)
+        if p is None:
+            raise HTTPException(404, 'CONDOMINIO_NAO_RECONHECIDO')
+        return p
+
+    def dados_endereco(perfil, padrao, *, privado=False):
+        origem = padrao.evidencia if padrao else None
+        manual = isinstance(origem, OrigemEnderecoUsuario)
+        return {'administradora_id': perfil['administradora_id'], 'condominio_id': perfil['condominio_id'],
+            'administradora': perfil['administradora'], 'condominio': perfil['nome'],
+            'cadastrado': padrao is not None, 'endereco': padrao.endereco.model_dump(mode='json') if padrao else Endereco().model_dump(),
+            'versao': origem.versao if manual and not privado else 0, 'atualizado_em': origem.registrado_em.isoformat() if manual else None,
+            'origem': 'perfil_privado_existente' if privado and padrao else 'configuracao_fornecida_pelo_usuario' if manual else 'nao_cadastrado'}
+
+    @app.get('/api/condominios/{administradora_id}/{condominio_id}/endereco')
+    def consultar_endereco(administradora_id: str, condominio_id: str):
+        p = perfil_condominio(administradora_id, condominio_id)
+        try:
+            padrao = enderecos.obter(administradora_id, condominio_id)
+            privado = padrao is None
+            if privado:
+                dados = json.loads(Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes())
+                saida = selecionar_perfil(dados, administradora_id=administradora_id, condominio_id=condominio_id)
+                padrao = saida.endereco_padrao if saida else None
+            return dados_endereco(p, padrao, privado=privado)
+        except (ErroLeitura, ValidationError, OSError, ValueError, Timeout):
+            raise HTTPException(409, 'CADASTRO_ENDERECOS_INDISPONIVEL') from None
+
+    @app.put('/api/condominios/{administradora_id}/{condominio_id}/endereco')
+    def salvar_endereco(administradora_id: str, condominio_id: str, dados: SalvarEndereco, request: Request):
+        p = perfil_condominio(administradora_id, condominio_id)
+        try:
+            padrao = enderecos.salvar(administradora_id, condominio_id, dados.endereco,
+                versao_esperada=dados.versao_esperada,
+                sessao_sha256=sha256(request.cookies['conversor_session'].encode()).hexdigest())
+            return dados_endereco(p, padrao)
+        except ErroLeitura as exc:
+            raise HTTPException(409, exc.codigo) from None
+        except ValidationError:
+            raise HTTPException(422, 'ENDERECO_DO_CONDOMINIO_INVALIDO') from None
+        except (OSError, Timeout):
+            raise HTTPException(409, 'CADASTRO_ENDERECOS_INDISPONIVEL') from None
 
     def job_do_usuario(id_, request):
         if not re.fullmatch(r'[0-9a-f]{32}', id_):
@@ -242,6 +297,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
                     estado_historico=estado_historico,
                     mapeamento_referencia=mapeamento,
                     perfis_saida=perfis_saida,
+                    buscar_endereco=enderecos.obter,
                     progresso=lambda etapa: job.update(etapa=etapa))
                 with lock:
                     job.update(estado='concluido', resultado=result)
@@ -351,6 +407,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
             'codificacao_template': r['codificacao_template'],
             'fechamento_habita': r['fechamento_habita'], 'manifesto_diagnostico': r['manifesto_diagnostico'],
             'rotulos_template': r['rotulos_template'], 'enderecos_template': r['enderecos_template'],
+            'endereco_condominio': r['endereco_condominio'],
             'autoriza_cobranca': False, 'permite_exportacao_operacional': False},
             headers={'Content-Disposition': f'attachment; filename="inconsistencias_{id_[:8]}.json"'})
 
