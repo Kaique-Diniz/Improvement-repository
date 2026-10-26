@@ -112,6 +112,8 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
     if raiz.is_symlink():
         raise RuntimeError('AREA_PRIVADA_NAO_PODE_SER_LINK')
     _area_fora_do_git(raiz)
+    if perfis_saida is None and (raiz / 'perfis_saida.json').exists():
+        perfis_saida = raiz / 'perfis_saida.json'
     if perfis_saida is not None:
         perfis_saida = Path(perfis_saida)
         if perfis_saida.is_symlink():

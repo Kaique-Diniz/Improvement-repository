@@ -6,7 +6,39 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-## Versão integrada — remoção de arquivos, hierarquia TREE e conferência VG
+## Correção cadastral atual — endereço privado e telefones sem DDD
+
+Habita preserva números identificados de 8/9 dígitos com DDD vazio e alerta
+informativo, sem inferir código de área. Pares completos existentes mantêm sua
+ordem; recuperados sem DDD vêm depois. Deduplicação por DDD + número, até cinco
+pares na saída, com classificações/tokens/origens e excedentes preservados na
+auditoria. Normalização registrada como `habita_telefones@2`; regras financeiras
+e leitores FL/Cadastro não mudam. Schemas aceitam DDD vazio ou dois dígitos;
+registros históricos, assinaturas e ocorrências existentes não são reescritos.
+
+O endereço autorizado TREE está **somente na área privada**, com hash da decisão.
+O servidor carrega automaticamente `perfis_saida.json` da pasta `--private-dir`,
+quando presente; `--perfis-saida` continua disponível para seleção explícita.
+No Windows, copie a configuração privada fornecida para essa pasta com esse nome
+e reinicie. Não coloque a configuração ou os PDFs na pasta Git. Endereços atuais
+parciais/divergentes são preservados integralmente, com alerta e auditoria.
+
+Conferência privada, referência 23/10/2026: TREE **63 dívidas no A; mesmas 63 +
+103 cadastros no B**. Dois telefones sem DDD recuperados em duas unidades e um
+celular com DDD explícito separado por hífen também recuperado. DEP/31: um → dois
+pares independentes; DEP/33: duas ocorrências idênticas na fonte → um contato.
+Os conjuntos de telefones das 63 dívidas equivalem aos da referência; três linhas
+têm diferença apenas de ordem/duplicação. Seis campos de endereço conferidos em
+63/63 linhas, considerando caixa, acentos e representação do CEP. PLAZA continua
+69 dívidas no A e 69 + 46 cadastros no B, com XLSX idênticos byte a byte.
+
+**1.318 testes aprovados**, oito verificações de schemas; uploads/downloads reais
+A/B no Chromium. Os 769 boletos, composições e valores, 79 vetos, 15 cotas elegíveis,
+parcelas, identificadores, CPF/CNPJ e as 904 ocorrências históricas foram preservados.
+Habita/VG continua crítico para operação e reconciliado somente para diagnóstico.
+Sem push, merge, exportação operacional ou CRM. Os registros abaixo são históricos.
+
+## Versão anterior — identificadores e rótulos TREE
 
 **Ajuste atual do template TREE:** perfil explícito de identificadores: cedente
 `HABITACIONAL_2`; complemento `BL{codigo}-UNI{unidade de 4 dígitos}`; CEDENTE e

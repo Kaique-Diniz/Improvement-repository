@@ -57,7 +57,7 @@ class Ocorrencia(Modelo):
 
 
 class Telefone(Modelo):
-    ddd: Annotated[str, Field(pattern=r"^\d{2}$")] = Field(repr=False)
+    ddd: Annotated[str, Field(pattern=r"^(?:[0-9]{2})?$")] = Field(repr=False)
     numero: Annotated[str, Field(pattern=r"^\d{8,9}$")] = Field(repr=False)
 
 

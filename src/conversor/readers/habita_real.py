@@ -4,6 +4,7 @@ import re
 from conversor.domain.canonical import documento_de_texto
 from .real_support import AcervoReal, Bilhete, EMAIL, MOEDA, PDFReal, ZERO, data_real, falhar
 from .text_support import VALOR_BRL, dinheiro_brl
+from .habita_contacts import VERSAO as VERSAO_TELEFONES, extrair_telefones
 
 UNIDADE=re.compile(r'^\s*Bloco:\s*(\w+)\s*•\s*Unidade:\s*(\w+)\s+(.+?)\s+(?:CPF(?:/CNPJ)?|CNPJ):\s*(.*?)\s*$')
 INICIO=re.compile(r'^\s*(\d{8})\s+(?:(A|AJ|J)\s+)?(\d{2}/\d{2}/\d{2})\s+(.*)$')
@@ -97,14 +98,18 @@ class LeitorHabitaReal:
                     unidade=b.unidade,valores=(b.numero,))
         for uid,linhas in contatos.items():
             tels=[];emails=[]
+            u=next(u for u in acc.unidades.values()if u.id==uid)
             for l in linhas:
                 emails.extend(EMAIL.findall(l.texto))
-                part=l.texto.split('E-mail:')[0]
-                for m in re.finditer(r'(?:\((\d{2})\)|(\d{2}))\s*(\d{4,5}[- ]?\d{4})(?!\d)',part):
-                    tels.append((m[1]or m[2])+re.sub(r'\D','',m[3]))
-                if re.search(r'Telefone\s+\w+:\s*\d{8}(?!\d)',part):
-                    acc.ressalva('TELEFONE_SEM_DDD',l,unidade=next(u for u in acc.unidades.values()if u.id==uid),valores=(l.texto,))
-            u=next(u for u in acc.unidades.values()if u.id==uid)
+                for telefone,rotulo,original in extrair_telefones(l.texto):
+                    tels.append(telefone)
+                    acc.ressalva('TELEFONE_IDENTIFICADO_NA_FONTE',l,unidade=u,
+                        valores=(rotulo,original,telefone.ddd,telefone.numero,VERSAO_TELEFONES),gravidade='informativo')
+                    if not telefone.ddd:
+                        acc.ressalva('TELEFONE_SEM_DDD',l,unidade=u,valores=(rotulo,original),gravidade='informativo')
+            # Preserva a ordem dos contatos completos já exportados. Telefones
+            # recuperados sem DDD vêm depois, sem alterar seu próprio pareamento.
+            tels.sort(key=lambda t:not bool(t.ddd))
             acc.contato(u,linhas,tels,emails)
             acc.ressalva('CONTATO_ORIGINAL_PRESERVADO',linhas[0],unidade=u,valores=[l.texto for l in linhas],gravidade='informativo')
         for u in acc.unidades.values():

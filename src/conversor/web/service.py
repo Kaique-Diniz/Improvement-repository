@@ -400,7 +400,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'pendencias_documentais': pendencias_documentais,
             'alertas_cadastrais': sorted(set((list(documento.codigos) if documento and not documento.bloqueante else []) +
                 [o.codigo for o in efetivas if not o.bloqueante and o.registro_id == u.id and o.codigo in (
-                    'DIVERGENCIA_NOME_ENTRE_FONTES','MARCADOR_ADMINISTRATIVO_NO_CABECALHO','CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA')])),
+                    'DIVERGENCIA_NOME_ENTRE_FONTES','MARCADOR_ADMINISTRATIVO_NO_CABECALHO','CONTATO_COMPLEMENTADO_DA_INADIMPLENCIA','TELEFONE_SEM_DDD','CONTATOS_EXCEDENTES_PRESERVADOS')])),
             'impedimentos_exportacao_operacional': sorted(set(motivos +
                 (['SUBTOTAL_BLOCO_DIVERGENTE'] if reconciliadas_diagnostico else []) + ['EXPORTACAO_OPERACIONAL_INDISPONIVEL'])),
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
@@ -417,9 +417,22 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         endereco_atual = pessoa.contato.endereco
         endereco_saida, estado_endereco = (perfil_saida.preencher_endereco(endereco_atual)
             if perfil_saida else (endereco_atual, 'sem_endereco_configurado'))
+        conflitos_endereco, alertas_endereco = [], []
+        if perfil_saida and perfil_saida.endereco_padrao and estado_endereco == 'endereco_atual_preservado':
+            esperado = perfil_saida.endereco_padrao.endereco.model_dump(exclude={'complemento'})
+            atual = endereco_atual.model_dump(exclude={'complemento'})
+            normal = lambda s: ' '.join(s.split()).casefold()
+            conflitos_endereco = [k for k in esperado if esperado[k] and atual[k] and normal(esperado[k]) != normal(atual[k])]
+            if conflitos_endereco:
+                alertas_endereco.append('ENDERECO_DIVERGENTE_PRESERVADO')
+            if any(esperado[k] and not atual[k] for k in esperado):
+                alertas_endereco.append('ENDERECO_PARCIAL_PRESERVADO')
+            for d in ds:
+                d['alertas_cadastrais'] = sorted(set(d['alertas_cadastrais'] + alertas_endereco))
         enderecos_template[u.id] = {'estado': estado_endereco,
+            'alertas': alertas_endereco, 'campos_conflitantes': conflitos_endereco,
             'evidencia': perfil_saida.endereco_padrao.evidencia.model_dump(mode='json')
-                if perfil_saida and perfil_saida.endereco_padrao and estado_endereco == 'endereco_explicito_configurado' else None}
+                if perfil_saida and perfil_saida.endereco_padrao else None}
         contato = Contato.model_validate(pessoa.contato.model_dump() | {
             'endereco': endereco_saida.model_dump() | {'complemento': identificacao['complemento']}})
         pessoa_saida = Pessoa.model_validate(pessoa.model_dump() | {'contato': contato})
@@ -482,6 +495,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'perfil_saida_sha256': sha256(saida_bytes).hexdigest(),
         'fechamento_habita': fechamento, 'ocorrencias_criticas_preservadas':
             [o.model_dump(mode='json') for o in ocorrencias if o.bloqueante],
+        'enderecos_template': enderecos_template,
         'aviso': aviso_fechamento if reconciliadas_diagnostico else 'Somente diagnóstico local. Não importar no CRM.',
         'arquivo': {'nome': 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
             'sha256': sha256((output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx').read_bytes()).hexdigest(),

@@ -156,11 +156,14 @@ class AcervoReal:
 
     def contato(self,unidade,linhas,telefones,emails,endereco=None):
         p=self.pessoas[unidade.id]
+        # Leitores legados fornecem o número completo; Habita também fornece
+        # pares explícitos com DDD vazio. Nunca reutilizar o DDD de outro par.
+        telefones=[t if isinstance(t,Telefone)else Telefone(ddd=t[:2],numero=t[2:])for t in telefones]
         telefones=list(dict.fromkeys(telefones));emails=list(dict.fromkeys(emails))
         if len(telefones)>5 or len(emails)>3:
             self.ressalva('CONTATOS_EXCEDENTES_PRESERVADOS',linhas[0],unidade=unidade,
                           valores=[l.texto for l in linhas])
-        contato=Contato(telefones=tuple(Telefone(ddd=t[:2],numero=t[2:])for t in telefones[:5]),
+        contato=Contato(telefones=tuple(telefones[:5]),
             emails=tuple(emails[:3]),origem=self.fonte.origem(linhas[0]),**({'endereco':endereco}if endereco else{}))
         self.pessoas[unidade.id]=Pessoa.model_validate(p.model_dump()|{'contato':contato})
 
