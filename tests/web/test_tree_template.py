@@ -40,13 +40,14 @@ def test_vg_sem_evidencia_nao_recebe_codigo_inventado():
 
 
 @pytest.mark.parametrize('atual',[Endereco(logradouro='Rua Atual Sintetica'),Endereco(cidade='Cidade Atual'),Endereco(numero='9')])
-def test_endereco_atual_inclusive_parcial_nunca_e_substituido(atual):
+def test_endereco_cadastrado_prevalece_sobre_fonte_inclusive_parcial(atual):
     perfil=perfil_tree().model_copy(update={'endereco_padrao':EnderecoPadrao.model_validate(endereco())})
     saida,status=perfil.preencher_endereco(atual)
-    assert saida==atual and status=='endereco_atual_preservado'
+    assert saida==perfil.endereco_padrao.endereco and status=='endereco_explicito_configurado'
+    assert saida is not atual
 
 
-def test_endereco_padrao_so_preenche_ausencia_integral():
+def test_endereco_padrao_preserva_complemento_e_sem_configuracao_preserva_fonte():
     p=perfil_tree().model_copy(update={'endereco_padrao':EnderecoPadrao.model_validate(endereco())})
     saida,status=p.preencher_endereco(Endereco(complemento='CODIGO-UNIDADE'))
     assert saida.logradouro=='Rua Inteiramente Ficticia'and saida.complemento=='CODIGO-UNIDADE'

@@ -45,9 +45,22 @@ o mesmo diretório privado ao atualizar a instalação.
 Perfis privados antigos continuam sendo lidos e exibidos, sem sobrescrita ou
 migração silenciosa. Ao salvar pela interface, o novo cadastro passa a fornecer
 somente o endereço, preservando mapas, identificadores e outros perfis existentes.
-Endereço ausente não impede análise. A aplicação mantém endereços atuais das
-unidades, inclusive parciais/divergentes, e oferece conferência nos detalhes;
-o complemento individual continua sendo gerado pelo codificador validado.
+Endereço ausente não impede análise. Conforme decisão posterior do responsável,
+o endereço cadastrado do condomínio **prevalece em todas as linhas do XLSX**,
+inclusive sobre endereços do Cadastro Geral. Os endereços originais ficam no
+canônico e na auditoria, com configuração, campos substituídos e política de
+aplicação. Não há combinação de campos com outro endereço. Sem configuração,
+a fonte é mantida. O complemento individual segue o codificador validado.
+As descrições históricas de preenchimento somente de ausências foram substituídas
+por esta prioridade explícita; configurações privadas existentes não precisam
+ser editadas ou cadastradas novamente.
+
+Regressão da prioridade: **1.369 testes aprovados**, incluindo seis novos casos
+de endereço divergente, ausência de configuração, cadastro parcial e modos A/B
+com/sem Cadastro Geral; oito verificações de schemas. Na conferência privada do
+PLAZA, um endereço inteiramente fictício em servidor isolado foi aplicado nas
+69 linhas do A e nas 115 do B, sem alterar as demais células ou os canônicos.
+Esses arquivos de teste não representam o endereço real do condomínio.
 
 Uma alteração do endereço invalida a prévia/downloads atuais desse condomínio e
 exige nova análise. Arquivos selecionados, data e modo A/B permanecem. Edições

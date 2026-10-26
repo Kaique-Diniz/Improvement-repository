@@ -8,6 +8,8 @@ from conversor.domain.base import Hash, Id, Modelo, Texto
 from conversor.domain.canonical import Endereco, Unidade
 from conversor.readers.text_support import ErroLeitura
 
+POLITICA_ENDERECO_CONDOMINIO = 'endereco_condominio_prioritario@2'
+
 
 class EvidenciaCodificacao(Modelo):
     arquivo: Texto
@@ -88,10 +90,8 @@ class PerfilIdentificadores(Modelo):
 def preencher_endereco(atual: Endereco, padrao: EnderecoPadrao | None) -> tuple[Endereco, str]:
     if padrao is None:
         return atual, 'sem_endereco_configurado'
-    # Não mistura partes de endereços nem substitui informação de fonte atual.
-    campos = atual.model_dump(exclude={'complemento'})
-    if any(v.strip() for v in campos.values()):
-        return atual, 'endereco_atual_preservado'
+    # Decisão explícita: endereço do edifício prevalece no XLSX inteiro.
+    # Não completar campos vazios com outro endereço; a fonte fica no canônico.
     return padrao.endereco.model_copy(update={'complemento': atual.complemento}), 'endereco_explicito_configurado'
 
 

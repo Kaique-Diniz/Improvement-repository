@@ -6,7 +6,7 @@
 <section id="login" class="card acesso"><div><span class="numero">01</span><h2>Acesso ao ambiente local</h2><p>Use a chave do arquivo <code>acesso-local.txt</code>, na pasta privada indicada ao iniciar o servidor.</p></div><form id="login-form"><label for="chave">Chave de acesso</label><div class="inline"><input id="chave" type="password" autocomplete="current-password" required><button class="primario">Entrar</button></div><p id="login-error" role="alert"></p></form></section>
 <div id="app" hidden>
 <details id="cadastro-condominios" class="card cadastro-condominio"><summary>Dados do condomínio <span id="endereco-cadastro-resumo" class="muted"></span></summary>
-<p>Cadastre uma vez o endereço do edifício. Ele será reutilizado nas próximas análises quando a unidade não tiver endereço próprio. O complemento continua individual.</p>
+<p>Cadastre uma vez o endereço do edifício. Ele terá prioridade em todas as linhas do XLSX deste condomínio. O complemento continua individual e os endereços das fontes ficam preservados na auditoria.</p>
 <form id="cadastro-condominio-form"><div class="endereco-grid">
 <label>Administradora<select id="endereco-administradora" required></select></label>
 <label>Condomínio<select id="endereco-condominio" required></select></label>

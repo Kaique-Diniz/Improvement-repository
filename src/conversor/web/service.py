@@ -31,7 +31,7 @@ from conversor.domain.documents import resolver_documento
 from conversor.domain.identity import chave_unidade
 from conversor.domain.template import Template
 from conversor.export.contract import DividaExportacao, LinhaExportacao, materializar
-from conversor.export.identifiers import preencher_endereco, selecionar_perfil
+from conversor.export.identifiers import POLITICA_ENDERECO_CONDOMINIO, preencher_endereco, selecionar_perfil
 from conversor.export.xlsx import escrever_xlsx
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
@@ -419,21 +419,23 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         identificacao = identificadores[u.id]
         endereco_atual = pessoa.contato.endereco
         endereco_saida, estado_endereco = preencher_endereco(endereco_atual, padrao_endereco)
-        conflitos_endereco, alertas_endereco = [], []
-        if padrao_endereco and estado_endereco == 'endereco_atual_preservado':
+        conflitos_endereco, campos_substituidos, alertas_endereco = [], [], []
+        if padrao_endereco:
             esperado = padrao_endereco.endereco.model_dump(exclude={'complemento'})
             atual = endereco_atual.model_dump(exclude={'complemento'})
             normal = lambda s: ' '.join(s.split()).casefold()
             conflitos_endereco = [k for k in esperado if esperado[k] and atual[k] and normal(esperado[k]) != normal(atual[k])]
-            if conflitos_endereco:
-                alertas_endereco.append('ENDERECO_DIVERGENTE_PRESERVADO')
-            if any(esperado[k] and not atual[k] for k in esperado):
-                alertas_endereco.append('ENDERECO_PARCIAL_PRESERVADO')
+            campos_substituidos = [k for k in esperado if esperado[k] != atual[k]]
+            if campos_substituidos and any(atual.values()):
+                alertas_endereco.append('ENDERECO_CADASTRADO_PRIORIZADO')
             for d in ds:
                 d['alertas_cadastrais'] = sorted(set(d['alertas_cadastrais'] + alertas_endereco))
         enderecos_template[u.id] = {'estado': estado_endereco,
             'alertas': alertas_endereco, 'campos_conflitantes': conflitos_endereco,
+            'campos_substituidos': campos_substituidos,
+            'politica_aplicacao': POLITICA_ENDERECO_CONDOMINIO if padrao_endereco else 'endereco_da_fonte',
             'endereco_origem': endereco_atual.model_dump(mode='json'),
+            'endereco_aplicado': endereco_saida.model_copy(update={'complemento': identificacao['complemento']}).model_dump(mode='json'),
             'evidencia': padrao_endereco.evidencia.model_dump(mode='json') if padrao_endereco else None}
         contato = Contato.model_validate(pessoa.contato.model_dump() | {
             'endereco': endereco_saida.model_dump() | {'complemento': identificacao['complemento']}})
@@ -500,6 +502,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'enderecos_template': enderecos_template,
         'endereco_condominio': {'administradora_id': perfil['administradora_id'], 'condominio_id': perfil['condominio_id'],
             'origem': origem_endereco, 'cadastrado': padrao_endereco is not None,
+            'politica_aplicacao': POLITICA_ENDERECO_CONDOMINIO if padrao_endereco else 'endereco_da_fonte',
             'configuracao': padrao_endereco.model_dump(mode='json') if padrao_endereco else None},
         'aviso': aviso_fechamento if reconciliadas_diagnostico else 'Somente diagnóstico local. Não importar no CRM.',
         'arquivo': {'nome': 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',

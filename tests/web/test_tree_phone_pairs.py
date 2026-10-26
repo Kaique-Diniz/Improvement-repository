@@ -112,7 +112,7 @@ def test_configuracao_privada_automatica_endereco_so_tree_e_sem_sobrescrever(tmp
         assert all(e['estado']=='sem_endereco_configurado'for e in plaza['resultado']['enderecos_template'].values())
 
 
-def test_endereco_parcial_divergente_preservado_e_alertado(tmp_path,monkeypatch):
+def test_endereco_configurado_prevalece_com_fonte_parcial_na_auditoria(tmp_path,monkeypatch):
     config=json.loads(service.PERFIS_SAIDA_PATH.read_bytes());config[1]['endereco_padrao']=endereco()
     p=tmp_path/'perfil_privado.json';p.write_text(json.dumps(config))
     old=service.ler
@@ -124,8 +124,10 @@ def test_endereco_parcial_divergente_preservado_e_alertado(tmp_path,monkeypatch)
     monkeypatch.setattr(service,'ler',com_endereco)
     r=executar(tmp_path/'saida',[['Telefone: 00000001']],perfis_saida=p)
     info=next(iter(r['enderecos_template'].values()))
-    assert info['alertas']==['ENDERECO_DIVERGENTE_PRESERVADO','ENDERECO_PARCIAL_PRESERVADO']
-    assert 'ENDERECO_DIVERGENTE_PRESERVADO'in r['decisoes'][0]['alertas_cadastrais']
+    assert info['alertas']==['ENDERECO_CADASTRADO_PRIORIZADO']
+    assert info['endereco_origem']['logradouro']=='Outra Rua Sintetica'
+    assert info['endereco_aplicado']['logradouro']=='Rua Inteiramente Ficticia'
+    assert 'ENDERECO_CADASTRADO_PRIORIZADO'in r['decisoes'][0]['alertas_cadastrais']
     wb=load_workbook(tmp_path/'saida/TESTE_LOCAL_NAO_IMPORTAR.xlsx')
-    assert wb['Dados']['E2'].value=='Outra Rua Sintetica'and wb['Dados']['F2'].value is None
+    assert wb['Dados']['E2'].value=='Rua Inteiramente Ficticia'and wb['Dados']['F2'].value=='123'
     wb.close()

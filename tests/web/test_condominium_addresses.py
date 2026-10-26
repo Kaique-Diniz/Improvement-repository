@@ -170,7 +170,7 @@ def test_duas_gravacoes_simultaneas_nao_perdem_atualizacao(tmp_path):
     assert len(json.loads((root/'enderecos_condominios.json').read_text())['registros'])==1
 
 
-def test_endereco_divergente_de_fonte_atual_continua_preservado(tmp_path,monkeypatch):
+def test_endereco_divergente_da_fonte_fica_na_auditoria_e_cadastrado_na_saida(tmp_path,monkeypatch):
     real=service.ler
     def com_endereco(*args,**kwargs):
         l,ctx=real(*args,**kwargs);p=l.pessoas[0]
@@ -180,10 +180,12 @@ def test_endereco_divergente_de_fonte_atual_continua_preservado(tmp_path,monkeyp
     with cliente(tmp_path/'privado')as c:
         login(c);salvar(c);job=processar_tree(c)
         e=next(iter(job['resultado']['enderecos_template'].values()))
-        assert e['estado']=='endereco_atual_preservado'and 'ENDERECO_DIVERGENTE_PRESERVADO'in e['alertas']
+        assert e['estado']=='endereco_explicito_configurado'and e['alertas']==['ENDERECO_CADASTRADO_PRIORIZADO']
+        assert e['politica_aplicacao']=='endereco_condominio_prioritario@2'
+        assert e['endereco_aplicado']['logradouro']==ENDERECO['logradouro']
         assert e['endereco_origem']['logradouro']=='Rua Atual Ficticia'
         wb=load_workbook(BytesIO(c.get('/api/processamentos/'+job['id']+'/arquivo-teste.xlsx').content))
-        assert wb['Dados']['E2'].value=='Rua Atual Ficticia'and wb['Dados']['F2'].value is None;wb.close()
+        assert wb['Dados']['E2'].value==ENDERECO['logradouro']and wb['Dados']['F2'].value==ENDERECO['numero'];wb.close()
 
 
 def test_cadastro_sobrevive_a_git_pull_em_copia_temporaria_e_reinicio(tmp_path):
@@ -203,3 +205,65 @@ def test_cadastro_sobrevive_a_git_pull_em_copia_temporaria_e_reinicio(tmp_path):
     assert(root/'enderecos_condominios.json').read_bytes()==original
     with cliente(root)as c:
         login(c);assert c.get(TREE).json()['endereco']['logradouro']==ENDERECO['logradouro']
+
+
+@pytest.mark.parametrize('modo',['A','B'])
+@pytest.mark.parametrize('com_cadastro',[False,True])
+def test_endereco_condominio_em_todas_linhas_plaza_sem_mudar_outros_campos(tmp_path,monkeypatch,modo,com_cadastro):
+    from conversor.web.demo import documentos_demo
+    original=service.ler
+    def fontes_com_enderecos_diferentes(*args,**kwargs):
+        lote,ctx=original(*args,**kwargs)
+        pessoas=[]
+        for i,p in enumerate(lote.pessoas):
+            e=Endereco(logradouro=f'Rua da Fonte Ficticia {i}',numero=str(i+1),cep='00000002',
+                bairro='Outro Bairro Inventado',cidade='Outra Cidade Inventada',uf='RJ',complemento=f'ORIGINAL-{i}')
+            pessoas.append(p.model_copy(update={'contato':p.contato.model_copy(update={'endereco':e})}))
+        return lote.model_copy(update={'pessoas':tuple(pessoas)}),ctx
+    monkeypatch.setattr(service,'ler',fontes_com_enderecos_diferentes)
+    docs=documentos_demo();extra={'cadastro':docs['cadastro']}if com_cadastro else{}
+    baseline=tmp_path/'baseline'
+    service.analisar(docs['inadimplencia'],service.PedidoDiagnostico(data_ref='2026-10-21',modo=modo),
+        processamento_id='prioridade_sintetica',destino=baseline,**extra)
+    root=tmp_path/'privado'
+    with cliente(root)as c:
+        login(c);assert salvar(c,PLAZA).status_code==200
+        arquivos={'inadimplencia':('FICTICIO.pdf',docs['inadimplencia'])}
+        if com_cadastro:arquivos['cadastro']=('CADASTRO_FICTICIO.pdf',docs['cadastro'])
+        job=aguardar(c,c.post('/api/processamentos',data={'data_ref':'2026-10-21','modo':modo},files=arquivos))
+        assert job['estado']=='concluido';r=job['resultado']
+        a=load_workbook(BytesIO(c.get('/api/processamentos/'+job['id']+'/arquivo-teste.xlsx').content))
+        b=load_workbook(baseline/'TESTE_LOCAL_NAO_IMPORTAR.xlsx')
+        novas=list(a['Dados'].values);antigas=list(b['Dados'].values);indices=(4,5,7,8,9,10)
+        assert novas[0]==antigas[0]and len(novas)==len(antigas)
+        for nova,antiga in zip(novas[1:],antigas[1:],strict=True):
+            assert[nova[i]for i in indices]==list(ENDERECO.values())
+            assert[v for i,v in enumerate(nova)if i not in indices]==[v for i,v in enumerate(antiga)if i not in indices]
+        assert sum(all(v is None for v in linha[24:30])for linha in novas[1:])==(1 if modo=='B'else 0)
+        for e in r['enderecos_template'].values():
+            assert e['alertas']==['ENDERECO_CADASTRADO_PRIORIZADO']
+            assert e['endereco_origem']['logradouro'].startswith('Rua da Fonte Ficticia')
+            assert e['endereco_aplicado']['logradouro']==ENDERECO['logradouro']
+            assert e['endereco_aplicado']['complemento'].startswith('UNI')
+            assert len(e['campos_substituidos'])==6 and e['evidencia']['tipo']=='configuracao_fornecida_pelo_usuario'
+        assert(root/'processamentos'/job['id']/'canonico.json').read_bytes()==(baseline/'canonico.json').read_bytes()
+        assert not r['permite_exportacao_operacional']and c.get('/api/processamentos/'+job['id']+'/operacional.xlsx').status_code==409
+        a.close();b.close()
+
+
+def test_endereco_cadastrado_parcial_nao_mistura_campos_da_fonte(tmp_path):
+    from conversor.export.identifiers import preencher_endereco
+    from conversor.adapters.condominium_addresses import RepositorioEnderecos
+    root=tmp_path/'privado';root.mkdir()
+    padrao=RepositorioEnderecos(root).salvar('adm_fl','cond_fl',Endereco(logradouro='Edificio Ficticio'),
+        versao_esperada=0,sessao_sha256='a'*64)
+    fonte=Endereco(logradouro='Outro Local Ficticio',numero='999',cep='00000002',uf='RJ',complemento='UNIDADE-FICTICIA')
+    antes=fonte.model_dump();saida,_=preencher_endereco(fonte,padrao)
+    assert saida.logradouro=='Edificio Ficticio'and saida.numero==saida.cep==saida.uf==''
+    assert saida.complemento==fonte.complemento and fonte.model_dump()==antes
+
+
+def test_sem_endereco_cadastrado_mantem_fonte_inclusive_parcial():
+    from conversor.export.identifiers import preencher_endereco
+    fonte=Endereco(cidade='Cidade Ficticia',complemento='UNIDADE-FICTICIA')
+    assert preencher_endereco(fonte,None)==(fonte,'sem_endereco_configurado')
