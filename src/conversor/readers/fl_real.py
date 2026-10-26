@@ -11,7 +11,9 @@ UNIDADE=re.compile(r'^(\d{4})\s+TORRE\s+(\w+)\s*-\s*(.+)$')
 INICIO=re.compile(r'^(\d{2}/\d{2}/\d{2})\s+(\d{2}/\d{4})\s+(\d+)\s+(.*)$')
 CAUDA=re.compile(r'('+VALOR_BRL+r')\s+('+VALOR_BRL+r')\s*$')
 NOTIFICACAO = r'\d+\s*(?:[º°ª]|[oa]\.?)\s+Notifica[cç][aã]o'
-MARCADOR = re.compile(NOTIFICACAO, re.I)
+MARCADOR = re.compile(r'(?:'+NOTIFICACAO+r'|Jur[ií]dico)', re.I)
+# "Jurídico" exige fragmento independente na coluna administrativa. Não usar
+# como sufixo textual genérico: pode integrar legitimamente o nome de empresa.
 SUFIXO_ADMINISTRATIVO = re.compile(r'(.+?)\s+('+NOTIFICACAO+r')$', re.I)
 
 

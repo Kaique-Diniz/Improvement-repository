@@ -6,6 +6,28 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## FL — marcador administrativo fora do nome
+
+O leitor separa `Jurídico` do titular somente quando um fragmento independente
+está na coluna administrativa e alinhado ao cabeçalho da unidade. Funciona com
+linha extraída fundida ou separada; sem essa evidência geométrica, preserva a
+palavra. Nomes de cotitulares separados por `/` continuam completos. A auditoria
+mantém texto original, marcador, hash, página, linha e coordenadas. Essa
+classificação é informativa e não cria exclusão financeira.
+
+Validação privada em 23/10/2026, sem Cadastro Geral: **61 nomes de linhas
+corrigidos no modo A e 67 no B**, com zero sufixos administrativos residuais.
+PLAZA conserva **69 dívidas e, no B, mais 46 cadastros**. Todos os outros campos
+do XLSX permanecem iguais. Com Cadastro Geral, o XLSX inteiro permanece idêntico.
+Diferenças de cotitulares frente à referência são preservadas. TREE mantém
+canônico e XLSX idênticos: **63 dívidas e, no B, mais 103 cadastros**.
+Comparativos com dados pessoais ficam exclusivamente no diretório privado.
+
+**1.363 testes aprovados** (1.303 regulares + 60 explícitos), incluindo 25 novos
+casos sintéticos de geometria, nomes legítimos, cotitulares e geração A/B com e
+sem cadastro complementar. Oito verificações de schemas passaram. Exportação
+continua exclusivamente diagnóstica; sem push/merge ou integração easyCollector.
+
 ## Cadastro permanente de endereços pela interface
 
 Depois de entrar, abra **Dados do condomínio**, selecione administradora e
