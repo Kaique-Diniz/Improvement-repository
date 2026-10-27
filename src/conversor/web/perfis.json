@@ -19,5 +19,40 @@
     "vigente_de": "2026-09-10", "vigente_ate": null, "exclusoes": [],
     "regra_prazo": "plaza_prazo_30", "dias": 30, "prioridade_exclusao": 1, "prioridade_prazo": 0,
     "ressalvas": ["O início escolhido antecede a data nominal da fonte. Fundamento da aplicabilidade anterior pendente."]
+  },
+  {
+    "id": "nova_york",
+    "condominio_id": "cond_bbz_nova_york",
+    "administradora_id": "adm_bbz",
+    "nome": "NOVA YORK PENTHOUSES",
+    "administradora": "BBZ",
+    "familia": "bbz",
+    "configuracao_versao": "1.0.0",
+    "codigo_arquivo": "884",
+    "codigo_administrativo": "287",
+    "aliases": [
+      "CONDOMINIO NOVA YORK PENTHOUSES",
+      "NOVA YORK PENTHOUSES"
+    ],
+    "vigente_de": null,
+    "vigente_ate": null,
+    "exclusoes": [],
+    "regra_prazo": "nova_york_prazo_60",
+    "dias": 60,
+    "prioridade_exclusao": 1,
+    "prioridade_prazo": 0,
+    "origem_regua": {
+      "arquivo_id": "regua_bbz_20261026",
+      "sha256": "17f065b659288e8b364cc056a374e87ee6797fc905587876ef05a94f5c904f0d",
+      "leitor_versao": "vinculacao_documental_regua@1",
+      "identificador": "aba1_E312_extrajudicial",
+      "linha": 312
+    },
+    "ressalvas": [
+      "Somente diagnóstico: atraso estritamente superior a 60 dias corridos, confirmado pelo responsável. Sem filtro judicial adicional.",
+      "Vigência operacional ainda não comprovada; data nominal da régua não é início de vigência. Nenhum plano real aprovado ou ativado.",
+      "Cadastro Geral BBZ ainda não integrado: use o relatório financeiro sem o PDF complementar. CPF/CNPJ e contatos ausentes ficam vazios.",
+      "Marcadores A/AJ/J/AE BBZ são preservados, sem herdar exclusões do TREE."
+    ]
   }
 ]

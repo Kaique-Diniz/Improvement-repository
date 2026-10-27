@@ -279,7 +279,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
             path = raiz / 'processamentos' / id_
             path.mkdir(mode=0o700, parents=True)
             for role, content in arquivos.items():
-                gravar_privado(path / (role + ('.xlsx' if role == 'referencia' else '.pdf')), content)
+                gravar_privado(path / (role + ('.xlsx' if content.startswith(b'PK') else '.pdf')), content)
             escrever_json(path / 'contexto.json', {
                 'finalidade': 'diagnostico_local_sem_aprovacao_ou_exportacao_operacional',
                 'processamento_id': id_, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
@@ -303,9 +303,10 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
                     job.update(estado='concluido', resultado=result)
             except (ErroLeitura, ValidationError) as exc:
                 code = exc.codigo if isinstance(exc, ErroLeitura) else 'CONTRATO_DO_DOCUMENTO_INVALIDO'
+                local = {k:getattr(exc,k) for k in ('pagina','linha') if getattr(exc,k,None) is not None}
                 with lock:
-                    job.update(estado='erro', codigo=code)
-                escrever_json(path / 'erro.json', {'codigo': code})
+                    job.update(estado='erro', codigo=code, **local)
+                escrever_json(path / 'erro.json', {'codigo': code, **local})
             except Exception:
                 with lock:
                     job.update(estado='erro', codigo='FALHA_NO_PROCESSAMENTO_PRIVADO')
@@ -337,7 +338,8 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
                     await f.close()
                 if not content or len(content) > LIMIT:
                     raise HTTPException(413, 'ARQUIVO_VAZIO_OU_LIMITE_EXCEDIDO')
-                if not content.startswith(b'PK' if role == 'referencia' else b'%PDF-'):
+                tipos = (b'PK',) if role=='referencia' else (b'%PDF-',) if role=='cadastro' else (b'%PDF-',b'PK')
+                if not content.startswith(tipos):
                     raise HTTPException(422, 'TIPO_DE_ARQUIVO_INVALIDO')
                 files[role] = content
         history = ()

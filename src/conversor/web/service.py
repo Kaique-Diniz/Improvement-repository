@@ -37,6 +37,7 @@ from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
 from conversor.readers.habita_closing import conferir_fechamento_habita
 from conversor.readers.operational import GRAMATICAS, RegistroLeitores, validar_assinatura_para_leitura
+from conversor.readers.bbz_xlsx import LeitorBBZXLSX, identificar as identificar_bbz
 from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
@@ -49,7 +50,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york'] = 'auto'
 
 
 def normalizar(s):
@@ -59,6 +60,15 @@ def normalizar(s):
 
 def reconhecer(conteudo, *, cadastro=False):
     sonda = SondadorLocal().sondar(conteudo, arquivo_id='upload')
+    if sonda.tipo == 'xlsx' and not cadastro:
+        codigo,nome = identificar_bbz(conteudo)
+        limpo = normalizar(nome)
+        matches = [p for p in PERFIS.values() if p['familia']=='bbz'
+                   and codigo==p['codigo_administrativo']
+                   and limpo in {normalizar(a)for a in p['aliases']}]
+        if len(matches)!=1:
+            raise ErroLeitura('CONDOMINIO_DESCONHECIDO_OU_AMBIGUO')
+        return matches[0],codigo,LeitorBBZXLSX.formato_id
     if sonda.tipo != 'pdf_texto' or sonda.bloqueios or not sonda.completo:
         raise ErroLeitura('PDF_NAO_EXTRAIVEL_COM_SEGURANCA')
     texto = '\n'.join(p.texto for p in sonda.fragmentos)
@@ -155,7 +165,7 @@ def configurar(perfil, namespace):
     return ConfiguracaoDiagnostica(perfil.get('configuracao_versao', '1.0.0'), tuple(fontes), tuple(regras))
 
 
-def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificadores=None):
+def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificadores=None, *, permitir_aba_historica=False, recibos_individuais=False):
     """Confronto estrito por identificador de origem ou bloco/unidade explícitos.
 
     Não infere torre numérica a partir de letra, não ajusta valores ou seleção.
@@ -178,9 +188,16 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificador
         raise ErroLeitura('REFERENCIA_XLSX_INVALIDA')
     livro = load_workbook(BytesIO(conteudo), read_only=True, data_only=False)
     try:
-        if 'Dados' not in livro.sheetnames:
+        if 'Dados' in livro.sheetnames:
+            aba = livro['Dados']
+        elif permitir_aba_historica:
+            logicas=Template(id='ref',nome='ref',versao='1').colunas_logicas
+            candidatas=[s for s in livro if tuple(str(v).strip()for v in next(s.iter_rows(values_only=True),())[:30])==logicas]
+            if len(candidatas)!=1:raise ErroLeitura('REFERENCIA_ABA_AMBIGUA_OU_INVALIDA')
+            aba=candidatas[0]
+        else:
             raise ErroLeitura('REFERENCIA_SEM_ABA_DADOS')
-        rows = list(livro['Dados'].iter_rows(values_only=True))
+        rows = list(aba.iter_rows(values_only=True))
         if not rows or tuple(str(x).strip() for x in rows[0][:30]) != Template(id='ref', nome='ref', versao='1').colunas_logicas:
             raise ErroLeitura('REFERENCIA_FORA_DAS_30_COLUNAS')
         resumo = Counter()
@@ -223,6 +240,10 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificador
                     boletos = [b for b in lote.boletos if b.unidade_id == u.id and
                         (b.identificador == vinculo['boleto'] if vinculo else
                          b.vencimento == data_excel(row[28]))]
+                    if recibos_individuais and not vinculo and len(boletos)>1:
+                        candidatos=[b for b in boletos if row[29]is not None and b.composicao.total_original==Decimal(str(row[29]))]
+                        # Nunca somar recibos distintos para imitar uma linha da referência.
+                        boletos=candidatos if len(candidatos)==1 else []
                     if boletos and row[29] is not None and not isinstance(row[29], str):
                         original = sum((b.composicao.total_original for b in boletos), Decimal('0.00'))
                         if original == Decimal(str(row[29])):
@@ -250,7 +271,7 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificador
                 resumo['documentos_com_representacao_numerica'] += 1
             resumo[categoria] += 1
             detalhes.append({'linha_excel': i, 'categoria': categoria, 'codigo': codigo})
-        return {'resumo': dict(resumo), 'linhas': detalhes,
+        return {'resumo': dict(resumo), 'linhas': detalhes, 'aba_referencia': aba.title,
                 'vinculo_tecnico_historico_utilizado': bool(mapeamento),
                 'referencia_nao_e_gabarito_absoluto': True,
                 'limite': 'Sem inferir vínculos, nomes, agrupamentos ou torres; ver linhas não avaliáveis.'}
@@ -271,6 +292,14 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     saida_bytes = Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()
     perfil_saida = selecionar_perfil(json.loads(saida_bytes), administradora_id=perfil['administradora_id'],
                                      condominio_id=perfil['condominio_id'])
+    if perfil_saida is None and perfis_saida:
+        # Perfis privados antigos não precisam ser editados para receber um novo
+        # condomínio comprovado. Nunca mesclar/sobrescrever um perfil já presente.
+        integrados=PERFIS_SAIDA_PATH.read_bytes()
+        perfil_integrado=selecionar_perfil(json.loads(integrados),administradora_id=perfil['administradora_id'],
+                                         condominio_id=perfil['condominio_id'])
+        if perfil_integrado:
+            perfil_saida,saida_bytes=perfil_integrado,integrados
     endereco_cadastrado = buscar_endereco(perfil['administradora_id'], perfil['condominio_id']) if buscar_endereco else None
     padrao_endereco = endereco_cadastrado or (perfil_saida.endereco_padrao if perfil_saida else None)
     origem_endereco = ('cadastro_usuario' if endereco_cadastrado else 'perfil_privado_existente' if padrao_endereco else 'nao_cadastrado')
@@ -294,8 +323,13 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'unidade_original': u.unidade_original, 'bloco_original': u.bloco_original,
             'chave_normalizada': u.chave_normalizada, 'origem_unidade': u.origem.model_dump(mode='json')}
     fontes = [{'papel': 'inadimplencia', 'sha256': sha256(conteudo).hexdigest(), 'leitor': leitor + '@1'}]
+    if perfil.get('origem_regua'):
+        fontes.append({'papel':'regua_requisitos_documentais','evidencia':perfil['origem_regua'],
+                       'aprovacao_operacional':False})
     cad = None
     if cadastro:
+        if perfil['familia']=='bbz':
+            raise ErroLeitura('CADASTRO_BBZ_AINDA_NAO_SUPORTADO')
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True)
         if (pc['id'], cc) != (perfil['id'], codigo):
@@ -334,7 +368,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     # intactos; o motor e a autorização operacional não recebem essa dispensa.
     efetivas = [o for o in ocorrencias if o.id not in reavaliadas | reconciliadas_diagnostico]
     globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
-    fora_vigencia = pedido.data_ref < date.fromisoformat(perfil['vigente_de'])
+    fora_vigencia = bool(perfil['vigente_de'] and pedido.data_ref < date.fromisoformat(perfil['vigente_de']))
     decisoes, linhas, linhas_info, previa = [], [], [], []
     rotulos_template, enderecos_template = {}, {}
 
@@ -564,11 +598,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if referencia:
         progresso('Comparando com a referência, sem ajustar os dados')
         try:
-            resultado['comparacao'] = comparar_referencia(referencia, lote, {d['id']: d for d in decisoes}, mapeamento_referencia, identificadores)
+            resultado['comparacao'] = comparar_referencia(referencia, lote, {d['id']: d for d in decisoes}, mapeamento_referencia, identificadores,
+                permitir_aba_historica=perfil['familia']=='bbz',recibos_individuais=perfil['familia']=='bbz')
         except ErroLeitura as erro:
             resultado['comparacao'] = {'resumo': {'referencia_nao_avaliavel': 1}, 'linhas': [],
                 'codigo': erro.codigo, 'referencia_nao_e_gabarito_absoluto': True,
-                'limite': 'Não foi possível confrontar esta referência. A análise do PDF e os bloqueios permanecem preservados.'}
+                'limite': 'Não foi possível confrontar esta referência. A análise do relatório e os bloqueios permanecem preservados.'}
         resultado['fontes'].append({'papel': 'referencia', 'sha256': sha256(referencia).hexdigest()})
     escrever_json(output / 'manifesto_diagnostico.json', manifesto)
     escrever_json(output / 'auditoria.json', resultado)

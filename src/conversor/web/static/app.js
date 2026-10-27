@@ -14,6 +14,7 @@ async function api(url, options={}) {
   }
   return data;
 }
+function localOrigem(o){const m=/^xlsx_aba([0-9]+)_r([0-9]+)_(.+)$/.exec(o.identificador||'');return m?'aba '+m[1]+', linha '+m[2]+', células '+m[3].replaceAll('_',':'):'página '+o.pagina+', linha '+o.linha;}
 function elemento(tag,text,cls) { const e=document.createElement(tag); if(text!==undefined)e.textContent=text; if(cls)e.className=cls; return e; }
 function atualizarArquivo(id) {
   const arquivo=$(id).files[0], nome=$(id+'-nome');
@@ -35,8 +36,8 @@ function selecaoAlterada(e) {
   const anterior=!!atual;revisaoSelecao++;limparResultado();
   if(arquivos.includes(e.target.id))atualizarArquivo(e.target.id);
   let aviso=anterior||!$('selecao-aviso').hidden?'Seleção alterada. Faça uma nova análise para atualizar a prévia e os downloads.':'';
-  if(!$('inadimplencia').files.length)aviso='Selecione um PDF de inadimplência para iniciar uma nova análise.';
-  else if(e.target.id==='inadimplencia'&&($('cadastro').files.length||$('referencia').files.length))aviso='PDF alterado. Confira se o Cadastro e a referência ainda selecionados pertencem ao mesmo condomínio. Remova os anteriores pelo × e faça uma nova análise.';
+  if(!$('inadimplencia').files.length)aviso='Selecione um relatório de inadimplência para iniciar uma nova análise.';
+  else if(e.target.id==='inadimplencia'&&($('cadastro').files.length||$('referencia').files.length))aviso='Relatório alterado. Confira se o Cadastro e a referência ainda selecionados pertencem ao mesmo condomínio. Remova os anteriores pelo × e faça uma nova análise.';
   $('selecao-aviso').textContent=aviso;$('selecao-aviso').hidden=!aviso;
 }
 for(const id of arquivos) {
@@ -50,7 +51,7 @@ function bloquear(b) {
   $('salvar-endereco').disabled=b||carregandoEndereco||salvandoEndereco||enderecoVersao===null;
 }
 function falhar(e) {
-  const mensagem=e.message==='CADASTRO_DE_OUTRO_CONDOMINIO'?'O Cadastro complementar pertence a outro condomínio. Remova-o pelo × ou selecione o cadastro correspondente ao PDF de inadimplência.':e.message;
+  const mensagem=e.message==='CADASTRO_BBZ_AINDA_NAO_SUPORTADO'?'O Cadastro Geral BBZ ainda não é lido nesta etapa. Remova o PDF complementar pelo × e processe o XLSX financeiro. CPF/CNPJ e contatos ausentes permanecem vazios.':e.message==='CADASTRO_DE_OUTRO_CONDOMINIO'?'O Cadastro complementar pertence a outro condomínio. Remova-o pelo × ou selecione o cadastro correspondente ao PDF de inadimplência.':e.message;
   $('progresso').hidden=true;$('erro').hidden=false;$('erro').textContent='Análise interrompida: '+mensagem+(mensagem.endsWith('.')?'':'.')+' Confira os arquivos e os parâmetros.';bloquear(false);
 }
 async function configurar() {
@@ -111,7 +112,7 @@ async function executar(tipo,id) {
   if(tipo==='demo'&&!document.querySelector('input[name="modo"]:checked'))document.querySelector('input[name="modo"][value="B"]').checked=true;
   const modo=document.querySelector('input[name="modo"]:checked');
   if(!$('data-ref').value||!modo) { $('erro').hidden=false;$('erro').textContent='Selecione a data de referência e o modo A ou B.';return; }
-  if(tipo==='upload'&&!$('inadimplencia').files.length) { $('erro').hidden=false;$('erro').textContent='Envie o PDF de inadimplência.';return; }
+  if(tipo==='upload'&&!$('inadimplencia').files.length) { $('erro').hidden=false;$('erro').textContent='Envie o relatório de inadimplência.';return; }
   const f=new FormData();f.append('data_ref',$('data-ref').value);f.append('modo',modo.value);
   let endpoint='/api/exemplo';
   if(tipo==='privado')endpoint='/api/fontes-privadas/'+encodeURIComponent(id)+'/processar';
@@ -161,7 +162,7 @@ function mostrarCotas() {
   $('grupos-cotas').replaceChildren(...atual.cotas.map(c=>{
     const grupo=elemento('details',undefined,'cota-grupo');
     grupo.append(elemento('summary',c.bloco+'/'+c.unidade+' · '+c.boletos_ids.length+' boletos · '+estados[c.situacao_financeira]+(c.retida_tecnicamente?' · Retida tecnicamente':'')));
-    for(const causa of c.causas_veto)grupo.append(elemento('p','Boleto '+causa.boleto+' vetou toda a cota: '+motivoLegivel(causa.regra_id)+' · '+causa.origens.map(o=>'página '+o.pagina+', linha '+o.linha).join('; ')));
+    for(const causa of c.causas_veto)grupo.append(elemento('p','Boleto '+causa.boleto+' vetou toda a cota: '+motivoLegivel(causa.regra_id)+' · '+causa.origens.map(o=>localOrigem(o)).join('; ')));
     if(c.impedimentos_tecnicos.length)grupo.append(elemento('p','Retenção técnica: '+c.impedimentos_tecnicos.map(motivoLegivel).join('; ')));
     for(const id of c.boletos_ids) {
       const d=decisoes.get(id),boleto=elemento('details',undefined,'boleto-grupo'),conteudo=elemento('div');
@@ -225,7 +226,7 @@ function preencherDetalhes(d,box) {
   if(rotulo)box.append(elemento('h3','Rótulo apresentado no template'),elemento('p',rotulo.rotulo+(rotulo.base==='vencimento_apresentacao'?' · Mês/ano do vencimento somente para apresentação; não informa competência.':'')),elemento('p','Identificador original do boleto: '+rotulo.identificador_origem));
   if(d.anomalia_global_reconciliada)box.append(elemento('h3','Anomalia global de fechamento'),elemento('p','Habita/VG integralmente reconciliado para diagnóstico local. Ocorrência original preservada; não é uma pendência individual deste boleto. Não autoriza exportação operacional.'));
   const cota=atual.cotas.find(c=>c.id===d.cota_id);
-  if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>'página '+o.pagina+', linha '+o.linha).join('; ')));
+  if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>localOrigem(o)).join('; ')));
   box.append(elemento('h3','Informações de contato da unidade'),elemento('p',contatoLegivel(d)));
   for(const m of d.alertas_cadastrais)box.append(elemento('p',motivoLegivel(m)));
   const endereco=atual.enderecos_template?.[d.unidade_id];
@@ -240,7 +241,7 @@ function preencherDetalhes(d,box) {
   box.append(elemento('p','Exportação operacional indisponível em todos os casos.'));
   for(const m of d.motivos)box.append(elemento('p',motivoLegivel(m)));
   box.append(elemento('h3','Composição original'));
-  for(const c of d.componentes)box.append(elemento('p',c.descricao_original+' · R$ '+c.valor+' · página '+c.origem.pagina+', linha '+c.origem.linha));
+  for(const c of d.componentes)box.append(elemento('p',c.descricao_original+' · R$ '+c.valor+' · '+localOrigem(c.origem)));
   box.append(elemento('p','Competência: '+(d.competencia||'não informada na fonte; preservada em branco')));
   box.append(elemento('p','Documento: '+(d.documento.estado.length?d.documento.estado.map(motivoLegivel).join('; '):'disponível no registro da unidade, sem atribuição individual')));
 }

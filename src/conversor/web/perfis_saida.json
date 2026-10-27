@@ -67,5 +67,29 @@
         "blocos_comprovados": "G2:G64 (01, 02, DEP); VG sem evidencia"
       }
     }
+  },
+  {
+    "id": "bbz_nova_york_template_diagnostico",
+    "versao": "1.0",
+    "uso": "diagnostico_nao_operacional",
+    "administradora_id": "adm_bbz",
+    "condominio_id": "cond_bbz_nova_york",
+    "nome_cedente": "BBZ",
+    "produto": "NOVA YORK PENTHOUSES",
+    "largura_unidade": 4,
+    "torres": {
+      "0": "0"
+    },
+    "codificador": "unidade_sufixo",
+    "sufixo_cedente": "884",
+    "evidencia": {
+      "arquivo": "884 - NOVA YORK PENTHOUSES - Template.xlsx",
+      "sha256": "945bacc971d1d1ba8cf265259adf3da9dd68e6ee6e1b6511471bae5b67d89a9d",
+      "aba": "Planilha1",
+      "celulas": {
+        "identificadores": "B2:B34 e G2:G34; 26 vínculos financeiros comprovados",
+        "contrato": "Y2:Y34"
+      }
+    }
   }
 ]

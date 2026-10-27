@@ -48,7 +48,7 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
-    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo'] = 'torre_unidade'
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo'] = 'torre_unidade'
     sufixo_cedente: Texto | None = None
     rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
     endereco_padrao: EnderecoPadrao | None = None
@@ -61,7 +61,7 @@ class PerfilIdentificadores(Modelo):
             raise ValueError('MAPEAMENTO_DE_TORRES_INVALIDO')
         if len(set(self.torres.values())) != len(self.torres):
             raise ValueError('CODIGOS_DE_TORRES_CONFLITANTES')
-        if (self.codificador == 'bloco_unidade_sufixo') != (self.sufixo_cedente is not None):
+        if (self.codificador in ('bloco_unidade_sufixo','unidade_sufixo')) != (self.sufixo_cedente is not None):
             raise ValueError('SUFIXO_INCOMPATIVEL_COM_CODIFICADOR')
         return self
 
@@ -78,6 +78,9 @@ class PerfilIdentificadores(Modelo):
         if len(numero) > self.largura_unidade:
             raise ErroLeitura('UNIDADE_FORA_DA_LARGURA_DOCUMENTADA')
         torre = self.torres[unidade.bloco_original]
+        if self.codificador == 'unidade_sufixo':
+            complemento=f'BL-UNI{numero}'
+            return f'{complemento}-{self.sufixo_cedente}',complemento
         if self.codificador == 'bloco_unidade_sufixo':
             complemento = f'BL{torre}-UNI{numero}'
             return f'{complemento}-{self.sufixo_cedente}', complemento
