@@ -207,7 +207,9 @@ B atual pertencem às unidades com recibos não elegíveis; Y:AD ficam vazias.
 Nomes do cabeçalho financeiro são preservados. A referência tem documentos de
 contato que não estão nessa fonte: não são copiados. Rótulos históricos de
 `COTA MM/AAAA` ou de reembolso não são convertidos em competência comprovada;
-a saída usa o identificador original do recibo quando não há competência.
+a primeira versão usava o identificador original do recibo quando não havia
+competência. A correção descritiva abaixo substitui essa apresentação na BBZ;
+o identificador original continua no canônico e na auditoria.
 Endereço só vem do cadastro privado autorizado e prevalece em todas as linhas,
 com complemento individual e originais na auditoria. O teste no navegador usou
 endereço inteiramente fictício em servidor isolado, sem configurar endereço real
@@ -228,13 +230,14 @@ naturezas distintas.
 | `cadastral` | Contatos, nomes, endereços, documentos ou seleção cadastral diferem. Manter fontes atuais e opcionais vazios quando ausentes. |
 | `identificador` | Código/unidade não vinculados inequivocamente ou codificação divergente. Não presumir bloco/equivalência; revisão quando necessária para associar. |
 | `financeira` | Valor, vencimento ou seleção histórica diferem da fonte/régua atual. Registrar para revisão sem recalcular ou copiar o histórico. |
-| `sem_explicacao` | Assinatura inválida, referência não avaliável ou recibo sem vínculo comprovado. Exigir investigação sem aproximação. |
+| `sem_explicacao` | Assinatura inválida, referência não avaliável, recibo sem vínculo ou equivalência descritiva não comprovada. Exigir conferência sem aproximação. |
 
-Na validação real NOVA YORK: A tem 38 ocorrências de formato, 33 cadastrais e
-sete de identificador; B tem 31, 33 e sete, respectivamente. Não há divergência
-financeira nem ocorrência sem explicação. As sete de identificador se referem
+Na validação anterior à correção descritiva NOVA YORK: A tinha 38 ocorrências de
+formato, 33 cadastrais e sete de identificador; B tinha 31, 33 e sete,
+respectivamente. Não havia divergência financeira nem ocorrência sem explicação
+naquela comparação. As sete de identificador se referem
 às unidades cadastrais históricas fora do relatório atual, não a perda de vínculo
-das 26 dívidas, que continuam coincidentes. Revisar uma referência histórica
+das 26 dívidas, que continuam financeiramente coincidentes. Revisar uma referência histórica
 não equivale a aprovar mudança de fonte ou liberar bloqueio crítico.
 
 ## Demais condomínios — levantamento, não habilitação
@@ -268,6 +271,58 @@ O navegador foi validado com upload real NOVA YORK A/B, referência, downloads,
 endereço fictício, dados textuais e bloqueio operacional. Regressores reais
 TREE/PLAZA confrontam canônicos e XLSX com as versões anteriores; detalhes ficam
 na área privada. Nenhum arquivo de cliente compõe as fixtures públicas.
+
+### Correção da descrição das dívidas BBZ
+
+`domain/debt_description.py` define política, regras e resultados tipados.
+`application/debt_descriptions.py` interpreta os históricos após a extração;
+o leitor financeiro e o motor de elegibilidade não foram modificados. A política
+`descricao_obrigacao_bbz@1.0.0` é independente de condomínio/recibo e admite novas
+naturezas por regras explícitas. Hash, regra de cada componente, origem, aba,
+linha, células E/D, conta e histórico original permanecem na auditoria privada.
+
+Todas as correspondências são integrais, com normalização de espaços, caixa e
+acentos apenas para comparar. Uma natureza exige âncora principal explícita e
+todos os demais componentes compatíveis. Fundo, consumo, rateios de fachada,
+segurança, recomposição de saldo e reforma documentados só são acessórios no
+contexto da cota do mesmo recibo; isolados não definem COTA. Não se escolhe o
+primeiro componente nem o de maior valor. Sinais e valores não são usados para
+inventar natureza ou eliminar componentes.
+
+Cota comprovada: `COTA MM/AAAA`, sem número da parcela na descrição. Mês/ano vem
+do histórico principal com ano completo, inclusive se divergir do vencimento.
+Meses abreviados de consumos e índices como `01/12` de rateios não viram competência.
+Competência comprovada enriquece uma cópia do canônico; o leitor original,
+ressalvas anteriores e todos os identificadores/valores continuam intactos.
+`canonico_extraido.json` conserva a saída original do leitor, com hash no manifesto,
+separada do `canonico.json` enriquecido; nenhuma saída histórica é sobrescrita.
+Sem período da cota, usar `COTA` com alerta. Reembolso de sinistro explícito usa
+`REEMBOLSO SINISTRO`. Cobrança extraordinária e locação explícitas também têm
+correspondências próprias, sem habilitar outro condomínio ou regra financeira.
+
+Naturezas principais diferentes, regra sobreposta, histórico desconhecido ou
+competência contraditória geram `RECIBO {identificador_original}` e alerta de
+classificação pendente. Não alteram elegibilidade financeira nem liberam
+bloqueios críticos. A divergência descritiva permanece para revisão no comparador;
+não é declarada simples diferença de formato resolvida.
+
+**Validação real:** 25/26 descrições coincidem com a referência (24 cotas e um
+reembolso). Um recibo contém cota condominial e locação de espaço, mas a referência
+apresenta somente COTA. Mantida descrição neutra; a decisão sobre a representação
+do conjunto continua humana. Todos os 260 componentes foram reconhecidos; dos
+29 recibos, 28 têm descrição comprovada e um permanece misto. Não há substituições
+por IDs de recibo, unidade, valor ou descrição esperada no template.
+
+No A/B, somente as 26 células AA financeiras mudaram em relação à versão
+publicada: mesmas 26 dívidas, dois cadastros no B, tipos/formatos e todos os outros
+campos preservados. Relatório comparativo das 26 linhas fica fora do Git.
+TREE e PLAZA mantiveram canônicos e XLSX idênticos às versões anteriores.
+
+Regressão atual: **1.543 testes** (1.483 regulares + 60 explícitos), com 44 novos
+casos de descrição; oito verificações de schemas. Inclui competências, múltiplos
+componentes, natureza mista, ausência/contradição, negativos, zero, marcadores,
+namespace, idempotência e A/B. O navegador valida a nova conferência de natureza
+e o JSON auditável em Detalhes. Somente diagnóstico; sem push/merge autorizado.
 
 ### Etapa seguinte proposta — Cadastro Geral PDF BBZ
 

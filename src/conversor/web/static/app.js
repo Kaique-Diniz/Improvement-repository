@@ -224,6 +224,12 @@ function preencherDetalhes(d,box) {
   box.append(elemento('h3','Elegibilidade financeira'),elemento('p',financeiro[d.situacao_financeira]||d.situacao_financeira));
   const rotulo=atual.rotulos_template?.[d.id];
   if(rotulo)box.append(elemento('h3','Rótulo apresentado no template'),elemento('p',rotulo.rotulo+(rotulo.base==='vencimento_apresentacao'?' · Mês/ano do vencimento somente para apresentação; não informa competência.':'')),elemento('p','Identificador original do boleto: '+rotulo.identificador_origem));
+  const descricao=atual.descricoes_recibos?.[d.id];
+  if(descricao){
+    box.append(elemento('h3','Natureza documental da dívida'),elemento('p',descricao.descricao+' · '+descricao.estado),elemento('p',descricao.justificativa),elemento('p','Competência: '+(descricao.competencia||descricao.estado_competencia)+' · Política '+descricao.politica_versao));
+    for(const alerta of descricao.alertas)box.append(elemento('p',motivoLegivel(alerta)));
+    for(const c of descricao.componentes)box.append(elemento('p',c.historico_original+' · '+c.resultado+' · '+(c.papel||'classificação pendente')+(c.conta?' · Conta '+c.conta:'')+' · '+localOrigem(c.origem_historico)));
+  }
   if(d.anomalia_global_reconciliada)box.append(elemento('h3','Anomalia global de fechamento'),elemento('p','Habita/VG integralmente reconciliado para diagnóstico local. Ocorrência original preservada; não é uma pendência individual deste boleto. Não autoriza exportação operacional.'));
   const cota=atual.cotas.find(c=>c.id===d.cota_id);
   if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>localOrigem(o)).join('; ')));
@@ -247,5 +253,7 @@ function preencherDetalhes(d,box) {
 }
 function abrirDetalhes(d) {
   preencherDetalhes(d,$('detalhes-legiveis'));
-  $('json-detalhes').textContent=JSON.stringify({boleto:d,cota:atual.cotas.find(c=>c.id===d.cota_id)},null,2);$('detalhes').showModal();
+  const auditoria={boleto:d,cota:atual.cotas.find(c=>c.id===d.cota_id)};
+  if(atual.descricoes_recibos?.[d.id])auditoria.descricao_divida=atual.descricoes_recibos[d.id];
+  $('json-detalhes').textContent=JSON.stringify(auditoria,null,2);$('detalhes').showModal();
 }

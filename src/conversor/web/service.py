@@ -21,6 +21,7 @@ from conversor.adapters.document_probe import SondadorLocal
 from conversor.adapters.integration_identity_json import RepositorioIdentidadesIntegracaoJSON
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
+from conversor.application.debt_descriptions import interpretar_lote_bbz
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
@@ -302,6 +303,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         raise ErroLeitura('SELECAO_DIVERGENTE_DO_CABECALHO')
     progresso('Extraindo unidades, cotas e composições')
     lote, ctx = ler(conteudo, perfil, codigo, leitor, 'inadimplencia')
+    lote_extraido = lote if perfil['familia'] == 'bbz' else None
+    descricoes_recibos = {}
+    if perfil['familia'] == 'bbz':
+        lote, descricoes_recibos = interpretar_lote_bbz(lote)
     saida_bytes = Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()
     perfil_saida = selecionar_perfil(json.loads(saida_bytes), administradora_id=perfil['administradora_id'],
                                      condominio_id=perfil['condominio_id'])
@@ -501,7 +506,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 parcela_final = parcela
             nome_divida = boleto.identificador
             base_rotulo = 'identificador_origem'
-            if perfil_saida and perfil_saida.rotulo_divida == 'vencimento_apresentacao':
+            if boleto.id in descricoes_recibos:
+                base_rotulo = 'natureza_documental_bbz'
+                nome_divida = descricoes_recibos[boleto.id].descricao
+            elif perfil_saida and perfil_saida.rotulo_divida == 'vencimento_apresentacao':
                 base_rotulo = 'vencimento_apresentacao'
                 nome_divida = f'COTA {boleto.vencimento:%m/%Y}' + (f' - {parcela_final}' if parcela_final else '')
             elif boleto.competencia:
@@ -557,6 +565,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'colunas': 30, 'aba': 'Dados'} if linhas else None}
     if perfil.get('identidade_integracao'):
         manifesto['identidade_integracao']=perfil['identidade_integracao']
+    if descricoes_recibos:
+        d = next(iter(descricoes_recibos.values()))
+        manifesto['politica_descricoes'] = {'id': d.politica_id, 'versao': d.politica_versao,
+                                          'sha256': d.politica_sha256, 'efeito': 'somente_descricao_e_competencia_documental'}
     resumo = dict(Counter(d['situacao'] for d in decisoes))
     resumo.update(unidades=len(lote.unidades), cotas=len(lote.unidades), boletos=len(lote.boletos),
                   cotas_elegiveis_pela_regua=sum(c['situacao_financeira'] == 'elegivel' for c in cotas),
@@ -621,9 +633,17 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         if perfil['familia']=='bbz':
             resultado['comparacao']['contrato_atual']=classificar_historico(referencia,
                 linhas=linhas,linhas_info=linhas_info,identificadores=identificadores,
-                comparacao=resultado['comparacao'],modo=pedido.modo)
+                comparacao=resultado['comparacao'],modo=pedido.modo,descricoes=descricoes_recibos)
     if perfil.get('identidade_integracao'):
         resultado['identidade_integracao']=perfil['identidade_integracao']
+    if descricoes_recibos:
+        resultado['politica_descricoes'] = manifesto['politica_descricoes']
+        resultado['descricoes_recibos'] = {id_: d.model_dump(mode='json') for id_, d in descricoes_recibos.items()}
+    if lote_extraido is not None:
+        caminho_extraido = output / 'canonico_extraido.json'
+        escrever_json(caminho_extraido, lote_extraido.model_dump(mode='json'))
+        manifesto['canonico_extraido'] = {'nome': caminho_extraido.name,
+                                         'sha256': sha256(caminho_extraido.read_bytes()).hexdigest()}
     escrever_json(output / 'manifesto_diagnostico.json', manifesto)
     escrever_json(output / 'auditoria.json', resultado)
     escrever_json(output / 'canonico.json', lote.model_dump(mode='json'))

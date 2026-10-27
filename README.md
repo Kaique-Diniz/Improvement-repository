@@ -41,7 +41,15 @@ não precisam ser editados para receber o novo perfil integrado. A saída preser
 30 colunas em `Dados`, textos com zeros e parcelas sequenciais. Não se infere
 competência nem se aplicam exclusões TREE aos marcadores BBZ A/AJ/J/AE.
 
-**1.499 testes aprovados** (73 novos da extensão inicial e 57 desta atualização),
+**Correção descritiva BBZ:** `NM_DIVIDA_CEDENTE` usa natureza e competência
+explícitas dos históricos, considerando o recibo completo. Não usa o vencimento
+como competência nem escolhe o primeiro/maior componente. As 26 dívidas e os
+totais permanecem iguais; 25 descrições coincidem com o histórico. Um recibo
+reúne cota e locação de espaço: descrição neutra com alerta, sem escolher uma
+natureza ou copiar a referência. Detalhes conservam conta, históricos, origens
+e versão/hash da política. As únicas células alteradas no XLSX são AA das dívidas.
+
+**1.543 testes aprovados** (44 novos da correção descritiva),
 e oito verificações de schemas.
 Upload/download e endereço fictício foram testados no navegador. Vigência
 operacional pendente; nenhum plano real aprovado/ativado. Somente XLSX diagnóstico,

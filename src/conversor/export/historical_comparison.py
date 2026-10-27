@@ -42,7 +42,7 @@ def valor(v):
     except(InvalidOperation,ValueError):return None
 
 
-def classificar_historico(conteudo,*,linhas,linhas_info,identificadores,comparacao,modo):
+def classificar_historico(conteudo,*,linhas,linhas_info,identificadores,comparacao,modo,descricoes=None):
     divergencias=[]
     def add(categoria,codigo,n,campos=(),revisao=False):
         divergencias.append(DivergenciaTemplate(categoria=categoria,codigo=codigo,linha_excel=n,
@@ -97,7 +97,13 @@ def classificar_historico(conteudo,*,linhas,linhas_info,identificadores,comparac
                 if atual[28]!=data(row[28]):financeiros.append('VENCIMENTO')
                 if atual[29]!=valor(row[29]):financeiros.append('VL_PARCELA')
                 if financeiros:add('financeira','DADOS_FINANCEIROS_DIVERGENTES',n,financeiros,True)
-                if texto(atual[26])!=texto(row[26]):add('formato_resolvido','ROTULO_ATUAL_NAO_INFERE_COMPETENCIA',n,('NM_DIVIDA_CEDENTE',))
+                if texto(atual[26])!=texto(row[26]):
+                    descricao=(descricoes or {}).get(candidatas[0][0].get('boleto_id'))
+                    if descricao:
+                        add('sem_explicacao', 'DESCRICAO_DA_OBRIGACAO_EM_REVISAO' if descricao.estado=='pendente'
+                            else 'DESCRICAO_DOCUMENTAL_DIFERE_DO_HISTORICO',n,('NM_DIVIDA_CEDENTE',),True)
+                    else:
+                        add('formato_resolvido','ROTULO_ATUAL_NAO_INFERE_COMPETENCIA',n,('NM_DIVIDA_CEDENTE',))
                 if atual[27]!=row[27]:add('formato_resolvido','PARCELAS_SEQUENCIAIS_POR_CONTRATO',n,('NU_PARCELA',))
             if atual is None:continue
             contatos=[COLUNAS[j]for j in range(2,24)if j!=6 and texto(atual[j])!=texto(row[j])]

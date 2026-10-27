@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 from conversor.export.historical_comparison import DivergenciaTemplate
 from conversor.web.service import analisar,PedidoDiagnostico
+from tests.bbz.conftest import unidade,recibo
 
 
 def comparar(xlsx,tmp_path,mutar):
@@ -36,8 +37,9 @@ def test_cinco_categorias_sem_mudar_saida_financeira(xlsx,tmp_path,categoria,mut
 def test_cabecalho_espacos_rotulo_parcela_e_coluna_extra_sao_formato_resolvido(xlsx,tmp_path):
     def mutar(w,s):s['AA1']='NM_DIVIDA_CEDENTE ';s['AA2']='COTA 08/2026';s['AB2']=99;s['AE2']='NOTA APENAS FICTICIA'
     r=comparar(xlsx,tmp_path,mutar);codes={d['codigo']for d in r['divergencias']}
-    assert {'CABECALHOS_ATUAIS_LITERAIS','ROTULO_ATUAL_NAO_INFERE_COMPETENCIA','PARCELAS_SEQUENCIAIS_POR_CONTRATO','ANOTACOES_FORA_DAS_30_COLUNAS'}<=codes
-    assert all(d['categoria']=='formato_resolvido'for d in r['divergencias'])
+    assert {'CABECALHOS_ATUAIS_LITERAIS','DESCRICAO_DA_OBRIGACAO_EM_REVISAO','PARCELAS_SEQUENCIAIS_POR_CONTRATO','ANOTACOES_FORA_DAS_30_COLUNAS'}<=codes
+    assert all(d['categoria']=='formato_resolvido'for d in r['divergencias']if d['codigo']!='DESCRICAO_DA_OBRIGACAO_EM_REVISAO')
+    assert any(d['codigo']=='DESCRICAO_DA_OBRIGACAO_EM_REVISAO'and d['revisao_humana']for d in r['divergencias'])
 
 
 def test_documento_numerico_historico_nao_e_copiado(xlsx,tmp_path):
@@ -71,3 +73,10 @@ def test_categoria_desconhecida_nao_e_aceita():
 def test_referencia_sem_assinatura_fica_sem_explicacao_sem_afetar_debito(xlsx,tmp_path):
     r=comparar(xlsx,tmp_path,lambda w,s:setattr(s['A1'],'value','CABECALHO INVALIDO'))
     assert r['resumo_por_categoria']=={'sem_explicacao':1}
+
+
+def test_descricao_comprovada_divergente_do_historico_exige_conferencia(xlsx,tmp_path):
+    def comprovado():
+        return xlsx([unidade(recibos=[recibo(componentes=[('COTA CONDOMINIAL AGO/2025','100.00')])])])
+    r=comparar(comprovado,tmp_path,lambda w,s:setattr(s['AA2'],'value','DESCRICAO HISTORICA DIVERGENTE'))
+    assert any(d['codigo']=='DESCRICAO_DOCUMENTAL_DIFERE_DO_HISTORICO'and d['revisao_humana']for d in r['divergencias'])
