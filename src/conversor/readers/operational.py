@@ -16,6 +16,7 @@ from .habita import LeitorHabitaSintetico
 from .habita_real import LeitorHabitaReal
 from .fl_real import LeitorFLReal
 from .cadastro_real import LeitorCadastroFLReal
+from .bbz_xlsx import LeitorBBZXLSX, identificar as identificar_bbz
 from .text_support import ContextoLeitura, ErroLeitura
 
 
@@ -28,9 +29,14 @@ GRAMATICAS = {
     LeitorCadastroFLReal.formato_id: (LeitorCadastroFLReal, ("W045A", "Unidade", "CPF/CNPJ")),
 }
 
+LEITORES_XLSX = {LeitorBBZXLSX.formato_id: LeitorBBZXLSX}
+
 
 def validar_assinatura_para_leitura(conteudo: bytes, leitor_id: str):
     """Verificação estrutural; nunca produz classificação conhecido_validado."""
+    if leitor_id in LEITORES_XLSX:
+        identificar_bbz(conteudo)
+        return
     sonda = SondadorLocal().sondar(conteudo, arquivo_id="verificacao_estrutural")
     if sonda.bloqueios or not sonda.completo or sonda.tipo != "pdf_texto":
         raise ErroLeitura("PDF_NAO_EXTRAIVEL_COM_SEGURANCA")
@@ -66,8 +72,10 @@ class ContextosCatalogo:
     def resolver(self, fonte, *, formato_id, condominio_id):
         formato = next((f for f in self.catalogo.formatos if f.id == formato_id), None)
         condo = next((c for c in self.catalogo.condominios if c.id == condominio_id), None)
-        if formato is None or condo is None or formato.id not in condo.formato_ids or formato.tipo_arquivo != "pdf_texto":
+        if formato is None or condo is None or formato.id not in condo.formato_ids or formato.tipo_arquivo not in ("pdf_texto", "xlsx"):
             raise ErroLeitura("CONTEXTO_DE_LEITURA_INCOMPATIVEL")
+        if (formato.tipo_arquivo == 'xlsx') != (formato.leitor_id in LEITORES_XLSX):
+            raise ErroLeitura('TIPO_DIVERGENTE_DO_LEITOR')
         vinculos = [v for v in condo.vinculos if v.inicio <= self.data_ref and (v.fim is None or self.data_ref < v.fim)]
         if len(vinculos) != 1 or vinculos[0].administradora_id not in formato.administradora_ids:
             raise ErroLeitura("VINCULO_HISTORICO_INCOMPATIVEL")
@@ -121,9 +129,45 @@ class AdaptadorLeitorPDF:
         return lote
 
 
+class AdaptadorLeitorXLSX:
+    """Mesmos protocolos e integridade; localização de planilha não é página PDF."""
+    def __init__(self, leitor_id, versao, fontes, contextos):
+        if leitor_id not in LEITORES_XLSX or versao != '1':
+            raise ErroLeitura('LEITOR_OU_VERSAO_NAO_REGISTRADO')
+        self.leitor_id,self.versao,self.fontes,self.contextos = leitor_id,versao,fontes,contextos
+
+    def ler(self, fonte, *, formato_id, condominio_id):
+        ctx = self.contextos.resolver(fonte,formato_id=formato_id,condominio_id=condominio_id)
+        if (ctx.formato_id,ctx.condominio_id,ctx.arquivo_id,ctx.leitor_versao) != (
+                formato_id,condominio_id,fonte.arquivo_id,self.leitor_id+'@'+self.versao):
+            raise ErroLeitura('CONTEXTO_DE_LEITURA_INCOMPATIVEL')
+        conteudo=self.fontes.ler(fonte)
+        if sha256(conteudo).hexdigest()!=fonte.sha256:raise ErroLeitura('HASH_FONTE_DIVERGENTE')
+        try:
+            lote=LEITORES_XLSX[self.leitor_id]().ler(conteudo,contexto=ctx)
+            lote=LoteCanonico.model_validate(lote.model_dump())
+        except ValidationError:
+            raise ErroLeitura('CONTRATO_DE_LEITURA_INVALIDO') from None
+        if any((u.condominio_id,u.administradora_id)!=(condominio_id,ctx.administradora_id)for u in lote.unidades):
+            raise ErroLeitura('LEITURA_RETORNOU_IDENTIDADE_DIVERGENTE')
+        def conferir(valor):
+            if isinstance(valor,dict):
+                if {'arquivo_id','sha256','leitor_versao','identificador'}<=valor.keys():
+                    if ((valor['arquivo_id'],valor['sha256'],valor['leitor_versao'])!=(fonte.arquivo_id,fonte.sha256,ctx.leitor_versao)
+                            or valor.get('pagina')is not None or valor.get('linha')is None
+                            or not valor['identificador'].startswith(f"xlsx_aba1_r{valor['linha']}_")):
+                        raise ErroLeitura('PROVENIENCIA_DE_LEITURA_INCONSISTENTE')
+                for v in valor.values():conferir(v)
+            elif isinstance(valor,(tuple,list)):
+                for v in valor:conferir(v)
+        conferir(lote.model_dump())
+        return lote
+
+
 class RegistroLeitores:
     def __init__(self, fontes: RepositorioFontes, contextos: ResolutorContexto):
         self._leitores = {(id_, "1"): AdaptadorLeitorPDF(id_, "1", fontes, contextos) for id_ in GRAMATICAS}
+        self._leitores.update({(id_,'1'):AdaptadorLeitorXLSX(id_,'1',fontes,contextos) for id_ in LEITORES_XLSX})
 
     def obter(self, leitor_id: str, versao: str) -> AdaptadorLeitorPDF:
         if (leitor_id, versao) not in self._leitores:

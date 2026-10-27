@@ -44,7 +44,7 @@ class LerDocumento:
         r = ResultadoReconhecimento.model_validate(reconhecimento.model_dump())
         if r.bloqueante or not r.pronto_para_proxima_etapa or r.selecao is None:
             raise ErroLeitura("RECONHECIMENTO_BLOQUEIA_LEITURA")
-        if r.tipo != "pdf_texto":
+        if r.tipo not in ("pdf_texto", "xlsx"):
             raise ErroLeitura("TIPO_NAO_SUPORTADO_PELO_LEITOR")
         if (r.arquivo_id, r.arquivo_hash) != (fonte.arquivo_id, fonte.sha256):
             raise ErroLeitura("FONTE_DIFERE_DO_RECONHECIMENTO")
@@ -57,6 +57,8 @@ class LerDocumento:
         formato = next((f for f in estado.catalogo.formatos if f.id == r.selecao.versoes.formato_id), None)
         if formato is None or formato.status != "validado":
             raise ErroLeitura("FORMATO_NAO_HOMOLOGADO")
+        if formato.tipo_arquivo != r.tipo:
+            raise ErroLeitura('TIPO_NAO_SUPORTADO_PELO_LEITOR')
         contextos = ContextosCatalogo(estado.catalogo, r.data_ref)
         contexto = contextos.resolver(fonte, formato_id=formato.id, condominio_id=r.selecao.condominio_id)
         if contexto.administradora_id != r.selecao.versoes.administradora_id:
