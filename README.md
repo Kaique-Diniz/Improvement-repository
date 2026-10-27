@@ -18,8 +18,11 @@ coletivo. Não se habilitam WIN, NOVA REBOUÇAS ou ABROLHOS.
 O Cadastro reconcilia 885 unidades, mas só complementa as 108 unidades
 financeiras comprovadas. INAT é preservado; não se inventa equivalência com
 bloco 0. Descrições sem evidência continuam em revisão, sem inferir competência.
-**1.661 testes aprovados**, oito verificações de schemas e upload/download no
-navegador. TREE/PLAZA/NOVA YORK preservados. Veja o
+Na revisão pré-publicação, 52 descrições ganharam a natureza documental correta;
+33 continuam em revisão. Com a referência, oito linhas de duas unidades têm
+CPF/contatos retidos por documentos válidos conflitantes; as dívidas permanecem.
+**1.693 testes aprovados**, oito verificações de schemas. TREE/PLAZA/NOVA YORK
+preservados. Veja o
 [relatório e as pendências diagnósticas](docs/BBZ_INNOVA_BLUE.md).
 
 ## Cadastro Geral PDF BBZ — complemento opcional NOVA YORK

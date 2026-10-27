@@ -62,7 +62,7 @@
     "nome": "INNOVA BLUE",
     "administradora": "BBZ",
     "familia": "bbz",
-    "configuracao_versao": "1.0.0",
+    "configuracao_versao": "1.1.0",
     "codigo_easycollector": "363",
     "codigo_administrativo": "1392",
     "aliases": [
@@ -72,7 +72,7 @@
     "vigente_de": null,
     "vigente_ate": null,
     "zero_original_cadastral": true,
-    "politica_descricoes": "descricao_obrigacao_bbz_condominio@1.0.0",
+    "politica_descricoes": "descricao_obrigacao_bbz_condominio@1.1.0",
     "exclusoes": [
       {
         "id": "innova_original_zero",

@@ -18,11 +18,12 @@ from openpyxl import load_workbook
 from pydantic import Field
 
 from conversor.adapters.document_probe import SondadorLocal
+from conversor.adapters.cadastral_reference import confrontar_documentos_historicos
 from conversor.adapters.integration_identity_json import RepositorioIdentidadesIntegracaoJSON
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
 from conversor.application.debt_descriptions import interpretar_lote_bbz, POLITICA_BBZ, POLITICAS_BBZ
-from conversor.application.bbz_cadastro import cruzar_cadastro_bbz
+from conversor.application.bbz_cadastro import cruzar_cadastro_bbz, reter_documentos_historicos_conflitantes
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
@@ -370,6 +371,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         cad, _ = ler(cadastro, pc, cc, lc, 'cadastro')
         if perfil['familia']=='bbz':
             lote,cadastro_bbz=cruzar_cadastro_bbz(lote,cad,endereco_configurado=padrao_endereco)
+            if referencia:
+                conflitos=confrontar_documentos_historicos(referencia,lote=lote,
+                    identificadores=identificadores,perfil_saida=perfil_saida)
+                lote,cadastro_bbz=reter_documentos_historicos_conflitantes(lote,cadastro_bbz,conflitos)
         else:
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
@@ -666,7 +671,15 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro_bbz is not None:
         resultado['cadastro_bbz']=cadastro_bbz
         manifesto['cadastro_bbz']={'politica':cadastro_bbz['politica'],'resumo':cadastro_bbz['resumo']}
-        for d in decisoes:d['associacao_cadastral']=cadastro_bbz['unidades'][d['unidade_id']]
+        for d in decisoes:
+            c=cadastro_bbz['unidades'][d['unidade_id']];d['associacao_cadastral']=c
+            if c.get('conflitos_referencia'):
+                codigo='BBZ_DOCUMENTO_HISTORICO_CONFLITANTE_ASSOCIACAO_RETIDA'
+                d['contato']['documento']='revisao'
+                d['documento']['estado']=[codigo]
+                d['pendencias_documentais']=sorted(set(d['pendencias_documentais']+[codigo]))
+                d['alertas_cadastrais']=sorted(set(d['alertas_cadastrais']+[codigo]))
+                d['impedimentos_exportacao_operacional']=sorted(set(d['impedimentos_exportacao_operacional']+[codigo]))
         escrever_json(output/'cadastro_bbz_original.json',cad.model_dump(mode='json'))
         manifesto['cadastro_bbz']['sha256_canonico']=sha256((output/'cadastro_bbz_original.json').read_bytes()).hexdigest()
     if lote_extraido is not None:

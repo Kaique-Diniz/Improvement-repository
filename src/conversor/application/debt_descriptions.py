@@ -66,7 +66,19 @@ POLITICA_BBZ_CONDOMINIO = PoliticaDescricoes(id='descricao_obrigacao_bbz_condomi
                    'cota_condominial', 'COTA', True),
         _principal('cond_abreviado_documental', r'COND ' + COMPETENCIA,
                    'cota_condominial', 'COTA', True),))
-POLITICAS_BBZ = {p.id+'@'+p.versao:p for p in (POLITICA_BBZ,POLITICA_BBZ_CONDOMINIO)}
+# Assinaturas documentais estritas: descrevem natureza, sem eleger ano/século
+# para os períodos brutos. A versão anterior continua disponível para reprodução.
+POLITICA_BBZ_CONDOMINIO_V11 = PoliticaDescricoes(id=POLITICA_BBZ_CONDOMINIO.id, versao='1.1.0',
+    namespace_formato=POLITICA_BBZ.namespace_formato, regras=POLITICA_BBZ_CONDOMINIO.regras + (
+        _principal('locacao_salas_documental', r'LOCACAO(?: DE)? SALAS(?: (?:LOCACAO )?' + PERIODO + r')?',
+                   'locacao_salas','LOCAÇÃO DE SALAS'),
+        _principal('feira_gastronomica_documental',
+                   r'FEIRA GASTRONOMICA (?:0?[1-9]|1[0-2])/(?!0000)[0-9]{4}(?: FEIRA - ' + PERIODO + r')?',
+                   'feira_gastronomica','FEIRA GASTRONÔMICA'),
+        _principal('esportes_atividade_documental',
+                   r'ESPORTES (?:REF\. (?:0?[1-9]|1[0-2])/(?!0000)[0-9]{4} (?:BOXE|FIT DANCE)|AULAS(?:- [0-9]+ ALUNOS)? ' + PERIODO + r')',
+                   'esportes','ESPORTES'),))
+POLITICAS_BBZ = {p.id+'@'+p.versao:p for p in (POLITICA_BBZ,POLITICA_BBZ_CONDOMINIO,POLITICA_BBZ_CONDOMINIO_V11)}
 
 
 def normalizar_historico(texto):

@@ -1,17 +1,49 @@
 """Associação BBZ por unidade e identidade pessoal; nunca prefere cadastro por suposição."""
 from collections import Counter
+from copy import deepcopy
 import json
 import re
 
 from conversor.domain.bbz_cadastro import FichaCadastroBBZ
 from conversor.domain.canonical import (Contato, Endereco, EvidenciaDocumento, LoteCanonico,
-    Pessoa, RessalvaLeitura, documento_validado)
+    Origem, Pessoa, RessalvaLeitura, documento_validado)
 from conversor.domain.documents import resolver_documento
 from conversor.domain.identity import chave_unidade
 from conversor.domain.recognition import normalizar_assinatura
 from conversor.readers.text_support import ErroLeitura
 
 POLITICA = 'bbz_associacao_por_papel@1.0.0'
+
+
+def reter_documentos_historicos_conflitantes(lote, auditoria, conflitos):
+    """Retém só a associação contestada; preserva fontes e decisão financeira."""
+    if not conflitos:return lote,auditoria
+    por_unidade={}
+    for e in conflitos:por_unidade.setdefault(e['unidade_id'],[]).append(e)
+    pessoas={p.unidade_id:p for p in lote.pessoas};saida=deepcopy(auditoria);ressalvas=list(lote.ressalvas)
+    codigo='BBZ_DOCUMENTO_HISTORICO_CONFLITANTE_ASSOCIACAO_RETIDA'
+    for uid,evidencias in por_unidade.items():
+        p=pessoas[uid];info=saida['unidades'][uid]
+        info.update(estado='associacao_retida',documento_vinculado=False,telefones_aproveitados=0,
+            emails_aproveitados=0,dados_retidos=['documentos','telefones','emails'],
+            projecao_antes_da_retencao=p.model_dump(mode='json'),conflitos_referencia=evidencias,
+            politica_revisao_documental='bbz_revisao_documental_historica@1.0.0')
+        info['motivos']=sorted(set(info['motivos']+[codigo]))
+        pessoas[uid]=Pessoa.model_validate(p.model_dump()|{'documento':None,'documento_origem':None,
+            'evidencias_documentais':(),'contato':Contato(endereco=p.contato.endereco,origem=p.contato.origem)})
+        ressalvas.append(RessalvaLeitura(codigo=codigo,gravidade='alerta',registro_id=uid,
+            origens=(p.origem,)+tuple(e.origem for e in p.evidencias_documentais)+tuple(Origem.model_validate(e['origem']) for e in evidencias),
+            valores_originais=(json.dumps(info,ensure_ascii=False),)))
+    resumo=saida['resumo'];infos=saida['unidades'].values()
+    resumo.update(documentos_validos_vinculados=sum(i['documento_vinculado'] for i in infos),
+        telefones_aproveitados=sum(i['telefones_aproveitados'] for i in infos),
+        emails_aproveitados=sum(i['emails_aproveitados'] for i in infos),
+        associacoes_retidas=sum(i['estado']=='associacao_retida' for i in infos),
+        documentos_ausentes=sum(not resolver_documento(p).evidencias for uid,p in pessoas.items() if uid not in por_unidade),
+        documentos_retidos_revisao=len(por_unidade),
+        conflitos_documentais_historicos=len(por_unidade))
+    return LoteCanonico(unidades=lote.unidades,boletos=lote.boletos,pessoas=tuple(pessoas[p.unidade_id] for p in lote.pessoas),
+        ressalvas=tuple(ressalvas)),saida
 
 
 def endereco_fisico(texto):
