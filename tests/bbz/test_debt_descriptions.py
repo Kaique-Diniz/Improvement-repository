@@ -66,10 +66,6 @@ def test_componentes_compativeis_ordem_e_valor_nao_elegem_natureza(xlsx):
 
 
 @pytest.mark.parametrize('historias,codigo', [
-    (['COTA CONDOMINIAL AGO/2025','REEMBOLSO SINISTRO'],'BBZ_NATUREZAS_MISTAS'),
-    (['COTA CONDOMINIAL AGO/2025','COBRANCA EXTRAORDINARIA'],'BBZ_NATUREZAS_MISTAS'),
-    (['COTA CONDOMINIAL AGO/2025','LOCACAO DE ESPACO 01/07/2025'],'BBZ_NATUREZAS_MISTAS'),
-    (['COTA CONDOMINIAL AGO/2025','LANCAMENTO DESCONHECIDO FICTICIO'],'BBZ_HISTORICO_NAO_RECONHECIDO_OU_AMBIGUO'),
     (['GAS PISCINA'],'BBZ_NATUREZA_PRINCIPAL_NAO_COMPROVADA'),
     (['COTA CONDOMINIAL AGO/2025','COTA CONDOMINIAL SET/2025'],'BBZ_COMPETENCIAS_CONFLITANTES'),
     (['COTA CONDOMINIAL AGO/2025','COTA CONDOMINIAL'],'BBZ_COMPETENCIA_PARCIAL_NOS_PRINCIPAIS'),
@@ -80,6 +76,46 @@ def test_evidencia_insuficiente_ou_diferentes_obrigacoes_tem_descricao_neutra(xl
     assert r.descricao==f'RECIBO {b.identificador}'and r.estado=='pendente'and r.ambigua
     assert codigo in r.alertas and r.competencia is None
     assert len(r.componentes)==len(historias)
+
+
+@pytest.mark.parametrize('outro',['REEMBOLSO SINISTRO','COBRANCA EXTRAORDINARIA',
+    'LOCACAO DE ESPACO 01/07/2025','LANCAMENTO DESCONHECIDO FICTICIO'])
+def test_cota_com_competencia_unica_define_descricao_com_outros_componentes(xlsx,outro):
+    for historias in ([outro,'COTA CONDOMINIAL AGO/2025'],['COTA CONDOMINIAL AGO/2025',outro]):
+        b=lote(xlsx,historias).boletos[0];antes=b.model_dump_json()
+        r=interpretar_recibo(b)
+        assert r.descricao=='COTA 08/2025'and r.competencia=='2025-08'
+        assert r.estado=='comprovada'and not r.ambigua
+        assert 'BBZ_CLASSIFICACAO_DESCRICAO_PENDENTE'not in r.alertas
+        assert len(r.componentes)==2 and b.model_dump_json()==antes
+        assert 'Cota condominial explícita'in r.justificativa
+
+
+def test_cota_conflitante_sem_ano_comprovado_nao_e_ignorada(xlsx):
+    r=interpretar_recibo(lote(xlsx,['COTA CONDOMINIAL AGO/2025','COTA CONDOMINIAL SET/25']).boletos[0])
+    assert r.estado=='pendente'and r.competencia is None
+
+
+def test_cota_sem_competencia_e_locacao_mantem_revisao(xlsx):
+    r=interpretar_recibo(lote(xlsx,['COTA CONDOMINIAL','LOCACAO DE ESPACO 01/07/2025']).boletos[0])
+    assert r.estado=='pendente'and r.competencia is None
+
+
+def test_cota_com_locacao_preserva_dez_componentes_e_origem_da_competencia(xlsx):
+    h=['AGUA FRIA JUN/25 250 M3','GAS PISCINA','COTA CONDOMINIAL AGO/2025',
+       'FUNDO DE RESERVA AGO/2025','LOCACAO DE ESPACO 01/07/2025','CONSUMO ENERGIA',
+       'GAS SISTEMA JUL/25','AGUA QUENTE JUN/25 100 M3','DESCONTO COTA CONDOMINIAL','FACHADA PC. 01/12']
+    original=lote(xlsx,h);enriquecido,descricoes=interpretar_lote_bbz(original)
+    b=enriquecido.boletos[0];r=descricoes[b.id]
+    assert len(b.composicao.itens)==10 and b.composicao==original.boletos[0].composicao
+    assert b.identificador==original.boletos[0].identificador and b.competencia=='2025-08'
+    prova=next(x for x in enriquecido.ressalvas if x.codigo=='BBZ_COMPETENCIA_DOCUMENTAL_INTERPRETADA')
+    principal=next(c for c in r.componentes if c.natureza=='cota_condominial')
+    assert prova.origens==(principal.origem_historico,)
+    assert any(c.natureza=='locacao_espaco'for c in r.componentes)
+    assert any(x.codigo=='BBZ_COTA_PRIORIZADA_NA_DESCRICAO'and x.gravidade=='informativo'for x in enriquecido.ressalvas)
+    repetido,d2=interpretar_lote_bbz(enriquecido)
+    assert repetido==enriquecido and d2==descricoes
 
 
 def test_cota_sem_competencia_nao_herda_periodo_de_acessorio(xlsx):
@@ -133,7 +169,7 @@ def test_rastreabilidade_conta_celulas_hash_e_idempotencia_sem_mutar_extracao(xl
         assert c.conta and c.aba=='RELATORIO SINTETICO'
         assert c.origem_historico.identificador.endswith('_E')and c.origem_conta.identificador.endswith('_D')
         assert c.origem_historico.sha256==b.origens[0].sha256 and c.origem_historico.linha==c.origem.linha
-    assert len(d.politica_sha256)==64 and d.politica_versao=='1.0.0'
+    assert len(d.politica_sha256)==64 and d.politica_versao=='1.1.0'
 
 
 def test_conflito_com_competencia_canonica_nao_e_sobrescrito(xlsx):

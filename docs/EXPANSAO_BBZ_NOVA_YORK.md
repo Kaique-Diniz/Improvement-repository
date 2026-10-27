@@ -277,13 +277,14 @@ na área privada. Nenhum arquivo de cliente compõe as fixtures públicas.
 `domain/debt_description.py` define política, regras e resultados tipados.
 `application/debt_descriptions.py` interpreta os históricos após a extração;
 o leitor financeiro e o motor de elegibilidade não foram modificados. A política
-`descricao_obrigacao_bbz@1.0.0` é independente de condomínio/recibo e admite novas
+`descricao_obrigacao_bbz@1.1.0` é independente de condomínio/recibo e admite novas
 naturezas por regras explícitas. Hash, regra de cada componente, origem, aba,
 linha, células E/D, conta e histórico original permanecem na auditoria privada.
 
 Todas as correspondências são integrais, com normalização de espaços, caixa e
-acentos apenas para comparar. Uma natureza exige âncora principal explícita e
-todos os demais componentes compatíveis. Fundo, consumo, rateios de fachada,
+acentos apenas para comparar. A versão 1.1.0 prioriza uma cota explícita com
+competência única comprovada, mesmo com outras naturezas no mesmo recibo. Sem
+essa cota, continuam exigidas âncora principal e compatibilidade dos componentes. Fundo, consumo, rateios de fachada,
 segurança, recomposição de saldo e reforma documentados só são acessórios no
 contexto da cota do mesmo recibo; isolados não definem COTA. Não se escolhe o
 primeiro componente nem o de maior valor. Sinais e valores não são usados para
@@ -300,26 +301,36 @@ Sem período da cota, usar `COTA` com alerta. Reembolso de sinistro explícito u
 `REEMBOLSO SINISTRO`. Cobrança extraordinária e locação explícitas também têm
 correspondências próprias, sem habilitar outro condomínio ou regra financeira.
 
-Naturezas principais diferentes, regra sobreposta, histórico desconhecido ou
-competência contraditória geram `RECIBO {identificador_original}` e alerta de
-classificação pendente. Não alteram elegibilidade financeira nem liberam
+Sem cota prioritária comprovada, natureza principal inconclusiva, regra sobreposta
+ou competência contraditória geram `RECIBO {identificador_original}` e alerta de
+classificação pendente. Cotas com competências distintas ou parciais não são
+resolvidas automaticamente. A data da locação e períodos de consumo não definem
+a competência da cota. Não alteram elegibilidade financeira nem liberam
 bloqueios críticos. A divergência descritiva permanece para revisão no comparador;
 não é declarada simples diferença de formato resolvida.
 
-**Validação real:** 25/26 descrições coincidem com a referência (24 cotas e um
-reembolso). Um recibo contém cota condominial e locação de espaço, mas a referência
-apresenta somente COTA. Mantida descrição neutra; a decisão sobre a representação
-do conjunto continua humana. Todos os 260 componentes foram reconhecidos; dos
-29 recibos, 28 têm descrição comprovada e um permanece misto. Não há substituições
-por IDs de recibo, unidade, valor ou descrição esperada no template.
+**Motivo da classificação anterior:** a versão 1.0.0 exigia natureza principal
+homogênea e retornava descrição neutra para cota com locação. Decisão posterior
+do responsável confirmou a prioridade descritiva da cota. A versão 1.1.0 usa a
+competência explícita dessa cota e mantém a locação, seu histórico e sua data
+na auditoria. Não há alteração do leitor, da régua ou de agrupamentos financeiros.
 
-No A/B, somente as 26 células AA financeiras mudaram em relação à versão
-publicada: mesmas 26 dívidas, dois cadastros no B, tipos/formatos e todos os outros
-campos preservados. Relatório comparativo das 26 linhas fica fora do Git.
+**Validação real atual:** 26/26 descrições coincidem com a referência (25 cotas e
+um reembolso). Os 29 recibos têm descrição comprovada; zero ambiguidades no
+relatório analisado. Todos os 260 componentes foram reconhecidos e preservados.
+A origem da competência do caso corrigido é exclusivamente E22; E26 continua
+como evidência da locação, não da competência. Não há substituições por IDs de
+recibo, unidade, valor ou descrição esperada no template.
+
+No A/B, somente AA4 mudou neste ajuste em relação ao commit publicado a4c24f5:
+mesmas 26 dívidas, dois cadastros no B, tipos/formatos e todos os outros campos
+preservados. Os dez componentes do recibo corrigido permanecem idênticos.
+A extração canônica bruta também é idêntica. Relatório comparativo das 26 linhas
+e saídas anteriores da política 1.0.0 ficam preservados fora do Git.
 TREE e PLAZA mantiveram canônicos e XLSX idênticos às versões anteriores.
 
-Regressão atual: **1.543 testes** (1.483 regulares + 60 explícitos), com 44 novos
-casos de descrição; oito verificações de schemas. Inclui competências, múltiplos
+Regressão atual: **1.546 testes** (1.486 regulares + 60 explícitos), com três
+novos casos neste ajuste e atualização dos testes da política anterior; oito verificações de schemas. Inclui competências, múltiplos
 componentes, natureza mista, ausência/contradição, negativos, zero, marcadores,
 namespace, idempotência e A/B. O navegador valida a nova conferência de natureza
 e o JSON auditável em Detalhes. Somente diagnóstico; sem push/merge autorizado.

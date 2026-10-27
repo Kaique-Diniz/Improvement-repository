@@ -44,12 +44,13 @@ competência nem se aplicam exclusões TREE aos marcadores BBZ A/AJ/J/AE.
 **Correção descritiva BBZ:** `NM_DIVIDA_CEDENTE` usa natureza e competência
 explícitas dos históricos, considerando o recibo completo. Não usa o vencimento
 como competência nem escolhe o primeiro/maior componente. As 26 dívidas e os
-totais permanecem iguais; 25 descrições coincidem com o histórico. Um recibo
-reúne cota e locação de espaço: descrição neutra com alerta, sem escolher uma
-natureza ou copiar a referência. Detalhes conservam conta, históricos, origens
-e versão/hash da política. As únicas células alteradas no XLSX são AA das dívidas.
+totais permanecem iguais; **26/26 descrições coincidem com o histórico**. A política
+1.1.0 prioriza a cota com competência única comprovada, inclusive com locação
+ou outros componentes no mesmo recibo. Detalhes conservam todos os componentes,
+conta, históricos, origens e versão/hash da política. Neste ajuste, somente AA4
+mudou nos modos A e B; competências conflitantes continuam em revisão.
 
-**1.543 testes aprovados** (44 novos da correção descritiva),
+**1.546 testes aprovados** (três novos neste ajuste, além dos 44 da correção descritiva),
 e oito verificações de schemas.
 Upload/download e endereço fictício foram testados no navegador. Vigência
 operacional pendente; nenhum plano real aprovado/ativado. Somente XLSX diagnóstico,

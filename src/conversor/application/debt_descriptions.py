@@ -35,7 +35,7 @@ def _acessorio(id, padrao, *, ajuste=False):
         naturezas_compativeis=('cota_condominial',))
 
 
-POLITICA_BBZ = PoliticaDescricoes(id='descricao_obrigacao_bbz', versao='1.0.0',
+POLITICA_BBZ = PoliticaDescricoes(id='descricao_obrigacao_bbz', versao='1.1.0',
     namespace_formato='bbz_inadimplencia_xlsx_v1', regras=(
         _principal('cota_documental', r'COTA CONDOMINIAL(?: (?:COMPETENCIA:? )?' + COMPETENCIA + r')?',
                    'cota_condominial', 'COTA', True),
@@ -135,12 +135,33 @@ def interpretar_recibo(boleto, *, politica=POLITICA_BBZ, metadados=None):
     if any(c.competencia for c in principais) and any(
             regras[c.codigo].natureza_competencia and not c.competencia for c in principais):
         alertas.append('BBZ_COMPETENCIA_PARCIAL_NOS_PRINCIPAIS')
+    cotas = [c for c in principais if c.natureza == 'cota_condominial']
+    competencias_cota = {c.competencia for c in cotas if c.competencia}
+    cota_inconclusiva = any(c.resultado != 'reconhecido' and
+        re.match(r'^COTA CONDOMINIAL(?:\s|$)', normalizar_historico(c.historico_original))
+        for c in componentes)
+    priorizar_cota = (bool(cotas) and len(competencias_cota) == 1 and
+        all(c.competencia for c in cotas) and not cota_inconclusiva and
+        (boleto.competencia is None or boleto.competencia in competencias_cota))
+    if priorizar_cota:
+        # A cota comprovada define a apresentação do recibo inteiro. Não excluir
+        # nem reclassificar os demais componentes; sua natureza continua auditada.
+        alertas = [a for a in alertas if a not in (
+            'BBZ_NATUREZAS_MISTAS', 'BBZ_COMPETENCIAS_CONFLITANTES',
+            'BBZ_COMPETENCIA_PARCIAL_NOS_PRINCIPAIS')]
+        if len(naturezas) > 1:
+            alertas.append('BBZ_COTA_PRIORIZADA_NA_DESCRICAO')
     pendente = bool(alertas)
     descricao = f'RECIBO {boleto.identificador}'
     competencia = None
     classificacao = 'mista' if len(naturezas) > 1 else 'indeterminada'
     estado_competencia = 'conflitante' if len(competencias) > 1 else 'ausente'
-    if not pendente:
+    if priorizar_cota:
+        pendente = False
+        classificacao, competencia = 'cota_condominial', next(iter(competencias_cota))
+        ano, mes = competencia.split('-')
+        descricao, estado_competencia = f'COTA {mes}/{ano}', 'comprovada'
+    elif not pendente:
         classificacao = next(iter(naturezas))
         # Rótulos da mesma natureza são iguais por contrato; não eleger um componente.
         descricao, exige_competencia = next(iter({(regras[c.codigo].rotulo,
@@ -162,7 +183,8 @@ def interpretar_recibo(boleto, *, politica=POLITICA_BBZ, metadados=None):
         estado='pendente' if pendente else 'comprovada', classificacao=classificacao,
         competencia=competencia, estado_competencia=estado_competencia,
         competencias_encontradas=tuple(sorted(competencias)), ambigua=pendente,
-        justificativa=('Natureza principal explícita e todos os componentes compatíveis no mesmo recibo.'
+        justificativa=('Cota condominial explícita com competência única define a descrição principal; todos os demais componentes permanecem preservados.'
+                       if priorizar_cota else 'Natureza principal explícita e todos os componentes compatíveis no mesmo recibo.'
                        if not pendente else 'Recibo reúne naturezas principais distintas; descrição neutra, sem escolher um componente.'
                        if len(naturezas) > 1 else 'Evidência insuficiente ou conflitante; descrição neutra, sem alterar a seleção financeira.'),
         alertas=tuple(sorted(alertas)), politica_id=politica.id, politica_versao=politica.versao,
@@ -181,10 +203,13 @@ def interpretar_lote_bbz(lote, *, politica=POLITICA_BBZ):
             evidencia = json.dumps({'competencia': d.competencia, 'politica_versao': d.politica_versao,
                 'politica_sha256': d.politica_sha256}, sort_keys=True)
             ressalvas.append(RessalvaLeitura(codigo=codigo, gravidade='informativo', registro_id=b.id,
-                origens=tuple(c.origem_historico for c in d.componentes if c.papel == 'principal'),
+                origens=tuple(c.origem_historico for c in d.componentes
+                              if c.natureza == d.classificacao and c.competencia == d.competencia),
                 valores_originais=(evidencia,)))
         for codigo in d.alertas:
-            r = RessalvaLeitura(codigo=codigo, gravidade='alerta', registro_id=b.id, origens=b.origens,
+            r = RessalvaLeitura(codigo=codigo,
+                gravidade='informativo' if codigo == 'BBZ_COTA_PRIORIZADA_NA_DESCRICAO' else 'alerta',
+                registro_id=b.id, origens=b.origens,
                 valores_originais=(json.dumps({'politica_versao': d.politica_versao,
                     'politica_sha256': d.politica_sha256, 'descricao': d.descricao}, sort_keys=True),))
             if r not in ressalvas:
