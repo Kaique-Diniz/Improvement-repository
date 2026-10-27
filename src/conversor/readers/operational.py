@@ -17,6 +17,7 @@ from .habita_real import LeitorHabitaReal
 from .fl_real import LeitorFLReal
 from .cadastro_real import LeitorCadastroFLReal
 from .bbz_xlsx import LeitorBBZXLSX, identificar as identificar_bbz
+from .bbz_cadastro import LeitorCadastroBBZ, identificar as identificar_cadastro_bbz
 from .text_support import ContextoLeitura, ErroLeitura
 
 
@@ -27,6 +28,7 @@ GRAMATICAS = {
     LeitorHabitaReal.formato_id: (LeitorHabitaReal, ("Inadimplencia Atualizada", "Bloco:", "Unidade:", "Emissao", "Monetaria")),
     LeitorFLReal.formato_id: (LeitorFLReal, ("Inadimplencia com composicao", "Venc.", "Comp.", "Saldo", "W002A")),
     LeitorCadastroFLReal.formato_id: (LeitorCadastroFLReal, ("W045A", "Unidade", "CPF/CNPJ")),
+    LeitorCadastroBBZ.formato_id: (LeitorCadastroBBZ, ('Relatório de Unidades - Completo', 'Código do cliente', 'Dados pessoais')),
 }
 
 LEITORES_XLSX = {LeitorBBZXLSX.formato_id: LeitorBBZXLSX}
@@ -36,6 +38,9 @@ def validar_assinatura_para_leitura(conteudo: bytes, leitor_id: str):
     """Verificação estrutural; nunca produz classificação conhecido_validado."""
     if leitor_id in LEITORES_XLSX:
         identificar_bbz(conteudo)
+        return
+    if leitor_id == LeitorCadastroBBZ.formato_id:
+        identificar_cadastro_bbz(conteudo)
         return
     sonda = SondadorLocal().sondar(conteudo, arquivo_id="verificacao_estrutural")
     if sonda.bloqueios or not sonda.completo or sonda.tipo != "pdf_texto":
