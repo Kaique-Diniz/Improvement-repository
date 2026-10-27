@@ -6,9 +6,32 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
-A primeira expansão pós-MVP autorizada é NOVA YORK PENTHOUSES / BBZ. Os
-originais ainda não foram localizados neste ambiente; não há leitor BBZ ativo.
-Veja a [preparação, fontes necessárias e pendências](docs/EXPANSAO_BBZ_NOVA_YORK.md).
+## BBZ — NOVA YORK PENTHOUSES (primeira extensão)
+
+Envie o **XLSX financeiro** pelo upload comum, com referência explícita e modo
+A/B. O formato é identificado pelas células e fechamentos, sem depender do nome
+do arquivo. Apenas NOVA YORK está habilitado; os outros quatro condomínios BBZ
+ficam nas pendências. O leitor PDF de Cadastro BBZ **ainda não está integrado**:
+processe sem esse complemento nesta etapa. Nomes financeiros são preservados;
+CPF/CNPJ e contatos ausentes ficam vazios. O PDF não é ignorado silenciosamente.
+
+Com referência **26/10/2026** e atraso **estritamente superior a 60 dias**:
+**7 unidades, 29 recibos, 260 componentes; 26 dívidas no A; as mesmas 26 + 2
+cadastros no B**. As 26 dívidas coincidiram por unidade, vencimento e original.
+Os três recibos fora do prazo e todos os totais foram reconciliados privadamente.
+Não se reproduzem os sete cadastros/duplicações do template histórico.
+
+Use **Dados do condomínio → BBZ → NOVA YORK** para cadastrar o endereço: ele
+prevalece em todas as linhas, com complemento individual. Perfis privados antigos
+não precisam ser editados para receber o novo perfil integrado. A saída preserva
+30 colunas em `Dados`, textos com zeros e parcelas sequenciais. Não se infere
+competência nem se aplicam exclusões TREE aos marcadores BBZ A/AJ/J/AE.
+
+**1.442 testes aprovados**, incluindo 73 novos, e oito verificações de schemas.
+Upload/download e endereço fictício foram testados no navegador. Vigência
+operacional pendente; nenhum plano real aprovado/ativado. Somente XLSX diagnóstico,
+sem easyCollector ou produção. Veja o [relatório técnico, assinatura e próxima
+etapa cadastral proposta](docs/EXPANSAO_BBZ_NOVA_YORK.md).
 
 ## FL — marcador administrativo fora do nome
 

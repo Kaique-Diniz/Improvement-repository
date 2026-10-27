@@ -5,10 +5,12 @@
 Em 27/10/2026, o responsável declarou concluído o MVP funcional TREE/PLAZA e
 autorizou a primeira extensão para NOVA YORK PENTHOUSES, sem implementar os
 outros quatro condomínios BBZ ou iniciar automaticamente o cadastro PDF.
-As fontes originais não foram localizadas; a implementação financeira permanece
-bloqueada, sem assinatura presumida ou regras ativadas. A
+Os originais foram recebidos e inventariados privadamente. A extensão financeira
+NOVA YORK está implementada para diagnóstico: sete unidades, 29 recibos e 26
+correspondências financeiras, sem habilitar os demais condomínios. A
 [preparação BBZ](docs/EXPANSAO_BBZ_NOVA_YORK.md) registra os pontos existentes,
-fontes ausentes, decisões e pendências futuras. Não há autorização de push/merge,
+assinatura comprovada, decisões, resultados e pendências futuras. O Cadastro
+Geral BBZ completo continua para etapa posterior. Não há autorização de push/merge,
 exportação operacional, integração easyCollector ou produção.
 
 As pausas e estados abaixo são registros históricos; esta autorização posterior

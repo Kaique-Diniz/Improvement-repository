@@ -1,154 +1,214 @@
-# Expansão BBZ — preparação do NOVA YORK PENTHOUSES
+# Expansão BBZ — NOVA YORK PENTHOUSES
 
-## Escopo e estado verificável
+## Entrega e limites
 
-Pedido de 27/10/2026: primeira extensão funcional somente para NOVA YORK
-PENTHOUSES. O MVP TREE/Habita e PLAZA/FL foi declarado concluído pelo responsável;
-isso não homologa produção nem habilita importação no easyCollector. Os quatro
-outros condomínios BBZ ficam exclusivamente no levantamento de pendências.
+Primeira extensão pós-MVP, autorizada em 27/10/2026 e implementada somente para
+NOVA YORK PENTHOUSES. O leitor pertence à família documental BBZ XLSX, não a um
+condomínio específico. Apenas o perfil NOVA YORK foi habilitado na interface.
+TREE/Habita e PLAZA/FL mantêm suas gramáticas, regras e contratos anteriores.
 
-**Estado desta entrega: preparação; implementação BBZ bloqueada pelas fontes.**
-Foram conferidos os nomes dos documentos disponíveis na área privada de
-validação e no workspace, inclusive nomes codificados em URL. Os quatro
-originais solicitados não foram localizados. O arquivo recebido contém o pedido,
-sem os relatórios financeiros, cadastro, template ou régua atualizada.
-Não foi registrada assinatura de formato, perfil de identidade validado ou
-regra executável BBZ. Nenhum arquivo com nome parecido será presumido equivalente.
+**Uso exclusivamente diagnóstico, não homologado para produção.** Nenhum plano
+operacional foi aprovado/ativado, nenhuma cobrança é enviada e a rota de
+exportação operacional continua retornando HTTP 409. Os demais quatro
+condomínios permanecem fora do processamento automático.
 
-| Fonte solicitada | Situação | Efeito da ausência |
+As primeiras revisões deste documento registraram fontes ausentes. Posteriormente
+foram recebidos os 15 originais. Tamanhos, SHA-256 e cópias íntegras foram
+inventariados fora do Git, com permissões restritas. Relatórios nominais,
+financeiros e fiscais detalhados ficam exclusivamente nessa área privada.
+
+| Fonte NOVA YORK recebida | Uso nesta etapa |
+|---|---|
+| `884 - NOVA YORK PENTHOUSES -Inadimplentes.xlsx` | Reconhecimento, leitura, origem por célula e reconciliação. |
+| `884 - NOVA YORK PENTHOUSES - Cadastro.pdf` | Conferência privada de identidade fiscal; **não** extração cadastral completa. |
+| `884 - NOVA YORK PENTHOUSES - Template.xlsx` | Referência histórica, sem substituir dados extraídos ou definir elegibilidade. |
+| `REGUA DE COBRANÇA -26.10.2026.xlsx` | Vinculação documental do requisito extrajudicial, sem importar acessos ou condições administrativas. |
+
+O nome efetivamente recebido da régua difere do nome inicialmente solicitado
+com o sufixo `ATUAL`. Seu hash próprio foi calculado; não se presume identidade
+com outra versão. O requisito NOVA YORK está na aba `RÉGUA DE COBRANÇA`, célula
+E312. Conteúdo administrativo de outras células não foi transformado em regra.
+
+## Arquitetura efetivamente reutilizada
+
+| Componente | Implementação |
+|---|---|
+| Sondagem | `SondadorLocal`: limites de arquivo/ZIP/XML, proteção contra macros e vínculos externos, sem executar fórmulas. |
+| Leitor | `readers/bbz_xlsx.py`: família `bbz_inadimplencia_xlsx_v1`, sem prazo de cobrança ou nome de condomínio embutidos. |
+| Contrato operacional | `Leitor`, `FonteProtegida`, `ContextosCatalogo`, `RegistroLeitores` e caso de uso de leitura existentes; adaptador XLSX separado da validação PDF. |
+| Domínio | `Unidade`, `Pessoa`, `Boleto`, `Composicao`, `Apontamento`, `Origem` e ressalvas existentes, sem alteração dos schemas históricos. |
+| Motor | Mesmo avaliador determinístico; configuração diagnóstica versionada em `web/perfis.json`. Não cria outro motor ou aprovação formal. |
+| Saída | Comparador, projeção A/B, `LinhaExportacao` e escritor universal existentes. |
+| Interface | Upload comum aceita PDF textual ou XLSX, identificação por conteúdo e cadastro privado de endereço por administradora/condomínio. |
+
+O registro atual recebe um adaptador adicional, sem criar um framework genérico
+de plugins nesta etapa. A futura extensão por família pode registrar sondador,
+reconhecedor, leitor financeiro, leitor cadastral opcional, identidade,
+fechamento e comparador independentes. PDF, XLSX e futuros XLS precisam de seus
+próprios adaptadores; o núcleo de cobrança e o contrato de saída são comuns.
+
+## Assinatura, identidade e proveniência
+
+A família exige uma única aba financeira, A1 com período completo válido, A2 com
+`Condomínio: código - nome`, agrupamentos `Bloco: ... Unidade: ... nome`,
+cabeçalhos posicionais de 12 colunas e fechamentos completos.
+
+```text
+A Recibo | B Vencimento | C Emissão | D Conta | E Histórico | F Moeda
+G Valor Original | H Valor Principal | I Multa | J Correção | K Juros | L Total
+```
+
+Cada recibo termina em `Total do Recibo:`, a unidade em `Total Geral da Unidade:`
+e o relatório em contagem de unidades mais `Total do condomínio :`. A moeda é
+verificada. Fórmulas, colunas extras preenchidas, múltiplas abas, cabeçalhos
+ambíguos, duplicidades ou fechamentos inconsistentes impedem o processamento.
+Não há reconhecimento por nome do arquivo, nome da aba ou palavras isoladas.
+
+A identidade NOVA YORK exige nome interno compatível e código administrativo
+**287**. O código externo **884**, fornecido pelo responsável e comprovado nos
+identificadores da referência histórica, é um
+identificador distinto. A administradora BBZ e o CNPJ do condomínio foram
+vinculados documentalmente no dossiê privado; o CNPJ foi confrontado entre régua
+e cabeçalho cadastral. Esse documento fiscal do edifício não ocupa o CPF do
+contato da unidade. Nenhum código de outro condomínio foi mapeado automaticamente.
+
+As origens XLSX guardam hash, leitor/versão, linha e identificador como
+`xlsx_aba1_r7_G`. Não há página PDF fictícia. As ressalvas privadas conservam
+nome original da aba, células, cabeçalhos, recibo bruto, conta, descrição, seis
+valores, formatos numéricos e os fechamentos. A interface apresenta aba/linha/
+células. Arquivos com erro continuam privados e a ocorrência informa código e
+localização disponível, sem imprimir valores ou nomes em logs.
+
+## Mapeamento e reconciliação financeira
+
+- G alimenta o original de cada componente; o G do subtotal comprovado alimenta
+  `Boleto.composicao.total_original`. H permanece distinto e auditado como
+  principal. I/J/K alimentam multa/correção/juros. L é o atualizado, preservado na
+  auditoria e nunca usado para substituir silenciosamente o original exportável.
+- Para cada componente, H + I + J + K deve coincidir exatamente com L. Para
+  cada recibo, suas seis colunas devem coincidir com a soma dos componentes;
+  depois se conferem unidade, contagem e total do condomínio nas mesmas colunas.
+- Números da planilha são convertidos para Decimal antes de qualquer cálculo.
+  Valores não finitos, inválidos ou com frações de centavo são rejeitados, sem
+  ajuste por aproximação. Negativos, zeros e centavos continuam nas composições.
+- Um recibo com vários componentes gera no máximo uma dívida. ID do recibo,
+  bloco/unidade, conta e código externo não são intercambiáveis. Repetição do
+  mesmo recibo na mesma unidade é retida; em unidades distintas, mantém IDs
+  separados. A repetição na continuação dos componentes é validada explicitamente.
+- Emissões numéricas sem convenção comprovada ficam em `emissao_original`, com
+  aviso; não se inventa data completa. Competência ausente continua ausente.
+  CPF/CNPJ e contatos não extraídos ficam vazios, com os alertas existentes.
+- A/AJ/J/AE são tokens exatos do campo Recibo, no namespace BBZ. Descrições,
+  legendas e nomes não viram apontamentos. Não se herdam exclusões TREE por
+  marcador, centavo, garantidora ou situação jurídica.
+
+## Regra diagnóstica e resultados privados
+
+Decisão expressa de 27/10/2026: NOVA YORK exige **mais de 60 dias corridos**,
+operador `gt`. Com referência explícita **2026-10-26**, atraso de 60 dias não
+satisfaz o prazo; 61 dias satisfazem, sujeitos aos bloqueios. Não há filtro
+judicial adicional. Judicial de 90 dias e observações de negociação são apenas
+informação documental, sem autorização para implementar medidas.
+
+Início/fim de vigência operacional continuam não comprovados (`null`), com
+ressalva visível. A data nominal da régua não é início de vigência. Trata-se de
+configuração **diagnóstica**, não de plano formal aprovado ou ativo.
+
+| Conferência real | Resultado |
+|---|---:|
+| Unidades financeiras | 7 |
+| Recibos | 29 |
+| Componentes | 260 |
+| Recibos acima de 60 dias / correspondências financeiras únicas | 26 / 26 |
+| Recibos fora do prazo | 3, em 2 unidades |
+| Modo A | 26 dívidas |
+| Modo B | As mesmas 26 dívidas + 2 cadastros |
+
+Os totais originais completo, selecionado e excluído coincidiram exatamente com
+as expectativas fornecidas pelo responsável; valores detalhados e recibos
+excluídos com localizadores estão somente no relatório privado. Não houve ajuste
+de dados para atingir as quantidades ou os valores da referência.
+
+## Referência histórica e divergências preservadas
+
+O template usa nome de aba diferente de `Dados`; apenas para BBZ, o comparador
+aceita uma única aba com os 30 cabeçalhos comprovados. A saída continua sendo
+`Dados`, com A:AD, cabeçalhos sem espaços finais e dados textuais preservando
+zeros. Recibos distintos não são somados para imitar uma linha da referência;
+correspondências ambíguas continuam não avaliáveis.
+
+A codificação comprovada nas 26 correspondências é: cedente BBZ, complemento
+`BL-UNI` + unidade com quatro dígitos e CEDENTE/contrato com o sufixo `-884`.
+O bloco original `0` continua no canônico; a omissão na apresentação é uma
+configuração explícita NOVA YORK. Bloco não mapeado ou unidade alfanumérica não
+recebem código inventado. Parcelas são sequenciais por contrato.
+
+A referência contém sete cadastros em cinco identificadores, com multiplicidades
+1/1/1/1/3. As cinco unidades cadastrais históricas não estão entre as sete
+unidades do relatório financeiro atual. Essa política histórica difere do modo
+B atual: não se copiam linhas
+nem se importam todas as unidades do cadastro complementar. Os dois cadastros do
+B atual pertencem às unidades com recibos não elegíveis; Y:AD ficam vazias.
+
+Nomes do cabeçalho financeiro são preservados. A referência tem documentos de
+contato que não estão nessa fonte: não são copiados. Rótulos históricos de
+`COTA MM/AAAA` ou de reembolso não são convertidos em competência comprovada;
+a saída usa o identificador original do recibo quando não há competência.
+Endereço só vem do cadastro privado autorizado e prevalece em todas as linhas,
+com complemento individual e originais na auditoria. O teste no navegador usou
+endereço inteiramente fictício em servidor isolado, sem configurar endereço real
+presumido. Perfis privados antigos sem NOVA YORK recebem o perfil integrado por
+fallback, sem sobrescrever o arquivo privado nem misturar endereço TREE/PLAZA.
+
+## Demais condomínios — levantamento, não habilitação
+
+Apenas estrutura/metadados foram inspecionados, sem executar suas réguas ou
+implementar seus leitores operacionais. Prazos abaixo são os informados no
+pedido; seus operadores e vigências não foram presumidos. Judicial não é filtro
+extra de seleção.
+
+| Referência | Extrajudicial / judicial informados | Pendências |
 |---|---|---|
-| `884 - NOVA YORK PENTHOUSES -Inadimplentes.xlsx` | Ausente | Impede mapear células, reconhecer assinatura e reconciliar recibos/componentes. |
-| `884 - NOVA YORK PENTHOUSES - Cadastro.pdf` | Ausente | Cadastro completo é opcional nesta etapa; falta conferir a identidade e os dados da fonte, quando necessários. |
-| `884 - NOVA YORK PENTHOUSES - Template.xlsx` | Ausente | Impede verificar a correspondência das 26 dívidas e as duplicações cadastrais históricas. |
-| `REGUA DE COBRANÇA -26.10.2026 ATUAL.xlsx` | Ausente | Impede vincular requisitos ao hash, versão e localização documental da régua. |
+| 363 — INNOVA BLUE | 31 / 90 dias | Conferidos 108 cabeçalhos de unidade, 645 subtotais de recibo, seis originais zero, 14 componentes negativos; histórico com 639 dívidas e seis cadastros. Marcadores A/AJ/J/AE presentes. Vínculo INAT versus 0 e os dois recibos citados continuam pendentes, sem correspondência presumida. |
+| 567 — EDIFÍCIO WIN | 31 / 61 dias | Conferidos 45 unidades e 672 recibos, componentes negativos e A/J. Datas históricas, centavos em campos financeiros, restrições de outro jurídico/vagas e template XLS exigem análise própria. Não presumir que um componente/encargo de centavo seja o original integral do recibo. |
+| 696 — NOVA REBOUÇAS | 30 / 90 dias | Conferidos 12 unidades e 102 recibos, A/J; cadastro anterior, papéis de proprietário/locatário/pagador e template XLS permanecem para etapa própria. |
+| 788 — JARDINS DO BRASIL ABROLHOS | 60 / 90 dias | Conferidos 90 unidades e 216 recibos; histórico com 103 dívidas. O arquivo chamado Cadastro.xlsx possui estrutura financeira. Identidade do subconjunto ABROLHOS e não selecionados exigem validação antes de habilitar. |
 
-Os originais deverão ficar fora do Git, com tamanho, SHA-256 dos bytes,
-papel documental e localizadores privados. Valores financeiros de referência,
-quando fornecidos no pedido, permanecem somente no inventário privado e são
-classificados como **informados, ainda não conferidos**. Não são evidência de
-reconciliação pelo sistema.
+Os XLS legados foram preservados e não lidos por openpyxl. Informações
+administrativas, credenciais e contatos internos da régua não foram incorporados
+a perfis, fixtures ou documentação versionada.
 
-## Pontos existentes e extensão mínima proposta
+## Testes e próxima etapa
 
-Esta seção é uma proposta de implementação, não um cadastro de plugins ativos.
+**1.442 testes aprovados**: 1.382 regulares + 60 suítes explícitas, incluindo
+73 casos novos. Oito verificações de schemas aprovadas. Cobertura sintética:
+múltiplos componentes, negativos/zero/centavos, marcadores e namespace, datas
+históricas/atuais, fronteiras 60/61, duplicidades, cabeçalhos ambíguos, fórmulas,
+subtotais, hash, contexto de catálogo, origem XLSX, isolamento, críticos, A/B,
+endereço persistente, perfil privado antigo e comparação por recibo.
 
-| Responsabilidade | Reuso existente | Extensão necessária após receber as fontes |
-|---|---|---|
-| Sondagem segura | `adapters/document_probe.py`: XLSX, limites ZIP/XML, bloqueio de macros/links externos e detecção de fórmulas | Manter o sondador e inspecionar estrutura/células reais; não identificar pelo nome da aba ou do arquivo. |
-| Reconhecimento | `application/recognition.py`, contratos de classificação e catálogo de assinaturas | Assinatura BBZ composta por cabeçalhos, relações de colunas e estrutura de agrupamentos comprovados. Conhecido validado, desconhecido e ambíguo continuam distintos. |
-| Identidade | Catálogo separa administradora, condomínio, formato e vínculos | Perfil NOVA YORK baseado nas evidências internas. `884` é o código informado do arquivo; `287` é o código administrativo informado. CNPJ, cliente, bloco, unidade e recibo são identificadores separados. Não inferir códigos dos outros quatro condomínios. |
-| Leitura | Protocolo `Leitor`, `FonteProtegida`, repositório de fontes e `LoteCanonico` | Adaptador XLSX por família BBZ, registrado por leitor/versão, sem copiar leitores PDF nem criar um motor financeiro. |
-| Contexto operacional | `readers/operational.py` e `application/reading.py` | Acrescentar caminho específico XLSX: os caminhos atuais exigem PDF textual e origem com página. Não afrouxar essas verificações dos PDFs. |
-| Proveniência | `Origem`, hash, linha, identificador e ressalvas | XLSX com aba, linha, célula e valores originais no dossiê privado. Usar identificadores de localização estáveis; não inventar página PDF para planilha. Verificar compatibilidade sem reescrever contratos históricos. |
-| Reconciliação | `Composicao` exige soma exata dos itens; `Boleto` separa multa, juros e correção | Conferir componentes, original/atualizado do recibo, unidade e relatório separadamente. Registrar total atualizado na auditoria sem trocar o original exportável. |
-| Regras | Motor determinístico existente, planos versionados e fatos tipados | Configuração específica NOVA YORK, somente diagnóstica. Nenhuma regra de centavo/A/AJ/J do TREE é herdada. Judicial não vira condição adicional de seleção. |
-| Comparação e saída | Comparador, projeção A/B, escritor universal e numeração existentes | Um recibo corresponde a uma dívida; confrontar unidade, vencimento e original. Preservar `Dados`, 30 cabeçalhos sem espaços finais, textos com zeros e parcelas por contrato. |
-| Endereço e interface | Cadastro privado autenticado por administradora + condomínio | Incorporar apenas o novo perfil comprovado; endereço cadastrado tem prioridade em todas as linhas e complemento continua individual. Upload XLSX será habilitado somente com reconhecimento e leitor seguros. |
+O navegador foi validado com upload real NOVA YORK A/B, referência, downloads,
+endereço fictício, dados textuais e bloqueio operacional. Regressores reais
+TREE/PLAZA confrontam canônicos e XLSX com as versões anteriores; detalhes ficam
+na área privada. Nenhum arquivo de cliente compõe as fixtures públicas.
 
-Não se implementa agora um framework genérico de plugins. O desenho permite
-acrescentar famílias de PDF, XLSX e futuros XLS por adaptadores, preservando os
-contratos e o núcleo de regras. Nem palavras soltas, nome de arquivo, nome de aba
-ou pontuação de confiança isolada bastam para liberar o diagnóstico.
+### Etapa seguinte proposta — Cadastro Geral PDF BBZ
 
-## Mapeamento e condições que faltam comprovar
+Somente com autorização posterior:
+1. Inventariar assinatura, identificação fiscal, data, número de unidades,
+   colunas, continuidade/paginação e possíveis variações do Cadastro BBZ.
+2. Separar proprietário, locatário, pagador e nomes múltiplos; um documento
+   válido no registro da unidade não exige atribuição individual a um nome.
+3. Extrair CPF/CNPJ e contatos opcionais com seus valores brutos e origens;
+   validar documentos sem inventar, corrigir ou escolher conflitos válidos.
+4. Cruzar administradora + condomínio + bloco + unidade pelo enriquecimento
+   existente, preservando dados financeiros e prioridade do endereço cadastrado.
+5. Conferir data cadastral anterior e divergência de quantidade total de
+   unidades entre régua/cadastro, sem trocar automaticamente a fonte preferida.
+6. Acrescentar fixtures sintéticas, confrontos privados e regressão completa.
+   Não habilitar automaticamente os outros quatro condomínios.
 
-1. Obter e preservar os quatro originais; inventariar hashes/tamanhos antes de ler.
-2. Localizar identificação administrativa e fiscal, período de emissão,
-   agrupamentos bloco/unidade, cabeçalhos de recibo e totalizações.
-3. Comprovar quais células representam valor original, principal, multa,
-   correção, juros e total atualizado. Não tratar rótulos como sinônimos sem
-   reconciliação. Não somar novamente subtotais ou saldos acumulados.
-4. Usar Decimal com centavos exatos. A representação numérica do XLSX deve ser
-   validada antes de entrar no domínio; não fazer aritmética financeira com
-   float nem corrigir diferenças por arredondamento silencioso. Fórmulas e
-   caches insuficientes exigem tratamento explícito, sem executar fórmulas.
-5. Preservar componentes negativos, zero e centavo. Recibo, componentes e
-   marcadores têm localizadores separados, estáveis e auditáveis. Recibo
-   repetido ou cabeçalho ambíguo exige revisão, não fusão automática.
-6. Preservar A/AJ/J/AE em namespace BBZ, nos campos apropriados. Legendas,
-   nomes, observações e restrições de outro jurídico não viram filtros por
-   aproximação. Não inferir competência ausente.
-7. **Decisão de negócio confirmada pelo responsável em 27/10/2026, somente
-   para NOVA YORK:** atraso estritamente superior a 60 dias corridos (`> 60`,
-   operador `gt`), com elegibilidade pelo prazo a partir do 61º dia. No 60º dia,
-   o recibo não satisfaz essa condição. Data de referência do teste:
-   **2026-10-26**, explícita e independente da data atual. Exemplos de fronteira:
-   vencimento em 27/08/2026 = 60 dias, não elegível pelo prazo; 26/08/2026 =
-   61 dias, satisfaz o prazo. Demais bloqueios continuam superiores. Essa
-   confirmação não ativa plano nem comprova os documentos ainda ausentes.
-8. Conferir a versão/hash da régua e sua aplicabilidade/vigência. A data nominal
-   26/10/2026 não será assumida como início de vigência. Não produzir aprovação,
-   atesto, assinatura ou ativação automática.
-
-As quantidades abaixo são expectativas fornecidas pelo responsável, ainda não
-medidas nesta execução: sete unidades, 29 recibos e 26 correspondências
-financeiras com o template. Os três adicionais, seus vencimentos e seus totais
-precisam ser conferidos célula a célula. Coerência aritmética dos números do
-pedido não substitui reconciliação documental.
-
-Modo A: uma linha por recibo elegível. Modo B: as mesmas dívidas e no máximo uma
-linha cadastral por unidade com recibo não elegível, com Y:AD vazias e bloqueios
-preservados. As sete linhas cadastrais históricas em cinco unidades, incluindo
-repetição de uma unidade, não serão copiadas automaticamente. Se as fontes
-confirmarem apenas duas unidades com recibos fora do prazo, essa será a base da
-projeção B; não haverá ajuste para forçar 33 linhas.
-
-## Levantamento dos demais condomínios — não implementado
-
-Dados e prazos informados no pedido, sem conferência dos originais. Os códigos
-abaixo são referências dos arquivos, não mapeamentos administrativos aprovados.
-Nos outros quatro condomínios, os limites permanecem sem operador inclusivo/
-exclusivo presumido. Para NOVA YORK, foi confirmado `> 60`, a partir do 61º dia.
-Os prazos judiciais são informação documental, não autorização ou filtro extra.
-
-| Condomínio / referência | Extrajudicial / judicial informados | Pendências futuras |
-|---|---|---|
-| 363 — INNOVA BLUE | 31 / 90 dias | 108 unidades, 645 recibos; histórico com 639 dívidas e seis cadastros; seis recibos com original zero; bloco INAT versus 0 na unidade alfanumérica citada no pedido, afetando dois recibos; A/AJ/J/AE e componentes negativos. Não escolher correspondência de bloco automaticamente. |
-| 567 — EDIFÍCIO WIN | 31 / 61 dias | 45 unidades, 672 recibos; históricos desde 2016; centavos, restrições de outro jurídico e vagas; template XLS legado ainda não validado. |
-| 696 — NOVA REBOUÇAS | 30 / 90 dias | 12 unidades, 102 recibos; cadastro de 2025; distinguir proprietário, locatário e pagador; marcadores J/A; template XLS legado. |
-| 788 — JARDINS DO BRASIL ABROLHOS | 60 / 90 dias | 90 unidades, 216 recibos; histórico com 103 dívidas e 25 contratos; auditar não selecionados; o arquivo chamado Cadastro.xlsx teria estrutura financeira; reconhecer o subconjunto ABROLHOS por conteúdo, sem misturar outros JARDINS DO BRASIL. |
-| 884 — NOVA YORK PENTHOUSES | 60 / 90 dias | Cadastro anterior ao financeiro; divergência na quantidade total de unidades entre cadastro e régua; duplicação cadastral no histórico; identidade fiscal e códigos pendentes de comprovação. |
-
-Não incluir credenciais, contatos internos nem observações administrativas da
-régua em configuração pública. Fontes reais e relatórios de comparação nominal
-ou financeira permanecem privados.
-
-## Sequência de implementação e aceite ainda pendente
-
-1. **Fontes/assinatura:** inventário, identidade, mapeamento e convenção dos 60
-   dias; assinatura forte com rejeição de administradora/condomínio incorretos.
-2. **Leitor BBZ financeiro:** unidades → recibos → componentes, marcadores,
-   datas e origens; reconciliação exata em todos os níveis disponíveis.
-3. **Integração diagnóstica NOVA YORK:** configuração e motor existentes;
-   comparação das 26 dívidas, auditoria dos três excluídos e projeção A/B.
-4. **Testes sintéticos derivados da estrutura comprovada:** múltiplos
-   componentes, negativos/zeros/centavos, A/AJ/J/AE, unidades alfanuméricas,
-   duplicidades, cabeçalhos ambíguos, subtotais, datas antigas e atuais,
-   condomínio desconhecido, bloqueios e formatos inválidos. Testar as duas
-   bordas do prazo aprovado e impedir propagação de regras TREE/PLAZA.
-5. **Validação privada:** confrontar sete unidades/29 recibos, todos os totais,
-   26 correspondências, as diferenças históricas de B e a saída textual de
-   CPF/CNPJ, CEP, DDD e FONE. Não preencher ausências com dados inventados.
-6. **Regressão e revisão:** preservar TREE/PLAZA, cadastros persistentes,
-   privacidade, auditoria e bloqueio de exportação operacional. Sem push/merge
-   até autorização própria.
-
-### Etapa seguinte proposta — Cadastro Geral PDF
-
-Somente após autorização posterior: inspecionar assinatura, colunas e continuidade
-do cadastro BBZ; separar papéis e nomes; validar CPF/CNPJ e contatos opcionais;
-cruzar administradora + condomínio + bloco + unidade; registrar data da fonte,
-divergências e conflitos válidos sem escolher titular silenciosamente. Confirmar
-quantidade de unidades versus régua e acoplar pelo enriquecimento existente.
-Adicionar testes sintéticos e privados, sem implementar os outros condomínios.
-
-Os critérios funcionais NOVA YORK continuam **não executados**, por falta dos
-originais. Testes da base atual atestam somente preservação do MVP, não
-reconhecimento BBZ ou homologação do novo formato. A etapa seguinte não foi
-iniciada, e o sistema permanece exclusivamente diagnóstico e não homologado para
-produção.
-
-Regressão executada nesta preparação: **1.369 testes aprovados** (1.309 regulares
-+ 60 das suítes explícitas), oito verificações de schemas aprovadas. Nenhum teste
-BBZ foi criado a partir de um layout presumido. Código, catálogos e regras
-executáveis permanecem intactos.
+Nesta entrega, selecionar um Cadastro PDF BBZ no fluxo financeiro gera aviso de
+erro explícito: remover o complemento e processar o XLSX sem ele. Não é ignorado
+silenciosamente. A etapa cadastral completa não foi iniciada. Sem push/merge até
+autorização, sem cobrança, exportação operacional ou homologação de produção.
