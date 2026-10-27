@@ -68,9 +68,14 @@ ou pontuação de confiança isolada bastam para liberar o diagnóstico.
 6. Preservar A/AJ/J/AE em namespace BBZ, nos campos apropriados. Legendas,
    nomes, observações e restrições de outro jurídico não viram filtros por
    aproximação. Não inferir competência ausente.
-7. Confirmar a fronteira dos 60 dias: `> 60` ou `>= 60`. Até essa decisão,
-   o prazo está incompleto e não pode autorizar seleção. Data de referência
-   do teste: **2026-10-26**, explícita e independente da data atual.
+7. **Decisão de negócio confirmada pelo responsável em 27/10/2026, somente
+   para NOVA YORK:** atraso estritamente superior a 60 dias corridos (`> 60`,
+   operador `gt`), com elegibilidade pelo prazo a partir do 61º dia. No 60º dia,
+   o recibo não satisfaz essa condição. Data de referência do teste:
+   **2026-10-26**, explícita e independente da data atual. Exemplos de fronteira:
+   vencimento em 27/08/2026 = 60 dias, não elegível pelo prazo; 26/08/2026 =
+   61 dias, satisfaz o prazo. Demais bloqueios continuam superiores. Essa
+   confirmação não ativa plano nem comprova os documentos ainda ausentes.
 8. Conferir a versão/hash da régua e sua aplicabilidade/vigência. A data nominal
    26/10/2026 não será assumida como início de vigência. Não produzir aprovação,
    atesto, assinatura ou ativação automática.
@@ -92,8 +97,9 @@ projeção B; não haverá ajuste para forçar 33 linhas.
 
 Dados e prazos informados no pedido, sem conferência dos originais. Os códigos
 abaixo são referências dos arquivos, não mapeamentos administrativos aprovados.
-Limites de prazo permanecem sem operador inclusivo/exclusivo presumido. Os
-prazos judiciais são informação documental, não autorização ou filtro extra.
+Nos outros quatro condomínios, os limites permanecem sem operador inclusivo/
+exclusivo presumido. Para NOVA YORK, foi confirmado `> 60`, a partir do 61º dia.
+Os prazos judiciais são informação documental, não autorização ou filtro extra.
 
 | Condomínio / referência | Extrajudicial / judicial informados | Pendências futuras |
 |---|---|---|
