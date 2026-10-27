@@ -54,5 +54,49 @@
       "Cadastro Geral BBZ opcional: associação por papel e identidade comprovada. Divergências ficam em revisão cadastral sem alterar a seleção financeira.",
       "Marcadores A/AJ/J/AE BBZ são preservados, sem herdar exclusões do TREE."
     ]
+  },
+  {
+    "id": "innova_blue",
+    "condominio_id": "cond_bbz_innova_blue",
+    "administradora_id": "adm_bbz",
+    "nome": "INNOVA BLUE",
+    "administradora": "BBZ",
+    "familia": "bbz",
+    "configuracao_versao": "1.0.0",
+    "codigo_easycollector": "363",
+    "codigo_administrativo": "1392",
+    "aliases": [
+      "CONDOMINIO INNOVA BLUE",
+      "INNOVA BLUE"
+    ],
+    "vigente_de": null,
+    "vigente_ate": null,
+    "zero_original_cadastral": true,
+    "politica_descricoes": "descricao_obrigacao_bbz_condominio@1.0.0",
+    "exclusoes": [
+      {
+        "id": "innova_original_zero",
+        "tipo": "valor_original",
+        "operador": "eq",
+        "valor": "0.00"
+      }
+    ],
+    "regra_prazo": "innova_prazo_31",
+    "dias": 31,
+    "prioridade_exclusao": 1,
+    "prioridade_prazo": 0,
+    "origem_regua": {
+      "arquivo_id": "regua_bbz_20261026",
+      "sha256": "17f065b659288e8b364cc056a374e87ee6797fc905587876ef05a94f5c904f0d",
+      "leitor_versao": "vinculacao_documental_regua@1",
+      "identificador": "aba_REGUA_E523_extrajudicial",
+      "linha": 523
+    },
+    "ressalvas": [
+      "Somente diagnóstico: atraso > 31 dias corridos é hipótese técnica autorizada; inclusividade do limite pendente de confirmação operacional. Data de referência explícita.",
+      "Prazo judicial de 90 dias não é filtro. Marcadores A/AJ/J/AE e centavo não herdam vetos TREE. Recibo de original zero não gera dívida, mas pode motivar cadastro adicional no modo B.",
+      "Vigência operacional não comprovada. Nenhum plano real aprovado ou ativado. Preservar INAT sem equivalência automática com bloco 0.",
+      "Cadastro opcional BBZ: associação por papel e identidade comprovada; divergências retêm a associação, não alteram elegibilidade financeira."
+    ]
   }
 ]

@@ -49,10 +49,10 @@ def test_catalogo_invalido_falha_sem_expor_conteudo(tmp_path,raw):
     assert raw not in str(exc.value)
 
 
-def test_cinco_relacoes_cadastradas_nao_ativam_quatro_leitores():
+def test_cinco_relacoes_cadastradas_habilitam_apenas_dois_pilotos():
     c,_=RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH).carregar()
     assert {i.codigo_easycollector for i in c.identidades}=={'363','567','696','788','884'}
-    assert[p['id']for p in PERFIS.values()if p['familia']=='bbz']==['nova_york']
+    assert[p['id']for p in PERFIS.values()if p['familia']=='bbz']==['nova_york','innova_blue']
 
 
 def test_reconhecimento_por_conteudo_captura_snapshot_sem_usar_filename(xlsx):
@@ -63,7 +63,7 @@ def test_reconhecimento_por_conteudo_captura_snapshot_sem_usar_filename(xlsx):
 
 
 def test_identidade_conhecida_sem_perfil_financeiro_nao_processa(xlsx):
-    cat,_=RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH).carregar();i=next(i for i in cat.identidades if i.codigo_easycollector=='363')
+    cat,_=RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH).carregar();i=next(i for i in cat.identidades if i.codigo_easycollector=='567')
     raw=xlsx(codigo=i.codigos_origem[0],nome=i.nomes_documentais[0])
     with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):reconhecer(raw)
 

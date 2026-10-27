@@ -110,11 +110,14 @@ class FonteCadastroBBZ:
                 (m:=re.fullmatch(r'Emitido em \d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2} - Página (\d+) de (\d+)',l.texto()))]
             if len(rodapes) != 1 or tuple(map(int,rodapes[0][1].groups())) != (pi,len(self.paginas)):
                 falha('BBZ_CADASTRO_PAGINACAO_INCOMPLETA')
-            cab = [l for l in linhas if l.texto().startswith('Condomínio:')]
+            cab = [l for l in linhas if re.match(r'^Condom[ií]nio:',l.texto())]
             if len(cab) != 1:falha('BBZ_CADASTRO_IDENTIDADE_INCOMPLETA')
             l = cab[0]
-            m = re.fullmatch(r'Condomínio:\s*([0-9]+)\s*-\s*(.+)',l.texto(0,465))
-            fiscal = re.fullmatch(r'CNPJ:\s*(.+)',l.texto(465,600))
+            fiscais = [x for t,x in l.partes if re.match(r'^CNPJ(?:\s*:|$)',t.strip()) and 450 <= x < 600]
+            if len(fiscais)!=1:falha('BBZ_CADASTRO_IDENTIDADE_INCOMPLETA',l)
+            limite = fiscais[0]
+            m = re.fullmatch(r'Condom[ií]nio:\s*([0-9]+)\s*-\s*(.+)',l.texto(0,limite))
+            fiscal = re.fullmatch(r'CNPJ\s*:\s*(.+)',l.texto(limite,600))
             if not m or not fiscal:falha('BBZ_CADASTRO_IDENTIDADE_INCOMPLETA',l)
             doc = Documento(tipo='cnpj',valor=fiscal[1])
             valido = cnpj_validado(doc)
@@ -184,7 +187,7 @@ class LeitorCadastroBBZ:
             primeiro = True
             for l in linhas:
                 texto = l.texto(); norm = normalizar_assinatura(texto)
-                if (l.y < 45 and texto.startswith('Emitido em ')) or l.y > 750 or texto.startswith('Condomínio:'):
+                if (l.y < 45 and texto.startswith('Emitido em ')) or l.y > 750 or re.match(r'^Condom[ií]nio:',texto):
                     continue
                 if l.y > 730 and texto.startswith('Endereço:'):continue
                 if texto.startswith('Quantidade de Unidade por tipo'):
@@ -193,9 +196,13 @@ class LeitorCadastroBBZ:
                     if texto.startswith('Bloco'):falha('BBZ_CADASTRO_CONTEUDO_APOS_RESUMO',l)
                     continue
                 if texto.startswith('Bloco'):
-                    bloco = re.fullmatch(r'Bloco\s*:\s*(\S+)',l.texto(0,160))
-                    unidade = re.fullmatch(r'Unidade\s*:\s*(\S+)\s+-\s+(.+)',l.texto(160,480))
-                    cliente = re.fullmatch(r'Código do cliente\s*:\s*(\S+)',l.texto(480,600))
+                    pos_unidade=[x for t,x in l.partes if re.match(r'^Unidade(?:\s*:|$)',t.strip()) and 140<=x<=180]
+                    pos_cliente=[x for t,x in l.partes if re.match(r'^Código do cliente(?:\s*:|$)',t.strip()) and 450<=x<=510]
+                    if len(pos_unidade)!=1 or len(pos_cliente)!=1:falha('BBZ_CADASTRO_CABECALHO_UNIDADE_INVALIDO',l)
+                    x_unidade,x_cliente=pos_unidade[0],pos_cliente[0]
+                    bloco = re.fullmatch(r'Bloco\s*:\s*(\S+)',l.texto(0,x_unidade))
+                    unidade = re.fullmatch(r'Unidade\s*:\s*(\S+)\s+-\s+(.+)',l.texto(x_unidade,x_cliente))
+                    cliente = re.fullmatch(r'Código do cliente\s*:\s*(\S+)',l.texto(x_cliente,600))
                     if not all((bloco,unidade,cliente)):falha('BBZ_CADASTRO_CABECALHO_UNIDADE_INVALIDO',l)
                     chave = chave_unidade(bloco[1],unidade[1]);cabecalhos += 1
                     anterior = fichas.get(chave)

@@ -65,7 +65,7 @@ def test_controle_de_colisao_idempotente_da_mesma_unidade():
 
 
 def test_fluxo_diagnostico_reutiliza_codificador_textual_e_contrato_sem_duplicacao(xlsx,tmp_path):
-    dados=json.loads(PERFIS_SAIDA_PATH.read_bytes());dados[-1]=perfil().model_dump(mode='json')
+    dados=[p for p in json.loads(PERFIS_SAIDA_PATH.read_bytes()) if p['condominio_id']!='cond_bbz_nova_york'];dados.append(perfil().model_dump(mode='json'))
     path=tmp_path/'perfis.json';path.write_text(json.dumps(dados));raw=xlsx([unidade_planilha(numero='LOJA_FICTICIA',bloco='A')])
     r=analisar(raw,PedidoDiagnostico(data_ref='2026-10-26',modo='A'),processamento_id='sintetico',destino=tmp_path/'resultado',perfis_saida=path)
     cod=next(iter(r['codificacao_template']['unidades'].values()))
@@ -74,7 +74,7 @@ def test_fluxo_diagnostico_reutiliza_codificador_textual_e_contrato_sem_duplicac
 
 
 def test_colisao_no_fluxo_impede_materializacao(xlsx,tmp_path):
-    dados=json.loads(PERFIS_SAIDA_PATH.read_bytes());dados[-1]=perfil().model_dump(mode='json')
+    dados=[p for p in json.loads(PERFIS_SAIDA_PATH.read_bytes()) if p['condominio_id']!='cond_bbz_nova_york'];dados.append(perfil().model_dump(mode='json'))
     path=tmp_path/'perfis.json';path.write_text(json.dumps(dados))
     raw=xlsx([unidade_planilha(numero='C',bloco='A-UniB'),unidade_planilha(numero='B-UniC',bloco='A',recibos=[recibo(id='99000002')])])
     with pytest.raises(ErroLeitura,match='CEDENTE_AMBIGUO_APOS_CODIFICACAO'):

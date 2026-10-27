@@ -20,6 +20,21 @@ def ler(raw):
         LeitorCadastroBBZ.formato_id,'cadastro','287',LeitorCadastroBBZ.formato_id+'@1'))
 
 
+def test_rotulos_fragmentados_separados_do_dois_pontos_preservam_associacao():
+    def fragmentar(i,rows):
+        out=[]
+        for x,y,t in rows:
+            label=t.split(':',1)[0]
+            if label in ('CNPJ','Unidade','Código do cliente'):
+                valor=t.split(':',1)[1]
+                delta={'CNPJ':24,'Unidade':36,'Código do cliente':68}[label]
+                out.extend([(x,y,label),(x+delta,y,':'),(x+delta+5,y,valor)])
+            else:out.append((x,y,t))
+        return out
+    lote=ler(cadastro(mutar=fragmentar))
+    assert len(lote.unidades)==1 and resolver_documento(lote.pessoas[0]).valor==CPF
+
+
 @pytest.mark.parametrize('paginas',[1,2,3])
 def test_ficha_entre_paginas_nao_duplica_unidade_nem_contatos(paginas):
     raw=cadastro(dividir(ficha(),paginas));r=ler(raw)

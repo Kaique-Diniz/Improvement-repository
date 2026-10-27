@@ -214,12 +214,19 @@ class LeitorBBZXLSX:
                         namespace_formato=self.formato_id,origem=origem(n,'A')))
                 elif recibo is None or recibo['token']!=a or valores[2] is not None:
                     falha('BBZ_CONTINUACAO_DE_RECIBO_AMBIGUA',n)
-                if not texto(valores[3]) or not isinstance(valores[4],str) or not valores[4].strip() or texto(valores[5])!='R$':
-                    falha('BBZ_COMPONENTE_INCOMPLETO',n)
                 vetor=tuple(moeda(v,n)for v in valores[6:12])
+                sem_historico = valores[3] is None and valores[4] is None and vetor == ZERO
+                if (texto(valores[5])!='R$' or recibo.get('sem_historico') or
+                    (sem_historico and recibo['itens']) or
+                    (not sem_historico and (not texto(valores[3]) or not isinstance(valores[4],str) or not valores[4].strip()))):
+                    falha('BBZ_COMPONENTE_INCOMPLETO',n)
+                if sem_historico:
+                    recibo['sem_historico']=True
+                    evidenciar('BBZ_RECIBO_ZERADO_SEM_HISTORICO',n,{'celulas':f'A{n}:L{n}',
+                        'conta_original':None,'historico_original':None},unidade.id)
                 if sum(vetor[1:5],Decimal(0))!=vetor[5]:falha('BBZ_TOTAL_COMPONENTE_DIVERGENTE',n)
                 recibo['itens'].append(ItemComposicao(codigo=f'componente_{n}',valor=vetor[0],
-                    descricao_original=valores[4],origem=origem(n,'G')))
+                    descricao_original=valores[4] if valores[4] is not None else '',origem=origem(n,'G')))
                 recibo['vetores'].append(vetor);recibo['origens'].append(origem(n))
                 recibo['linhas'].append({'linha':n,'celulas':f'A{n}:L{n}',
                     'recibo':a,'conta':texto(valores[3]),'historico':valores[4],

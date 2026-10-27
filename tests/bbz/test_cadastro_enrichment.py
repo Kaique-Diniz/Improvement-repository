@@ -125,7 +125,7 @@ def test_endereco_privado_tem_prioridade_e_cobranca_externa_nunca_e_aplicada(tmp
     assert 'Rua de Correspondencia'not in row[4]
 
 
-@pytest.mark.parametrize('codigo,nome',[('1392','CONDOMINIO INNOVA BLUE'),('999','OUTRO CONDOMINIO FICTICIO')])
+@pytest.mark.parametrize('codigo,nome',[('117','CONDOMINIO EDIFICIO WIN'),('999','OUTRO CONDOMINIO FICTICIO')])
 def test_outros_condominios_bbz_permanecem_desabilitados(codigo,nome):
     with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO|CONDOMINIO_DESCONHECIDO_OU_AMBIGUO'):
         reconhecer(cadastro(codigo=codigo,nome=nome),cadastro=True)

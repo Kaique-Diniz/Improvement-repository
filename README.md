@@ -6,6 +6,22 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## INNOVA BLUE — segundo piloto BBZ
+
+Envie o XLSX financeiro do INNOVA, com Cadastro Geral PDF e referência opcionais.
+O piloto diagnóstico usa referência explícita de 26/10/2026 e a hipótese
+`atraso > 31 dias`, cuja inclusividade ainda exige confirmação operacional.
+Reconciliação: 108 unidades, 645 recibos, 4.095 componentes; 639 dívidas no A e
+as mesmas 639 + seis cadastros no B. Original zero não gera dívida nem veto
+coletivo. Não se habilitam WIN, NOVA REBOUÇAS ou ABROLHOS.
+
+O Cadastro reconcilia 885 unidades, mas só complementa as 108 unidades
+financeiras comprovadas. INAT é preservado; não se inventa equivalência com
+bloco 0. Descrições sem evidência continuam em revisão, sem inferir competência.
+**1.661 testes aprovados**, oito verificações de schemas e upload/download no
+navegador. TREE/PLAZA/NOVA YORK preservados. Veja o
+[relatório e as pendências diagnósticas](docs/BBZ_INNOVA_BLUE.md).
+
 ## Cadastro Geral PDF BBZ — complemento opcional NOVA YORK
 
 Agora é possível enviar o XLSX financeiro com ou sem o Cadastro Geral BBZ PDF.

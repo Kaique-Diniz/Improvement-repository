@@ -21,7 +21,7 @@ from conversor.adapters.document_probe import SondadorLocal
 from conversor.adapters.integration_identity_json import RepositorioIdentidadesIntegracaoJSON
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
-from conversor.application.debt_descriptions import interpretar_lote_bbz
+from conversor.application.debt_descriptions import interpretar_lote_bbz, POLITICA_BBZ, POLITICAS_BBZ
 from conversor.application.bbz_cadastro import cruzar_cadastro_bbz
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
@@ -56,7 +56,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue'] = 'auto'
 
 
 def normalizar(s):
@@ -322,7 +322,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     lote_extraido = lote if perfil['familia'] == 'bbz' else None
     descricoes_recibos = {}
     if perfil['familia'] == 'bbz':
-        lote, descricoes_recibos = interpretar_lote_bbz(lote)
+        politica = POLITICAS_BBZ.get(perfil.get('politica_descricoes',POLITICA_BBZ.id+'@'+POLITICA_BBZ.versao))
+        if politica is None:raise ErroLeitura('POLITICA_DESCRICOES_BBZ_NAO_REGISTRADA')
+        lote, descricoes_recibos = interpretar_lote_bbz(lote,politica=politica)
     saida_bytes = Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()
     perfil_saida = selecionar_perfil(json.loads(saida_bytes), administradora_id=perfil['administradora_id'],
                                      condominio_id=perfil['condominio_id'])
@@ -439,7 +441,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             motivos.append('TITULAR_AUSENTE')
         if documento and documento.bloqueante:
             motivos.extend(documento.codigos)
-        if b.composicao.total_original <= 0:
+        zero_cadastral = (perfil.get('zero_original_cadastral',False) and
+            b.composicao.total_original == 0 and resolucao.situacao == 'excluido')
+        if b.composicao.total_original <= 0 and not zero_cadastral:
             motivos.append('VALOR_ORIGINAL_NAO_POSITIVO')
         status = 'revisao' if motivos or resolucao.revisao_humana else (
             'elegivel' if resolucao.situacao == 'elegivel_na_simulacao' else 'nao_elegivel')
@@ -451,7 +455,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         decisoes.append({'id': b.id, 'unidade_id': u.id, 'condominio': perfil['nome'],
             'bloco': u.bloco_original, 'unidade': u.unidade_original, 'cota': b.identificador,
             'boleto': b.identificador, 'cota_id': u.id, 'veto_coletivo': veto,
-            'motivo_selecao': ('veto_coletivo' if veto else 'prazo_nao_atingido' if resolucao.situacao == 'excluido'
+            'motivo_selecao': ('veto_coletivo' if veto else 'valor_original_zero' if zero_cadastral else 'prazo_nao_atingido' if resolucao.situacao == 'excluido'
                               else 'prazo_satisfeito' if resolucao.situacao == 'elegivel_na_simulacao' else 'indeterminado'),
             'vencimento': b.vencimento.isoformat(), 'competencia': b.competencia,
             'valor': format(b.composicao.total_original, '.2f'), 'situacao': status,
@@ -607,6 +611,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                   cadastros_adicionais=sum(l.tipo == 'cadastral' for l in linhas),
                   linhas_teste=len(linhas), ocorrencias=len(ocorrencias))
     resumo['anomalias_globais_reconciliadas_diagnostico'] = int(bool(reconciliadas_diagnostico))
+    if perfil.get('zero_original_cadastral'):
+        resumo['boletos_nao_selecionados_zero'] = sum(d['motivo_selecao']=='valor_original_zero' for d in decisoes)
     resultado = {'id': processamento_id, 'condominio': perfil['nome'], 'perfil': perfil['id'],
         'administradora_id': perfil['administradora_id'], 'condominio_id': perfil['condominio_id'],
         'administradora': perfil['administradora'], 'reconhecimento': 'identificado_para_diagnostico',

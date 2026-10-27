@@ -58,6 +58,16 @@ POLITICA_BBZ = PoliticaDescricoes(id='descricao_obrigacao_bbz', versao='1.1.0',
         _acessorio('desconto_fundo', r'DESCONTO FUNDO DE RESERVA', ajuste=True),
     ))
 
+# Variação documental da família: adotada somente por perfil explícito.
+# A política histórica permanece intacta e reproduzível.
+POLITICA_BBZ_CONDOMINIO = PoliticaDescricoes(id='descricao_obrigacao_bbz_condominio', versao='1.0.0',
+    namespace_formato=POLITICA_BBZ.namespace_formato, regras=POLITICA_BBZ.regras + (
+        _principal('condominio_documental', r'CONDOMINIO ' + COMPETENCIA,
+                   'cota_condominial', 'COTA', True),
+        _principal('cond_abreviado_documental', r'COND ' + COMPETENCIA,
+                   'cota_condominial', 'COTA', True),))
+POLITICAS_BBZ = {p.id+'@'+p.versao:p for p in (POLITICA_BBZ,POLITICA_BBZ_CONDOMINIO)}
+
 
 def normalizar_historico(texto):
     return ' '.join(''.join(c for c in unicodedata.normalize('NFKD', texto.upper())
@@ -137,8 +147,10 @@ def interpretar_recibo(boleto, *, politica=POLITICA_BBZ, metadados=None):
         alertas.append('BBZ_COMPETENCIA_PARCIAL_NOS_PRINCIPAIS')
     cotas = [c for c in principais if c.natureza == 'cota_condominial']
     competencias_cota = {c.competencia for c in cotas if c.competencia}
+    prefixo_cota = (r'^(?:COTA CONDOMINIAL|CONDOMINIO|COND)(?:\s|$)' if
+        any(r.id=='condominio_documental' for r in politica.regras) else r'^COTA CONDOMINIAL(?:\s|$)')
     cota_inconclusiva = any(c.resultado != 'reconhecido' and
-        re.match(r'^COTA CONDOMINIAL(?:\s|$)', normalizar_historico(c.historico_original))
+        re.match(prefixo_cota, normalizar_historico(c.historico_original))
         for c in componentes)
     priorizar_cota = (bool(cotas) and len(competencias_cota) == 1 and
         all(c.competencia for c in cotas) and not cota_inconclusiva and

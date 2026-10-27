@@ -1,5 +1,14 @@
 # 01 — Plano do projeto e fases
 
+## Expansão incremental autorizada — INNOVA BLUE / BBZ
+
+Após a publicação do Cadastro Geral NOVA YORK, foi autorizada exclusivamente a
+expansão diagnóstica INNOVA BLUE. Reutilizados os leitores de família, o motor,
+o cadastro por papel, a codificação textual e os modos A/B. As hipóteses e
+pendências estão no [relatório INNOVA](docs/BBZ_INNOVA_BLUE.md). Não habilita os
+outros três condomínios BBZ, exportação operacional, produção ou publicação
+automática. Os marcos anteriores abaixo permanecem como histórico.
+
 ## Expansão pós-MVP autorizada — NOVA YORK / BBZ
 
 Em 27/10/2026, o responsável declarou concluído o MVP funcional TREE/PLAZA e

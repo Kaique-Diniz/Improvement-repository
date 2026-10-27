@@ -99,7 +99,12 @@ def classificar_historico(conteudo,*,linhas,linhas_info,identificadores,comparac
                 if financeiros:add('financeira','DADOS_FINANCEIROS_DIVERGENTES',n,financeiros,True)
                 if texto(atual[26])!=texto(row[26]):
                     descricao=(descricoes or {}).get(candidatas[0][0].get('boleto_id'))
-                    if descricao:
+                    sufixo_historico=(descricao and descricao.estado=='comprovada' and
+                        type(row[27]) is int and row[27]>0 and
+                        texto(row[26])==f'{texto(atual[26])} - {row[27]}')
+                    if sufixo_historico:
+                        add('formato_resolvido','SUFIXO_HISTORICO_DE_PARCELA_SEPARADO',n,('NM_DIVIDA_CEDENTE',))
+                    elif descricao:
                         add('sem_explicacao', 'DESCRICAO_DA_OBRIGACAO_EM_REVISAO' if descricao.estado=='pendente'
                             else 'DESCRICAO_DOCUMENTAL_DIFERE_DO_HISTORICO',n,('NM_DIVIDA_CEDENTE',),True)
                     else:

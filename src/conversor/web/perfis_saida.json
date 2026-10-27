@@ -91,5 +91,29 @@
         "contrato": "Y2:Y34"
       }
     }
+  },
+  {
+    "id": "bbz_innova_template_diagnostico",
+    "versao": "1.0",
+    "uso": "diagnostico_nao_operacional",
+    "administradora_id": "adm_bbz",
+    "condominio_id": "cond_bbz_innova_blue",
+    "nome_cedente": "BBZ",
+    "produto": "INNOVA BLUE",
+    "largura_unidade": 4,
+    "torres": {},
+    "codificador": "bloco_unidade_textual",
+    "tratamento_unidade_numerica": "largura_comprovada",
+    "evidencia": {
+      "arquivo": "363 - INNOVA BLUE - Template.xlsx",
+      "sha256": "6e380c4a8feba85e81bbfff2bbc2891b9cf69a69584df7538527831ccab1dd95",
+      "aba": "Dados",
+      "celulas": {
+        "identificadores": "B2:B646 e G2:G646; blocos originais preservados, sem INAT -> 0",
+        "contrato": "Y2:Y640",
+        "nome_cedente": "A2:A646",
+        "produto": "Z2:Z640"
+      }
+    }
   }
 ]
