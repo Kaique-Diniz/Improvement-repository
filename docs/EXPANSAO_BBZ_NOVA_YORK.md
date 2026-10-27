@@ -65,9 +65,11 @@ ambíguos, duplicidades ou fechamentos inconsistentes impedem o processamento.
 Não há reconhecimento por nome do arquivo, nome da aba ou palavras isoladas.
 
 A identidade NOVA YORK exige nome interno compatível e código administrativo
-**287**. O código externo **884**, fornecido pelo responsável e comprovado nos
-identificadores da referência histórica, é um
-identificador distinto. A administradora BBZ e o CNPJ do condomínio foram
+**287**, preservado como atributo auxiliar do sistema de origem. O código
+**easyCollector 884**, confirmado pelo responsável e coerente com os
+identificadores da referência histórica, é a identidade prioritária de integração
+do condomínio. Código de origem, código easyCollector, unidade e recibo são
+identificadores distintos. A administradora BBZ e o CNPJ do condomínio foram
 vinculados documentalmente no dossiê privado; o CNPJ foi confrontado entre régua
 e cabeçalho cadastral. Esse documento fiscal do edifício não ocupa o CPF do
 contato da unidade. Nenhum código de outro condomínio foi mapeado automaticamente.
@@ -78,6 +80,58 @@ nome original da aba, células, cabeçalhos, recibo bruto, conta, descrição, s
 valores, formatos numéricos e os fechamentos. A interface apresenta aba/linha/
 células. Arquivos com erro continuam privados e a ocorrência informa código e
 localização disponível, sem imprimir valores ou nomes em logs.
+
+## Identidade persistente e unidades alfanuméricas
+
+`domain/integration_identity.py` define o catálogo tipado e versionado. O JSON
+persistente `web/identidades_integracao.json` relaciona os códigos easyCollector
+363/567/696/788/884 a administradora, condomínio, nomes documentais e códigos
+auxiliares conhecidos. Esses registros **não habilitam leitores ou regras**.
+Somente NOVA YORK possui perfil financeiro nesta rodada.
+
+A porta `RepositorioIdentidadesIntegracao` separa a consulta do armazenamento;
+o adaptador JSON reutiliza o decodificador estrito existente, rejeita chaves
+repetidas e valida unicidade de código destino e vínculo administradora/condomínio.
+Código auxiliar pode repetir entre identidades: ele não é chave global do
+destino. Esses atributos identificam o condomínio no sistema de origem; não se
+confundem com unidade, conta, código do cliente ou número de recibo. Associação exige conteúdo compatível e não escolhe automaticamente
+entre candidatos ambíguos. Mudança/conflito do código auxiliar conhecido exige
+revisão; nome do arquivo nunca decide o código easyCollector.
+
+O reconhecimento captura um snapshot do vínculo com versão/hash do catálogo,
+código easyCollector e código de origem observado. Isso aparece na auditoria,
+manifesto e contexto da interface. A relação sobrevive a reinício porque vem da
+configuração persistida, não é reconstruída a partir do nome do upload. JSON é
+a implementação atual da porta; outro repositório pode fornecer o mesmo contrato.
+
+O codificador compartilhado `bloco_unidade_textual`, ainda não atribuído a
+qualquer outro condomínio ativo, prepara a forma literal
+`Bloc{BLOCO}-Uni{UNIDADE}`. Aceita bloco numérico ou alfabético e unidades
+numéricas, alfanuméricas ou palavras. Usa campos originais, preserva zeros e
+capitalização, sem conversão obrigatória para inteiro. Exemplos de contrato:
+`Bloc0-UniBOXE`, `BlocA-Uni0017` e `BlocB-Uni00X1`. O mesmo código serve de
+CEDENTE e contrato; complemento permanece individual.
+
+A largura numérica só é aplicada mediante configuração explícita
+`tratamento_unidade_numerica=largura_comprovada`, com a evidência exigida pelo
+perfil. Por exemplo, uma origem `000017` pode ser apresentada como `0017` se a
+largura quatro tiver sido comprovada; a origem continua intacta. O padrão literal
+preserva `000017`. Palavras não recebem preenchimento numérico, bloco zero ou
+mudança de caixa presumidos. Espaços/controles ambíguos são retidos.
+
+Colisões após a codificação são detectadas antes da materialização e impedem o
+XLSX. Perfis de outro condomínio/administradora continuam recusados. O piloto
+NOVA YORK mantém sua codificação comprovada `BL-UNI....-884`: não se aplica a ele
+o estilo de outro condomínio nem o código 287 como CEDENTE.
+
+**INNOVA — divergência de bloco:** fonte e histórico confirmam o conflito em
+dois recibos da unidade alfanumérica citada pelo responsável: bloco INAT na
+origem e bloco 0 na referência. O dossiê privado registra
+hashes/localizações e estado de revisão, sem equivalência autorizada. A forma
+literal preservaria INAT. Não há correção automática nem mapeamento INAT→0,
+e o leitor financeiro desse condomínio permanece desabilitado. Uma equivalência
+exigirá mapeamento explícito autorizado em etapa própria, sem exceção embutida
+no leitor ou no motor de cobrança.
 
 ## Mapeamento e reconciliação financeira
 
@@ -92,7 +146,7 @@ localização disponível, sem imprimir valores ou nomes em logs.
   Valores não finitos, inválidos ou com frações de centavo são rejeitados, sem
   ajuste por aproximação. Negativos, zeros e centavos continuam nas composições.
 - Um recibo com vários componentes gera no máximo uma dívida. ID do recibo,
-  bloco/unidade, conta e código externo não são intercambiáveis. Repetição do
+  bloco/unidade, conta e código easyCollector não são intercambiáveis. Repetição do
   mesmo recibo na mesma unidade é retida; em unidades distintas, mantém IDs
   separados. A repetição na continuação dos componentes é validada explicitamente.
 - Emissões numéricas sem convenção comprovada ficam em `emissao_original`, com
@@ -160,6 +214,29 @@ endereço inteiramente fictício em servidor isolado, sem configurar endereço r
 presumido. Perfis privados antigos sem NOVA YORK recebem o perfil integrado por
 fallback, sem sobrescrever o arquivo privado nem misturar endereço TREE/PLAZA.
 
+### Classificação do histórico frente ao contrato atual
+
+O comparador mantém o confronto financeiro anterior e acrescenta
+`contrato_atual.divergencias`, com linha de origem, campos afetados, categoria,
+código e indicação de revisão humana. Nenhum registro ou decisão é alterado.
+Os contadores representam ocorrências; uma mesma linha pode ter diferenças de
+naturezas distintas.
+
+| Categoria | Tratamento |
+|---|---|
+| `formato_resolvido` | Aba, cabeçalhos sem espaços, campos textuais, parcelas sequenciais, rótulo atual e cadastros duplicados são tratados pelo contrato universal. Não copiar convenção histórica. |
+| `cadastral` | Contatos, nomes, endereços, documentos ou seleção cadastral diferem. Manter fontes atuais e opcionais vazios quando ausentes. |
+| `identificador` | Código/unidade não vinculados inequivocamente ou codificação divergente. Não presumir bloco/equivalência; revisão quando necessária para associar. |
+| `financeira` | Valor, vencimento ou seleção histórica diferem da fonte/régua atual. Registrar para revisão sem recalcular ou copiar o histórico. |
+| `sem_explicacao` | Assinatura inválida, referência não avaliável ou recibo sem vínculo comprovado. Exigir investigação sem aproximação. |
+
+Na validação real NOVA YORK: A tem 38 ocorrências de formato, 33 cadastrais e
+sete de identificador; B tem 31, 33 e sete, respectivamente. Não há divergência
+financeira nem ocorrência sem explicação. As sete de identificador se referem
+às unidades cadastrais históricas fora do relatório atual, não a perda de vínculo
+das 26 dívidas, que continuam coincidentes. Revisar uma referência histórica
+não equivale a aprovar mudança de fonte ou liberar bloqueio crítico.
+
 ## Demais condomínios — levantamento, não habilitação
 
 Apenas estrutura/metadados foram inspecionados, sem executar suas réguas ou
@@ -180,8 +257,8 @@ a perfis, fixtures ou documentação versionada.
 
 ## Testes e próxima etapa
 
-**1.442 testes aprovados**: 1.382 regulares + 60 suítes explícitas, incluindo
-73 casos novos. Oito verificações de schemas aprovadas. Cobertura sintética:
+**1.499 testes aprovados**: 1.439 regulares + 60 suítes explícitas, incluindo
+73 casos da extensão inicial e 57 novos desta atualização de identificadores. Oito verificações de schemas aprovadas. Cobertura sintética:
 múltiplos componentes, negativos/zero/centavos, marcadores e namespace, datas
 históricas/atuais, fronteiras 60/61, duplicidades, cabeçalhos ambíguos, fórmulas,
 subtotais, hash, contexto de catálogo, origem XLSX, isolamento, críticos, A/B,

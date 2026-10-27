@@ -21,13 +21,28 @@ cadastros no B**. As 26 dívidas coincidiram por unidade, vencimento e original.
 Os três recibos fora do prazo e todos os totais foram reconciliados privadamente.
 Não se reproduzem os sete cadastros/duplicações do template histórico.
 
+A identidade persistente distingue **easyCollector 884** de **código de origem
+287**. O arquivo `identidades_integracao.json` registra também os quatro futuros
+condomínios, sem habilitar seu processamento. O reconhecimento usa conteúdo e
+vínculos cadastrados; nome de arquivo ou código auxiliar isolado não autorizam
+associação. A auditoria preserva versão/hash e os dois códigos.
+
+O codificador compartilhado já aceita palavras e zeros em unidades/blocos, com
+capitalização literal e controle de colisões. O piloto mantém seus identificadores
+validados; o estilo `Bloc{BLOCO}-Uni{UNIDADE}` fica preparado para futuros perfis.
+A divergência INAT versus bloco 0 continua pendente de mapeamento autorizado.
+
+O confronto histórico agora discrimina **formato resolvido, cadastro,
+identificador, financeiro e sem explicação**, sem copiar dados ou regras antigas.
+
 Use **Dados do condomínio → BBZ → NOVA YORK** para cadastrar o endereço: ele
 prevalece em todas as linhas, com complemento individual. Perfis privados antigos
 não precisam ser editados para receber o novo perfil integrado. A saída preserva
 30 colunas em `Dados`, textos com zeros e parcelas sequenciais. Não se infere
 competência nem se aplicam exclusões TREE aos marcadores BBZ A/AJ/J/AE.
 
-**1.442 testes aprovados**, incluindo 73 novos, e oito verificações de schemas.
+**1.499 testes aprovados** (73 novos da extensão inicial e 57 desta atualização),
+e oito verificações de schemas.
 Upload/download e endereço fictício foram testados no navegador. Vigência
 operacional pendente; nenhum plano real aprovado/ativado. Somente XLSX diagnóstico,
 sem easyCollector ou produção. Veja o [relatório técnico, assinatura e próxima
