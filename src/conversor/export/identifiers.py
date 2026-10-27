@@ -48,13 +48,18 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
-    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo'] = 'torre_unidade'
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual'] = 'torre_unidade'
     sufixo_cedente: Texto | None = None
     rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
     endereco_padrao: EnderecoPadrao | None = None
+    tratamento_unidade_numerica: Literal['preservar', 'largura_comprovada'] = 'preservar'
 
     @model_validator(mode='after')
     def mapa_explicito(self):
+        if self.codificador == 'bloco_unidade_textual':
+            if self.torres or self.sufixo_cedente is not None:
+                raise ValueError('CODIFICACAO_TEXTUAL_NAO_PRESUME_EQUIVALENCIA_DE_BLOCOS')
+            return self
         codigo = r'[0-9]{1,6}' if self.codificador == 'torre_unidade' else r'[A-Z0-9]{1,6}'
         if not self.torres or any(not k or k != k.strip().upper() or
                                  not re.fullmatch(codigo, v) for k, v in self.torres.items()):
@@ -69,12 +74,23 @@ class PerfilIdentificadores(Modelo):
         if (administradora_id, unidade.administradora_id, unidade.condominio_id) != (
                 self.administradora_id, self.administradora_id, self.condominio_id):
             raise ErroLeitura('PERFIL_IDENTIFICADORES_DE_OUTRO_CONDOMINIO')
+        if self.codificador == 'bloco_unidade_textual':
+            bloco,numero=unidade.bloco_original,unidade.unidade_original
+            if any(not v or v!=v.strip()or any(c.isspace()or not c.isprintable()for c in v)for v in (bloco,numero)):
+                raise ErroLeitura('IDENTIFICADOR_TEXTUAL_AMBIGUO')
+            if self.tratamento_unidade_numerica=='largura_comprovada'and numero.isascii()and numero.isdigit():
+                numero=(numero.lstrip('0')or'0').zfill(self.largura_unidade)
+                if len(numero)>self.largura_unidade:
+                    raise ErroLeitura('UNIDADE_FORA_DA_LARGURA_DOCUMENTADA')
+            # Não usa a chave normalizada nem converte códigos originais para int.
+            identificador=f'Bloc{bloco}-Uni{numero}'
+            return identificador,identificador
         if unidade.bloco_original not in self.torres:
             raise ErroLeitura('TORRE_SEM_MAPEAMENTO_DOCUMENTAL')
         numero = unidade.unidade_original
         if not numero.isascii() or not numero.isdigit():
             raise ErroLeitura('UNIDADE_SEM_CODIFICACAO_DOCUMENTAL')
-        numero = str(int(numero)).zfill(self.largura_unidade)
+        numero = (numero.lstrip('0') or '0').zfill(self.largura_unidade)
         if len(numero) > self.largura_unidade:
             raise ErroLeitura('UNIDADE_FORA_DA_LARGURA_DOCUMENTADA')
         torre = self.torres[unidade.bloco_original]
@@ -105,3 +121,11 @@ def selecionar_perfil(dados, *, administradora_id, condominio_id):
         raise ErroLeitura('PERFIL_IDENTIFICADORES_AMBIGUO')
     return next((p for p in perfis if (p.administradora_id, p.condominio_id) ==
                  (administradora_id, condominio_id)), None)
+
+
+def registrar_codigo_integracao(vistos, codigo, unidade_id, origem=None):
+    """Uma representação não pode fundir unidades distintas após codificação."""
+    if codigo in vistos and vistos[codigo]!=unidade_id:
+        raise ErroLeitura('CEDENTE_AMBIGUO_APOS_CODIFICACAO',
+            pagina=origem.pagina if origem else None,linha=origem.linha if origem else None)
+    vistos[codigo]=unidade_id

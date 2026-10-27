@@ -18,6 +18,7 @@ from openpyxl import load_workbook
 from pydantic import Field
 
 from conversor.adapters.document_probe import SondadorLocal
+from conversor.adapters.integration_identity_json import RepositorioIdentidadesIntegracaoJSON
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
 from conversor.application.grouped_diagnostics import projetar_cotas
@@ -31,8 +32,9 @@ from conversor.domain.documents import resolver_documento
 from conversor.domain.identity import chave_unidade
 from conversor.domain.template import Template
 from conversor.export.contract import DividaExportacao, LinhaExportacao, materializar
-from conversor.export.identifiers import POLITICA_ENDERECO_CONDOMINIO, preencher_endereco, selecionar_perfil
+from conversor.export.identifiers import POLITICA_ENDERECO_CONDOMINIO, preencher_endereco, selecionar_perfil, registrar_codigo_integracao
 from conversor.export.xlsx import escrever_xlsx
+from conversor.export.historical_comparison import classificar_historico
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
 from conversor.readers.habita_closing import conferir_fechamento_habita
@@ -43,6 +45,7 @@ from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
 PERFIS_SAIDA_PATH = Path(__file__).with_name('perfis_saida.json')
+IDENTIDADES_PATH = Path(__file__).with_name('identidades_integracao.json')
 PERFIS = {p['id']: p for p in json.loads(PERFIS_PATH.read_text())}
 LIMIT = 20 * 1024 * 1024
 
@@ -58,17 +61,27 @@ def normalizar(s):
     return re.sub(r'[^a-z0-9]', '', normalizar_assinatura(s))
 
 
-def reconhecer(conteudo, *, cadastro=False):
+def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None):
     sonda = SondadorLocal().sondar(conteudo, arquivo_id='upload')
     if sonda.tipo == 'xlsx' and not cadastro:
         codigo,nome = identificar_bbz(conteudo)
-        limpo = normalizar(nome)
-        matches = [p for p in PERFIS.values() if p['familia']=='bbz'
-                   and codigo==p['codigo_administrativo']
-                   and limpo in {normalizar(a)for a in p['aliases']}]
-        if len(matches)!=1:
+        repo=repositorio_identidades or RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH)
+        catalogo,digest=repo.carregar()
+        candidatos=catalogo.candidatos(nome,codigo)
+        if len(candidatos)!=1:
             raise ErroLeitura('CONDOMINIO_DESCONHECIDO_OU_AMBIGUO')
-        return matches[0],codigo,LeitorBBZXLSX.formato_id
+        identidade=candidatos[0]
+        matches = [p for p in PERFIS.values() if p['familia']=='bbz' and
+                   (p['administradora_id'],p['condominio_id'])==(identidade.administradora_id,identidade.condominio_id)]
+        if len(matches)!=1:
+            raise ErroLeitura('CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO')
+        if matches[0].get('codigo_easycollector')!=identidade.codigo_easycollector:
+            raise ErroLeitura('CODIGO_DESTINO_DIVERGENTE_DO_PERFIL')
+        perfil=dict(matches[0],identidade_integracao={
+            **identidade.model_dump(mode='json'),'codigo_origem_observado':codigo,
+            'catalogo_versao':catalogo.versao,'catalogo_sha256':digest,
+            'origem_codigo_easycollector':catalogo.origem_codigos_destino})
+        return perfil,codigo,LeitorBBZXLSX.formato_id
     if sonda.tipo != 'pdf_texto' or sonda.bloqueios or not sonda.completo:
         raise ErroLeitura('PDF_NAO_EXTRAIVEL_COM_SEGURANCA')
     texto = '\n'.join(p.texto for p in sonda.fragmentos)
@@ -314,9 +327,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 if erro.codigo not in ('TORRE_SEM_MAPEAMENTO_DOCUMENTAL', 'UNIDADE_SEM_CODIFICACAO_DOCUMENTAL', 'UNIDADE_FORA_DA_LARGURA_DOCUMENTADA'):
                     raise
                 motivo = erro.codigo
-        if cedente in codigos:
-            raise ErroLeitura('CEDENTE_AMBIGUO_APOS_CODIFICACAO')
-        codigos[cedente] = u.id
+        registrar_codigo_integracao(codigos,cedente,u.id,u.origem)
         identificadores[u.id] = {'estado': estado, 'motivo': motivo, 'cedente': cedente, 'complemento': complemento,
             'contrato': cedente, 'nome_cedente': perfil_saida.nome_cedente if perfil_saida else perfil['nome'],
             'produto': perfil_saida.produto if perfil_saida else perfil['nome'],
@@ -544,6 +555,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'linhas_divida': sum(l.tipo == 'divida' for l in linhas),
             'linhas_cadastrais': sum(l.tipo == 'cadastral' for l in linhas),
             'colunas': 30, 'aba': 'Dados'} if linhas else None}
+    if perfil.get('identidade_integracao'):
+        manifesto['identidade_integracao']=perfil['identidade_integracao']
     resumo = dict(Counter(d['situacao'] for d in decisoes))
     resumo.update(unidades=len(lote.unidades), cotas=len(lote.unidades), boletos=len(lote.boletos),
                   cotas_elegiveis_pela_regua=sum(c['situacao_financeira'] == 'elegivel' for c in cotas),
@@ -605,6 +618,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 'codigo': erro.codigo, 'referencia_nao_e_gabarito_absoluto': True,
                 'limite': 'Não foi possível confrontar esta referência. A análise do relatório e os bloqueios permanecem preservados.'}
         resultado['fontes'].append({'papel': 'referencia', 'sha256': sha256(referencia).hexdigest()})
+        if perfil['familia']=='bbz':
+            resultado['comparacao']['contrato_atual']=classificar_historico(referencia,
+                linhas=linhas,linhas_info=linhas_info,identificadores=identificadores,
+                comparacao=resultado['comparacao'],modo=pedido.modo)
+    if perfil.get('identidade_integracao'):
+        resultado['identidade_integracao']=perfil['identidade_integracao']
     escrever_json(output / 'manifesto_diagnostico.json', manifesto)
     escrever_json(output / 'auditoria.json', resultado)
     escrever_json(output / 'canonico.json', lote.model_dump(mode='json'))

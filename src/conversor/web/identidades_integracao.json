@@ -1,0 +1,72 @@
+{
+  "schema_versao": "1.0",
+  "versao": "1.0.0",
+  "origem_codigos_destino": "decisao_responsavel",
+  "identidades": [
+    {
+      "codigo_easycollector": "363",
+      "administradora_id": "adm_bbz",
+      "condominio_id": "cond_bbz_innova_blue",
+      "nome_integracao": "INNOVA BLUE",
+      "nomes_documentais": [
+        "CONDOMINIO INNOVA BLUE",
+        "INNOVA BLUE"
+      ],
+      "codigos_origem": [
+        "1392"
+      ]
+    },
+    {
+      "codigo_easycollector": "567",
+      "administradora_id": "adm_bbz",
+      "condominio_id": "cond_bbz_edificio_win",
+      "nome_integracao": "CONDOMÍNIO EDIFÍCIO WIN",
+      "nomes_documentais": [
+        "CONDOMINIO EDIFICIO WIN",
+        "CONDOMÍNIO EDIFÍCIO WIN"
+      ],
+      "codigos_origem": [
+        "117"
+      ]
+    },
+    {
+      "codigo_easycollector": "696",
+      "administradora_id": "adm_bbz",
+      "condominio_id": "cond_bbz_nova_reboucas",
+      "nome_integracao": "CONDOMÍNIO EDIFÍCIO NOVA REBOUÇAS",
+      "nomes_documentais": [
+        "CONDOMINIO EDIFICIO NOVA REBOUÇAS",
+        "CONDOMÍNIO EDIFÍCIO NOVA REBOUÇAS"
+      ],
+      "codigos_origem": [
+        "286"
+      ]
+    },
+    {
+      "codigo_easycollector": "788",
+      "administradora_id": "adm_bbz",
+      "condominio_id": "cond_bbz_abrolhos",
+      "nome_integracao": "JARDINS DO BRASIL ABROLHOS",
+      "nomes_documentais": [
+        "CONDOMINIO JARDINS DO BRASIL",
+        "JARDINS DO BRASIL ABROLHOS"
+      ],
+      "codigos_origem": [
+        "575"
+      ]
+    },
+    {
+      "codigo_easycollector": "884",
+      "administradora_id": "adm_bbz",
+      "condominio_id": "cond_bbz_nova_york",
+      "nome_integracao": "NOVA YORK PENTHOUSES",
+      "nomes_documentais": [
+        "CONDOMINIO NOVA YORK PENTHOUSES",
+        "NOVA YORK PENTHOUSES"
+      ],
+      "codigos_origem": [
+        "287"
+      ]
+    }
+  ]
+}

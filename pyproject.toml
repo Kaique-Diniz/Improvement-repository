@@ -22,7 +22,7 @@ conversor-web = "conversor.web.__main__:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"conversor.web" = ["static/*", "perfis.json", "perfis_saida.json"]
+"conversor.web" = ["static/*", "perfis.json", "perfis_saida.json", "identidades_integracao.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

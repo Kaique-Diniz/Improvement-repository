@@ -131,7 +131,7 @@ async function acompanhar(id,revisao) {
 }
 function mostrar() {
   const r=atual;$('progresso').hidden=true;$('resultado').hidden=false;
-  $('contexto').textContent=r.administradora+' · '+r.condominio+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
+  $('contexto').textContent=r.administradora+' · '+r.condominio+(r.identidade_integracao?' · easyCollector '+r.identidade_integracao.codigo_easycollector+' · origem '+r.identidade_integracao.codigo_origem_observado:'')+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
   const stats=[['Unidades / cotas',r.resumo.cotas],['Boletos extraídos',r.resumo.boletos],['Cotas elegíveis pela régua',r.resumo.cotas_elegiveis_pela_regua],['Cotas excluídas por veto coletivo',r.resumo.cotas_excluidas_por_veto],['Boletos selecionados pela régua',r.resumo.boletos_selecionados_pela_regua],['Boletos fora do prazo',r.resumo.boletos_nao_selecionados_prazo],['Cotas retidas tecnicamente',r.resumo.cotas_retidas],['Boletos retidos tecnicamente',r.resumo.boletos_retidos],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
   if(r.resumo.indeterminadas_pela_regua)stats.push(['Boletos indeterminados pela régua',r.resumo.indeterminadas_pela_regua]);
   stats.push(['Dívidas disponíveis só para teste',r.resumo.dividas_efetivamente_geradas]);
@@ -153,7 +153,7 @@ function mostrar() {
   $('inconsistencias').hidden=false;$('inconsistencias').href='/api/processamentos/'+r.id+'/inconsistencias.json';
   $('manifesto').hidden=false;$('manifesto').href='/api/processamentos/'+r.id+'/manifesto-diagnostico.json';
   $('comparacao').hidden=!r.comparacao;
-  if(r.comparacao){$('comparacao').replaceChildren(elemento('h3','Confronto com a referência'),elemento('p','A referência é um resultado esperado, não um gabarito absoluto. Nenhuma diferença altera os dados extraídos.'),elemento('pre',JSON.stringify(r.comparacao.resumo,null,2)),elemento('p',r.comparacao.limite));}
+  if(r.comparacao){$('comparacao').replaceChildren(elemento('h3','Confronto com a referência'),elemento('p','A referência é um resultado esperado, não um gabarito absoluto. Nenhuma diferença altera os dados extraídos.'),elemento('pre',JSON.stringify(r.comparacao.resumo,null,2)),elemento('p',r.comparacao.limite));if(r.comparacao.contrato_atual)$('comparacao').append(elemento('h3','Diferenças frente ao contrato atual'),elemento('pre',JSON.stringify(r.comparacao.contrato_atual.resumo_por_categoria,null,2)));}
   desenharTabela();mostrarCotas();mostrarPrevia();
 }
 function mostrarCotas() {
