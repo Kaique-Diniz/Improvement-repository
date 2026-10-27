@@ -6,6 +6,10 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+A primeira expansão pós-MVP autorizada é NOVA YORK PENTHOUSES / BBZ. Os
+originais ainda não foram localizados neste ambiente; não há leitor BBZ ativo.
+Veja a [preparação, fontes necessárias e pendências](docs/EXPANSAO_BBZ_NOVA_YORK.md).
+
 ## FL — marcador administrativo fora do nome
 
 O leitor separa `Jurídico` do titular somente quando um fragmento independente

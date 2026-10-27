@@ -1,5 +1,19 @@
 # 01 — Plano do projeto e fases
 
+## Expansão pós-MVP autorizada — NOVA YORK / BBZ
+
+Em 27/10/2026, o responsável declarou concluído o MVP funcional TREE/PLAZA e
+autorizou a primeira extensão para NOVA YORK PENTHOUSES, sem implementar os
+outros quatro condomínios BBZ ou iniciar automaticamente o cadastro PDF.
+As fontes originais não foram localizadas; a implementação financeira permanece
+bloqueada, sem assinatura presumida ou regras ativadas. A
+[preparação BBZ](docs/EXPANSAO_BBZ_NOVA_YORK.md) registra os pontos existentes,
+fontes ausentes, decisões e pendências futuras. Não há autorização de push/merge,
+exportação operacional, integração easyCollector ou produção.
+
+As pausas e estados abaixo são registros históricos; esta autorização posterior
+permite a expansão incremental delimitada acima.
+
 ## Pausa autorizada — testes do ambiente real
 
 Em 23/10/2026, o responsável autorizou commit, push e merge da entrega atual e
