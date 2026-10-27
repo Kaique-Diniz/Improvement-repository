@@ -61,6 +61,16 @@ O arquivo-base histórico possui **espaço final** no cabeçalho AA. Por solicit
 - Nunca exportar boleto não elegível como dívida, incluir todo o Cadastro Geral ou contornar bloqueios de lote/unidade/titular/documento com linha cadastral. Registrar modo A/B no histórico/auditoria; implementação operacional posterior, sem mudar as 30 colunas ou iniciar a Fase 5 nesta revisão documental.
 - Evitar fórmulas ou macros nos campos de dados; não alterar o template original em disco.
 
+## Associação cadastral BBZ
+
+No piloto BBZ, o nome financeiro permanece na saída. Documentos e contatos
+do Cadastro PDF só são associados após conferência de unidade e nome do titular.
+Locatário, pagador, correspondência e observações têm evidências separadas.
+Divergência cadastral retém a associação, mantendo o documento não comprovado
+vazio, sem excluir a dívida diagnóstica. Bloqueios críticos preexistentes continuam
+obrigatórios. Endereço privado prioritário, complemento individual e Y:AD vazias
+nos cadastros permanecem inalterados.
+
 ## Compatibilidade documental confirmada — easyCollector
 
 Em 21/10/2026 o responsável pelo processo confirmou que o CRM easyCollector

@@ -34,5 +34,7 @@ O repositório implementa o **Conversor Inteligente de Inadimplência**. Instru�
 - Telefone identificado de 8/9 dígitos pode ter DDD vazio. Preservar texto e zeros, sem herdar código de outro contato. Deduplicar somente pares DDD/número idênticos e conservar classificações/origens na auditoria. Endereço cadastrado explicitamente para o condomínio prevalece nos seis campos de endereço de todas as linhas do XLSX, inclusive sobre fonte atual parcial/divergente. Preservar complemento individual, endereço original e proveniência na auditoria; não misturar campos de endereços nem aplicar configurações de outro condomínio. Sem configuração, manter a fonte.
 - Não modificar o template fonte in-place.
 
+- Cadastro BBZ usa política própria por papel: manter nome financeiro, associar documentos/contatos apenas com nome e unidade comprovados. Divergência cadastral retém a associação individual, preserva evidências e não altera elegibilidade; críticos preexistentes continuam bloqueantes. Correspondência e dados de locatário/pagador não substituem endereço físico ou identidade financeira.
+
 ## Conduta ao terminar
 Entregar diffs/arquivos, decisões técnicas, testes executados e pendências. Parar após a fase autorizada.

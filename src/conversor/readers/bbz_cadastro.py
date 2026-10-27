@@ -156,10 +156,14 @@ def _telefone(texto):
         if not parte:continue
         if not re.fullmatch(r'[+0-9() .\-]+',parte) or parte.count('(')!=parte.count(')'):
             return (), False
+        grupos=re.findall(r'\(([^()]*)\)',parte)
+        if grupos and (len(grupos)!=1 or not re.fullmatch(r'\s*[0-9]{2}\s*',grupos[0])):
+            return (), False
         digitos = re.sub(r'\D','',parte)
         if len(digitos) in (12,13) and digitos.startswith('55'):digitos=digitos[2:]
         if len(digitos) in (8,9):numeros.append(Telefone(ddd='',numero=digitos))
-        elif len(digitos) in (10,11):numeros.append(Telefone(ddd=digitos[:2],numero=digitos[2:]))
+        elif len(digitos) in (10,11)and not digitos.startswith('0'):
+            numeros.append(Telefone(ddd=digitos[:2],numero=digitos[2:]))
         else:return (), False
     return tuple(dict.fromkeys(numeros)), bool(numeros)
 

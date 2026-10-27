@@ -51,7 +51,7 @@ function bloquear(b) {
   $('salvar-endereco').disabled=b||carregandoEndereco||salvandoEndereco||enderecoVersao===null;
 }
 function falhar(e) {
-  const mensagem=e.message==='CADASTRO_BBZ_AINDA_NAO_SUPORTADO'?'O Cadastro Geral BBZ ainda não é lido nesta etapa. Remova o PDF complementar pelo × e processe o XLSX financeiro. CPF/CNPJ e contatos ausentes permanecem vazios.':e.message==='CADASTRO_DE_OUTRO_CONDOMINIO'?'O Cadastro complementar pertence a outro condomínio. Remova-o pelo × ou selecione o cadastro correspondente ao PDF de inadimplência.':e.message;
+  const mensagem=e.message==='CADASTRO_DE_OUTRO_CONDOMINIO'?'O Cadastro complementar pertence a outro condomínio. Remova-o pelo × ou selecione o cadastro correspondente ao PDF de inadimplência.':e.message;
   $('progresso').hidden=true;$('erro').hidden=false;$('erro').textContent='Análise interrompida: '+mensagem+(mensagem.endsWith('.')?'':'.')+' Confira os arquivos e os parâmetros.';bloquear(false);
 }
 async function configurar() {
@@ -133,10 +133,12 @@ function mostrar() {
   const r=atual;$('progresso').hidden=true;$('resultado').hidden=false;
   $('contexto').textContent=r.administradora+' · '+r.condominio+(r.identidade_integracao?' · easyCollector '+r.identidade_integracao.codigo_easycollector+' · origem '+r.identidade_integracao.codigo_origem_observado:'')+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
   const stats=[['Unidades / cotas',r.resumo.cotas],['Boletos extraídos',r.resumo.boletos],['Cotas elegíveis pela régua',r.resumo.cotas_elegiveis_pela_regua],['Cotas excluídas por veto coletivo',r.resumo.cotas_excluidas_por_veto],['Boletos selecionados pela régua',r.resumo.boletos_selecionados_pela_regua],['Boletos fora do prazo',r.resumo.boletos_nao_selecionados_prazo],['Cotas retidas tecnicamente',r.resumo.cotas_retidas],['Boletos retidos tecnicamente',r.resumo.boletos_retidos],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
+  if(r.cadastro_bbz){const c=r.cadastro_bbz.resumo;stats.push(['Unidades no Cadastro BBZ',c.unidades_cadastrais_lidas],['Unidades financeiras localizadas',c.unidades_financeiras_localizadas||0],['Documentos vinculados',c.documentos_validos_vinculados||0],['Telefones aproveitados',c.telefones_aproveitados||0],['E-mails aproveitados',c.emails_aproveitados||0],['Associações cadastrais em revisão',c.associacoes_retidas],['Documentos ausentes nas unidades financeiras',c.documentos_ausentes],['Documentos inválidos nas unidades financeiras',c.documentos_invalidos]);}
   if(r.resumo.indeterminadas_pela_regua)stats.push(['Boletos indeterminados pela régua',r.resumo.indeterminadas_pela_regua]);
   stats.push(['Dívidas disponíveis só para teste',r.resumo.dividas_efetivamente_geradas]);
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
+  if(r.cadastro_bbz)$('avisos').append(elemento('p','Cadastro Geral BBZ PDF reconhecido e vinculado ao condomínio identificado · '+r.cadastro_bbz.resumo.paginas+' páginas. A conferência técnica não é um atesto humano.'));
   const endereco=r.endereco_condominio;
   $('endereco-resultado').replaceChildren(elemento('p',endereco?.cadastrado?'Endereço cadastrado do condomínio aplicado em todas as linhas do XLSX; endereços das fontes preservados na auditoria.':'Endereço não cadastrado. O diagnóstico pode continuar normalmente.'));
   const cadastrar=elemento('button',endereco?.cadastrado?'Conferir endereço do condomínio':'Cadastrar endereço','secundario');cadastrar.type='button';
@@ -234,6 +236,11 @@ function preencherDetalhes(d,box) {
   const cota=atual.cotas.find(c=>c.id===d.cota_id);
   if(d.veto_coletivo)for(const c of cota.causas_veto)box.append(elemento('p','Veto coletivo: boleto '+c.boleto+' · '+motivoLegivel(c.regra_id)+' · '+c.origens.map(o=>localOrigem(o)).join('; ')));
   box.append(elemento('h3','Informações de contato da unidade'),elemento('p',contatoLegivel(d)));
+  if(d.associacao_cadastral){
+    const c=d.associacao_cadastral;
+    box.append(elemento('h3','Associação do Cadastro BBZ'),elemento('p',c.estado==='vinculado'?'Titular e unidade conferidos. Somente dados vinculados ao titular são aproveitados.':'Associação cadastral retida para revisão. O nome financeiro foi preservado; dados de outra identidade não foram transferidos.'),elemento('p',c.motivos.map(motivoLegivel).join('; ')),elemento('p',c.fundamento));
+    if(c.cadastro_original)box.append(elemento('p','Nome no financeiro: '+c.financeiro_original.nome),elemento('p','Nome no Cadastro: '+c.cadastro_original.nome));
+  }
   for(const m of d.alertas_cadastrais)box.append(elemento('p',motivoLegivel(m)));
   const endereco=atual.enderecos_template?.[d.unidade_id];
   if(endereco?.estado==='endereco_explicito_configurado')box.append(elemento('p','Endereço padrão configurado explicitamente para este condomínio; origem registrada na auditoria.'));
@@ -242,7 +249,7 @@ function preencherDetalhes(d,box) {
     const padrao=atual.endereco_condominio?.configuracao?.endereco||{};
     for(const k of camposEndereco)if((endereco.endereco_origem?.[k]||'')!==(padrao[k]||''))box.append(elemento('p',k.toUpperCase()+' · Fonte atual: '+(endereco.endereco_origem?.[k]||'não informado')+' · Endereço cadastrado: '+(padrao[k]||'não informado')));
   }
-  box.append(elemento('h3','Pendências documentais'),elemento('p',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join('; '):'Sem conflito documental. Vários nomes não atribuem o documento a cada pessoa.'));
+  box.append(elemento('h3','Pendências documentais'),elemento('p',d.pendencias_documentais.length?d.pendencias_documentais.map(motivoLegivel).join('; '):d.associacao_cadastral?.estado==='associacao_retida'?'Associação cadastral retida para revisão. Dados de outra identidade não foram atribuídos ao registro financeiro.':'Sem conflito documental. Vários nomes não atribuem o documento a cada pessoa.'));
   box.append(elemento('h3','Impedimentos para exportação'),elemento('p',d.bloqueios.length?d.bloqueios.map(motivoLegivel).join('; '):'Sem retenção técnica específica deste boleto para a prévia.'));
   box.append(elemento('p','Exportação operacional indisponível em todos os casos.'));
   for(const m of d.motivos)box.append(elemento('p',motivoLegivel(m)));
@@ -255,5 +262,6 @@ function abrirDetalhes(d) {
   preencherDetalhes(d,$('detalhes-legiveis'));
   const auditoria={boleto:d,cota:atual.cotas.find(c=>c.id===d.cota_id)};
   if(atual.descricoes_recibos?.[d.id])auditoria.descricao_divida=atual.descricoes_recibos[d.id];
+  if(d.associacao_cadastral)auditoria.associacao_cadastral=d.associacao_cadastral;
   $('json-detalhes').textContent=JSON.stringify(auditoria,null,2);$('detalhes').showModal();
 }

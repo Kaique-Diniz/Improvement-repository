@@ -10,7 +10,9 @@ NOVA YORK está implementada para diagnóstico: sete unidades, 29 recibos e 26
 correspondências financeiras, sem habilitar os demais condomínios. A
 [preparação BBZ](docs/EXPANSAO_BBZ_NOVA_YORK.md) registra os pontos existentes,
 assinatura comprovada, decisões, resultados e pendências futuras. O Cadastro
-Geral BBZ completo continua para etapa posterior. Não há autorização de push/merge,
+Geral PDF BBZ foi autorizado posteriormente e implementado para o piloto NOVA
+YORK: 125 unidades e associação segura por papel, sem habilitar os demais
+condomínios. Veja [implementação cadastral BBZ](docs/CADASTRO_GERAL_BBZ.md). Não há autorização de push/merge,
 exportação operacional, integração easyCollector ou produção.
 
 As pausas e estados abaixo são registros históricos; esta autorização posterior

@@ -115,6 +115,13 @@ def test_telefones_sem_ddd_pareados_deduplicados_e_excedentes_auditados():
     assert len(titular.telefones)==9 and len(titular.emails)==4
 
 
+def test_prefixo_telefonico_ambiguo_nao_e_convertido_em_ddd_inventado():
+    for telefone in ('(011) 2000-0001','01120000001'):
+        r=ler(cadastro([ficha(contatos=['Telefone residencial - '+telefone])]))
+        assert not r.pessoas[0].contato.telefones
+        assert any(x.codigo=='TELEFONE_NAO_SEGMENTADO'for x in r.ressalvas)
+
+
 @pytest.mark.parametrize('email',['sem_arroba','nome@example..invalid','nome@-example.invalid','nome.@example.invalid'])
 def test_email_malformado_nao_e_corrigido(email):
     r=ler(cadastro([ficha(contatos=['E-mail - '+email])]))

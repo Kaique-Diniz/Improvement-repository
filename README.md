@@ -6,6 +6,24 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## Cadastro Geral PDF BBZ — complemento opcional NOVA YORK
+
+Agora é possível enviar o XLSX financeiro com ou sem o Cadastro Geral BBZ PDF.
+O leitor reconcilia 125 unidades em 48 páginas (169 cabeçalhos, 44 continuações)
+e localiza as sete unidades financeiras. Documento válido foi vinculado em seis;
+uma divergência de titular permanece em revisão cadastral, com documento e
+contatos de terceiros retidos. São aproveitados quatro telefones e nove e-mails,
+contados por unidade, exclusivamente dos titulares comprovados.
+
+Preservados: 26 dívidas no A; mesmas 26 dívidas + dois cadastros no B, valores,
+parcelas e 26/26 descrições. Sem complemento, comportamento financeiro anterior
+inalterado. O endereço privado segue prioritário. Papéis e dados excedentes ficam
+na auditoria privada; os outros condomínios continuam desabilitados.
+
+**1.605 testes aprovados**, incluindo 59 novos, oito verificações de schemas e
+upload real no navegador. Somente diagnóstico, sem exportação operacional.
+Leia o [relatório de implementação e limites](docs/CADASTRO_GERAL_BBZ.md).
+
 ## BBZ — NOVA YORK PENTHOUSES (primeira extensão)
 
 Envie o **XLSX financeiro** pelo upload comum, com referência explícita e modo

@@ -22,6 +22,7 @@ from conversor.adapters.integration_identity_json import RepositorioIdentidadesI
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
 from conversor.application.debt_descriptions import interpretar_lote_bbz
+from conversor.application.bbz_cadastro import cruzar_cadastro_bbz
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
@@ -41,6 +42,7 @@ from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
 from conversor.readers.habita_closing import conferir_fechamento_habita
 from conversor.readers.operational import GRAMATICAS, RegistroLeitores, validar_assinatura_para_leitura
 from conversor.readers.bbz_xlsx import LeitorBBZXLSX, identificar as identificar_bbz
+from conversor.readers.bbz_cadastro import LeitorCadastroBBZ, identificar as identificar_cadastro_bbz
 from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
@@ -62,26 +64,40 @@ def normalizar(s):
     return re.sub(r'[^a-z0-9]', '', normalizar_assinatura(s))
 
 
+def _perfil_bbz(codigo,nome,repositorio_identidades=None):
+    repo=repositorio_identidades or RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH)
+    catalogo,digest=repo.carregar()
+    candidatos=catalogo.candidatos(nome,codigo)
+    if len(candidatos)!=1:
+        raise ErroLeitura('CONDOMINIO_DESCONHECIDO_OU_AMBIGUO')
+    identidade=candidatos[0]
+    matches = [p for p in PERFIS.values() if p['familia']=='bbz' and
+               (p['administradora_id'],p['condominio_id'])==(identidade.administradora_id,identidade.condominio_id)]
+    if len(matches)!=1:
+        raise ErroLeitura('CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO')
+    if matches[0].get('codigo_easycollector')!=identidade.codigo_easycollector:
+        raise ErroLeitura('CODIGO_DESTINO_DIVERGENTE_DO_PERFIL')
+    perfil=dict(matches[0],identidade_integracao={
+        **identidade.model_dump(mode='json'),'codigo_origem_observado':codigo,
+        'catalogo_versao':catalogo.versao,'catalogo_sha256':digest,
+        'origem_codigo_easycollector':catalogo.origem_codigos_destino})
+    return perfil
+
+
 def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None):
+    if cadastro and conteudo.startswith(b'%PDF-'):
+        try:
+            identificacao=identificar_cadastro_bbz(conteudo)
+        except ErroLeitura as erro:
+            if erro.codigo!='FORMATO_DESCONHECIDO':raise
+        else:
+            codigo=identificacao['codigo']
+            perfil=_perfil_bbz(codigo,identificacao['nome'],repositorio_identidades)
+            return perfil,codigo,LeitorCadastroBBZ.formato_id
     sonda = SondadorLocal().sondar(conteudo, arquivo_id='upload')
     if sonda.tipo == 'xlsx' and not cadastro:
         codigo,nome = identificar_bbz(conteudo)
-        repo=repositorio_identidades or RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH)
-        catalogo,digest=repo.carregar()
-        candidatos=catalogo.candidatos(nome,codigo)
-        if len(candidatos)!=1:
-            raise ErroLeitura('CONDOMINIO_DESCONHECIDO_OU_AMBIGUO')
-        identidade=candidatos[0]
-        matches = [p for p in PERFIS.values() if p['familia']=='bbz' and
-                   (p['administradora_id'],p['condominio_id'])==(identidade.administradora_id,identidade.condominio_id)]
-        if len(matches)!=1:
-            raise ErroLeitura('CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO')
-        if matches[0].get('codigo_easycollector')!=identidade.codigo_easycollector:
-            raise ErroLeitura('CODIGO_DESTINO_DIVERGENTE_DO_PERFIL')
-        perfil=dict(matches[0],identidade_integracao={
-            **identidade.model_dump(mode='json'),'codigo_origem_observado':codigo,
-            'catalogo_versao':catalogo.versao,'catalogo_sha256':digest,
-            'origem_codigo_easycollector':catalogo.origem_codigos_destino})
+        perfil=_perfil_bbz(codigo,nome,repositorio_identidades)
         return perfil,codigo,LeitorBBZXLSX.formato_id
     if sonda.tipo != 'pdf_texto' or sonda.bloqueios or not sonda.completo:
         raise ErroLeitura('PDF_NAO_EXTRAIVEL_COM_SEGURANCA')
@@ -343,15 +359,17 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         fontes.append({'papel':'regua_requisitos_documentais','evidencia':perfil['origem_regua'],
                        'aprovacao_operacional':False})
     cad = None
+    cadastro_bbz = None
     if cadastro:
-        if perfil['familia']=='bbz':
-            raise ErroLeitura('CADASTRO_BBZ_AINDA_NAO_SUPORTADO')
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True)
         if (pc['id'], cc) != (perfil['id'], codigo):
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
         cad, _ = ler(cadastro, pc, cc, lc, 'cadastro')
-        lote = cruzar_cadastro(lote, cad)
+        if perfil['familia']=='bbz':
+            lote,cadastro_bbz=cruzar_cadastro_bbz(lote,cad,endereco_configurado=padrao_endereco)
+        else:
+            lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
     estado_historico = estado_historico or ('carregado' if historico else 'nao_disponivel')
@@ -368,7 +386,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
-    reavaliacoes = reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliacoes = [] if perfil['familia']=='bbz' else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
         if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
@@ -639,6 +657,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if descricoes_recibos:
         resultado['politica_descricoes'] = manifesto['politica_descricoes']
         resultado['descricoes_recibos'] = {id_: d.model_dump(mode='json') for id_, d in descricoes_recibos.items()}
+    if cadastro_bbz is not None:
+        resultado['cadastro_bbz']=cadastro_bbz
+        manifesto['cadastro_bbz']={'politica':cadastro_bbz['politica'],'resumo':cadastro_bbz['resumo']}
+        for d in decisoes:d['associacao_cadastral']=cadastro_bbz['unidades'][d['unidade_id']]
+        escrever_json(output/'cadastro_bbz_original.json',cad.model_dump(mode='json'))
+        manifesto['cadastro_bbz']['sha256_canonico']=sha256((output/'cadastro_bbz_original.json').read_bytes()).hexdigest()
     if lote_extraido is not None:
         caminho_extraido = output / 'canonico_extraido.json'
         escrever_json(caminho_extraido, lote_extraido.model_dump(mode='json'))

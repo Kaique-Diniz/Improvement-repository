@@ -51,7 +51,7 @@
     "ressalvas": [
       "Somente diagnóstico: atraso estritamente superior a 60 dias corridos, confirmado pelo responsável. Sem filtro judicial adicional.",
       "Vigência operacional ainda não comprovada; data nominal da régua não é início de vigência. Nenhum plano real aprovado ou ativado.",
-      "Cadastro Geral BBZ ainda não integrado: use o relatório financeiro sem o PDF complementar. CPF/CNPJ e contatos ausentes ficam vazios.",
+      "Cadastro Geral BBZ opcional: associação por papel e identidade comprovada. Divergências ficam em revisão cadastral sem alterar a seleção financeira.",
       "Marcadores A/AJ/J/AE BBZ são preservados, sem herdar exclusões do TREE."
     ]
   }

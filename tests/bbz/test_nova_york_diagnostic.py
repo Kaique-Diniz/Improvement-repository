@@ -85,9 +85,9 @@ def test_upload_comum_xlsx_nome_irrelevante_endereco_e_isolamento(xlsx,tmp_path)
         c.post('/api/session',json={'chave':KEY});assert c.get('/api/condominios/adm_bbz/cond_bbz_nova_york/endereco').json()['endereco']==endereco|{'complemento':''}
 
 
-def test_cadastro_pdf_bbz_ainda_nao_integrado_e_explicito(xlsx,tmp_path):
+def test_bbz_rejeita_cadastro_pdf_de_outra_administradora(xlsx,tmp_path):
     from conversor.web.demo import documentos_demo
-    with pytest.raises(ErroLeitura,match='CADASTRO_BBZ_AINDA_NAO_SUPORTADO'):
+    with pytest.raises(ErroLeitura,match='CADASTRO_DE_OUTRO_CONDOMINIO'):
         analisar(xlsx(),PedidoDiagnostico(data_ref='2026-10-26',modo='A'),processamento_id='sintetico',destino=tmp_path,
                  cadastro=documentos_demo()['cadastro'])
 

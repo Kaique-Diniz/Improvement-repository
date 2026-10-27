@@ -335,9 +335,11 @@ componentes, natureza mista, ausência/contradição, negativos, zero, marcadore
 namespace, idempotência e A/B. O navegador valida a nova conferência de natureza
 e o JSON auditável em Detalhes. Somente diagnóstico; sem push/merge autorizado.
 
-### Etapa seguinte proposta — Cadastro Geral PDF BBZ
+### Cadastro Geral PDF BBZ — implementação posterior autorizada
 
-Somente com autorização posterior:
+A etapa foi autorizada posteriormente e está implementada somente para NOVA
+YORK. Veja o [relatório cadastral](CADASTRO_GERAL_BBZ.md). O levantamento abaixo
+permanece como histórico do planejamento:
 1. Inventariar assinatura, identificação fiscal, data, número de unidades,
    colunas, continuidade/paginação e possíveis variações do Cadastro BBZ.
 2. Separar proprietário, locatário, pagador e nomes múltiplos; um documento
@@ -351,7 +353,7 @@ Somente com autorização posterior:
 6. Acrescentar fixtures sintéticas, confrontos privados e regressão completa.
    Não habilitar automaticamente os outros quatro condomínios.
 
-Nesta entrega, selecionar um Cadastro PDF BBZ no fluxo financeiro gera aviso de
-erro explícito: remover o complemento e processar o XLSX sem ele. Não é ignorado
-silenciosamente. A etapa cadastral completa não foi iniciada. Sem push/merge até
-autorização, sem cobrança, exportação operacional ou homologação de produção.
+A restrição anterior ao Cadastro PDF foi superada pela autorização posterior
+dessa etapa. O complemento agora é opcional e reconhecido pela família própria;
+identidade divergente ou formato não suportado continua bloqueado. Sem push/merge
+até autorização, sem cobrança, exportação operacional ou homologação de produção.
