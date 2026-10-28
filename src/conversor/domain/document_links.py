@@ -99,7 +99,7 @@ class VinculoDocumental(Modelo):
 
 class EventoVinculo(Modelo):
     sequencia: int = Field(strict=True, ge=1)
-    acao: Literal['candidatar', 'aprovar', 'recusar', 'revogar', 'revisar', 'reter_documento']
+    acao: Literal['candidatar', 'aprovar', 'recusar', 'revogar', 'reabrir', 'revisar', 'reter_documento']
     registro: VinculoDocumental
     responsavel: Texto
     sessao_sha256: Hash

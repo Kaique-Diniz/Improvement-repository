@@ -19,10 +19,11 @@ function mostrarVinculos(){
     if(r.pendencias_documentais.length)box.append(elemento('strong','Documento e contatos retidos: conflito documental pendente. A decisão de pertencimento não remove essa retenção.'));
     const fontes=elemento('details');fontes.append(elemento('summary','Conferir evidências e aprovação'));
     for(const ev of r.evidencias)fontes.append(elemento('p',ev.papel+' · '+localOrigem(ev.origem)+' · SHA-256 '+ev.origem.sha256));
-    if(r.aprovacao)fontes.append(elemento('p','Aprovado por '+r.aprovacao.responsavel+' em '+r.aprovacao.aprovado_em+' · '+r.aprovacao.fundamento));
+    if(r.aprovacao)fontes.append(elemento('p',(r.estado==='aprovado'?'Aprovado por ':'Aprovação anterior, sem liberação atual: ')+r.aprovacao.responsavel+' em '+r.aprovacao.aprovado_em+' · '+r.aprovacao.fundamento));
+    if(r.estado==='revogado')box.append(elemento('p','Reabrir para revisão verifica as evidências originais e retorna somente a candidato. Será necessária nova aprovação individual.'));
     box.append(fontes);
     const label=elemento('label'),check=elemento('input');check.type='checkbox';label.append(check,document.createTextNode(' Conferi as evidências desta unidade para este destino.'));box.append(label);
-    const acoes=r.estado==='candidato'?[['aprovar','Aprovar esta unidade'],['recusar','Recusar candidato']]:r.estado==='revogado'||r.estado==='recusado'?[]:[['revogar','Revogar vínculo']];
+    const acoes=r.estado==='candidato'?[['aprovar','Aprovar esta unidade'],['recusar','Recusar candidato']]:r.estado==='revogado'?[['reabrir','Reabrir para revisão']]:r.estado==='recusado'?[]:[['revogar','Revogar vínculo']];
     for(const [acao,texto]of acoes){
       const b=elemento('button',texto,'secundario');b.type='button';b.onclick=()=>decidirVinculo(r,acao,check.checked);box.append(b);
     }
@@ -35,7 +36,10 @@ async function decidirVinculo(r,acao,confirmar){
     const responsavel=$('vinculo-responsavel').value.trim(),fundamento=$('vinculo-fundamento').value.trim();
     if(!responsavel||!fundamento)throw new Error('Informe responsável e fundamento da decisão.');
     if(acao==='aprovar'&&!confirmar)throw new Error('Confira e marque as evidências desta unidade antes de aprovar.');
-    await api('/api/vinculos/'+r.id+'/decisao',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao,responsavel,fundamento,confirmar_evidencias:confirmar,revalidar_ate:$('vinculo-revalidar').value||null,revisao_esperada:cadastroVinculos.revisao,conteudo_sha256:r.conteudo_sha256})});
+    if(acao==='reabrir'&&!confirmar)throw new Error('Confira e marque as evidências originais desta unidade antes de reabrir.');
+    if(acao==='revogar'&&!window.confirm('Revogar o vínculo '+r.identidade.bloco_literal+' / '+r.identidade.unidade_literal+' → '+r.codigo_destino+'? Ele ficará retido. Esta ação será registrada no histórico.'))return;
+    if(acao==='reabrir'&&!window.confirm('Reabrir '+r.identidade.bloco_literal+' / '+r.identidade.unidade_literal+' → '+r.codigo_destino+' somente como candidato? Será necessária nova aprovação individual. Conflitos de documentos e contatos permanecerão retidos.'))return;
+    await api('/api/vinculos/'+r.id+'/decisao',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao,responsavel,fundamento,confirmar_evidencias:acao==='revogar'?true:confirmar,revalidar_ate:acao==='aprovar'?($('vinculo-revalidar').value||null):null,revisao_esperada:cadastroVinculos.revisao,conteudo_sha256:r.conteudo_sha256})});
     revisaoSelecao++;limparResultado();await consultarVinculos();
   }catch(e){$('vinculos-status').textContent=e.message;}
 }

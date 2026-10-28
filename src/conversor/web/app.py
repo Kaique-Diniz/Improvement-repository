@@ -25,7 +25,7 @@ from conversor.adapters.condominium_addresses import RepositorioEnderecos
 from conversor.adapters.document_links_json import RepositorioVinculosJSON
 from conversor.adapters.billing_authority import ler_protegido, sem_links
 from conversor.application.ports import ErroAplicacao
-from conversor.application.document_links import candidatos_documentais
+from conversor.application.document_links import candidatos_documentais, comprovar_reabertura
 from conversor.domain.billing_rules import hash_modelo
 from conversor.domain.base import Data, Hash, Texto
 from conversor.domain.base import Modelo
@@ -289,7 +289,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
         responsavel: Texto
 
     class DecidirVinculo(PrepararVinculos):
-        acao: Literal['aprovar','recusar','revogar']
+        acao: Literal['aprovar','recusar','revogar','reabrir']
         conteudo_sha256: Hash
         fundamento: Texto
         confirmar_evidencias: bool = Field(default=False, strict=True)
@@ -339,11 +339,33 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
     def decidir_vinculo(vinculo_id: str, dados: DecidirVinculo, request: Request):
         if not re.fullmatch('[a-f0-9]{64}',vinculo_id):raise HTTPException(404,'VINCULO_NAO_ENCONTRADO')
         try:
+            prova=None
+            if dados.acao=='reabrir':
+                snapshot=vinculos.consultar();registro=snapshot.registros.get(vinculo_id)
+                if (not registro or snapshot.revisao!=dados.revisao_esperada or
+                        hash_modelo(registro)!=dados.conteudo_sha256):
+                    raise ErroLeitura('VINCULOS_ALTERADOS_RECARREGUE')
+                if registro.estado!='revogado' or not dados.confirmar_evidencias or not dados.fundamento.strip():
+                    raise ErroLeitura('REABERTURA_EXIGE_REVOGADO_E_CONFIRMACAO')
+                original={papel:next(e.origem.sha256 for e in registro.evidencias if e.papel==papel)
+                    for papel in ('financeiro','referencia')}
+                raw=vinculos.ler_fonte(original['financeiro']);ref=vinculos.ler_fonte(original['referencia'])
+                p,code,reader=reconhecer(raw)
+                lote,_=ler(raw,p,code,reader,'inadimplencia')
+                saida=selecionar_perfil(json.loads(Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()),
+                    administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
+                if saida is None:saida=selecionar_perfil(json.loads(PERFIS_SAIDA_PATH.read_bytes()),
+                    administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
+                prova=comprovar_reabertura(vinculos,registro,lote,financeiro=raw,referencia=ref,
+                    perfil=p,perfil_saida=saida,codigo=code)
             s=vinculos.decidir(vinculo_id,**dados.model_dump(exclude={'responsavel'}),responsavel=dados.responsavel,
-                sessao_sha256=sha256(request.cookies['conversor_session'].encode()).hexdigest())
+                sessao_sha256=sha256(request.cookies['conversor_session'].encode()).hexdigest(),
+                comprovacao_reabertura=prova)
             r=s.registros[vinculo_id]
             return resposta_vinculos(s,r.identidade.administradora_id,r.condominio_destino_id)
         except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
+        except (OSError,KeyError,ValueError,StopIteration,ErroAplicacao):
+            raise HTTPException(409,'REABERTURA_COMPROVACAO_ORIGINAL_INDISPONIVEL')from None
 
     def iniciar(request, pedido, arquivos, *, historico=None, origem='upload', mapeamento=None, contexto=None,
                 estado_historico='nao_disponivel'):

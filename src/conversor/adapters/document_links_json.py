@@ -101,6 +101,11 @@ class RepositorioVinculosJSON:
                     r.aprovacao.conteudo_aprovado_sha256!=hash_modelo(prev) or
                     r.aprovacao.responsavel!=evento.responsavel or r.aprovacao.sessao_sha256!=evento.sessao_sha256):
                 raise ValueError('APROVACAO_DESVINCULADA_DO_CONTEUDO')
+            if evento.acao=='reabrir':
+                imutaveis={'versao','estado','aprovacao','atualizado_em','motivo'}
+                if (not prev or prev.estado!='revogado' or r.estado!='candidato' or r.aprovacao is not None or
+                        r.model_dump(exclude=imutaveis)!=prev.model_dump(exclude=imutaveis)):
+                    raise ValueError('REABERTURA_DESVINCULADA_DO_HISTORICO')
             if r.estado=='aprovado' and (evento.acao!='aprovar' and (not prev or prev.estado!='aprovado')):
                 raise ValueError('APROVACAO_SEM_ACAO_EXPLICITA')
             anteriores[r.id]=r; head=hash_modelo(evento)
@@ -219,12 +224,12 @@ class RepositorioVinculosJSON:
 
     @protegido
     def decidir(self, id_, *, acao, revisao_esperada, conteudo_sha256, responsavel, sessao_sha256,
-                fundamento, confirmar_evidencias, revalidar_ate=None):
+                fundamento, confirmar_evidencias, revalidar_ate=None, comprovacao_reabertura=None):
         with self._travar():
             s=self._carregar();r=s.registros.get(id_)
             if type(revisao_esperada)is not int or s.revisao!=revisao_esperada or not r or hash_modelo(r)!=conteudo_sha256:
                 raise ErroLeitura('VINCULOS_ALTERADOS_RECARREGUE')
-            if acao not in ('aprovar','recusar','revogar') or not responsavel.strip() or not fundamento.strip():raise ValueError('DECISAO_INVALIDA')
+            if acao not in ('aprovar','recusar','revogar','reabrir') or not responsavel.strip() or not fundamento.strip():raise ValueError('DECISAO_INVALIDA')
             now=datetime.now(timezone.utc);changes={'versao':r.versao+1,'atualizado_em':now,'motivo':fundamento}
             if acao=='aprovar':
                 if not confirmar_evidencias or r.estado!='candidato':raise ErroLeitura('CANDIDATO_COMPROVADO_EXIGE_CONFIRMACAO')
@@ -232,9 +237,35 @@ class RepositorioVinculosJSON:
                 changes.update(estado='aprovado',revalidar_ate=revalidar_ate,
                     aprovacao=AprovacaoVinculo(responsavel=responsavel,sessao_sha256=sessao_sha256,
                         aprovado_em=now,fundamento=fundamento,conteudo_aprovado_sha256=hash_modelo(r)))
-            else:changes['estado']='revogado'if acao=='revogar'else'recusado'
+            elif acao=='reabrir':
+                if not confirmar_evidencias or r.estado!='revogado' or revalidar_ate is not None:
+                    raise ErroLeitura('REABERTURA_EXIGE_REVOGADO_E_CONFIRMACAO')
+                self._validar_reabertura(s,r,comprovacao_reabertura)
+                changes.update(estado='candidato',aprovacao=None)
+            else:
+                if acao=='revogar' and (not confirmar_evidencias or r.estado in ('revogado','recusado')):
+                    raise ErroLeitura('REVOGACAO_EXIGE_CONFIRMACAO_EXPLICITA')
+                if acao=='recusar' and r.estado!='candidato':raise ErroLeitura('RECUSA_EXIGE_CANDIDATO')
+                changes['estado']='revogado'if acao=='revogar'else'recusado'
             novo=VinculoDocumental.model_validate(r.model_dump()|changes)
             return self._gravar_evento(s,novo,acao,responsavel,sessao_sha256,fundamento)
+
+    def _validar_reabertura(self, snapshot, registro, prova):
+        # Só a aplicação produz esta comprovação a partir dos bytes armazenados;
+        # o cliente HTTP não pode fornecê-la. Revalidar sob a mesma trava do CAS.
+        if not isinstance(prova,VinculoDocumental) or prova.estado!='candidato' or prova.aprovacao:
+            raise ErroLeitura('REABERTURA_EXIGE_COMPROVACAO_ORIGINAL')
+        historico=[e for e in snapshot.acervo.eventos if e.registro.id==registro.id]
+        inicio=max(i for i,e in enumerate(historico)if e.acao=='candidatar')
+        if any(e.acao=='revisar'for e in historico[inicio:]) or any(e.papel=='confronto'for e in registro.evidencias):
+            raise ErroLeitura('REABERTURA_COM_RESTRICAO_EXIGE_NOVA_COMPROVACAO')
+        for campo in ('id','identidade','condominio_destino_id','codigo_destino','nome_financeiro_hmac',
+                      'perfil_versao','perfil_sha256','recibos_historicos'):
+            if getattr(registro,campo)!=getattr(prova,campo):
+                raise ErroLeitura('REABERTURA_CONTEXTO_ATUAL_INCOMPATIVEL')
+        if registro.evidencias!=prova.evidencias:
+            raise ErroLeitura('REABERTURA_EVIDENCIAS_ORIGINAIS_INCOMPATIVEIS')
+        self._conferir_fontes(registro)
 
     @protegido
     def observar(self, id_, *, motivo, pendencia=None, evidencias=()):
@@ -252,11 +283,12 @@ class RepositorioVinculosJSON:
                     pendencia=old.model_copy(update={'evidencias':ev})
                     changes['pendencias_documentais']=tuple(pendencia if p.id==old.id else p for p in r.pendencias_documentais)
                 else:changes['pendencias_documentais']=(*r.pendencias_documentais,pendencia)
-            elif r.estado not in ('revogado','recusado'):
-                estado='conflitante'if motivo in ('DESTINO_PERSISTENTE_CONFLITANTE','REFERENCIA_ATUAL_CONTRADITORIA_OU_NAO_CONCILIADA')else'pendente'
+            else:
+                # Revogação/recusa não apagam restrições descobertas depois dela.
+                estado=r.estado if r.estado in ('revogado','recusado') else (
+                    'conflitante'if motivo in ('DESTINO_PERSISTENTE_CONFLITANTE','REFERENCIA_ATUAL_CONTRADITORIA_OU_NAO_CONCILIADA')else'pendente')
                 if r.estado==estado and r.motivo==motivo and not adicionais:return s
                 changes['estado']=estado
-            else:return s
             changes.update(versao=r.versao+1,atualizado_em=datetime.now(timezone.utc),motivo=motivo)
             novo=VinculoDocumental.model_validate(r.model_dump()|changes)
             return self._gravar_evento(s,novo,'reter_documento'if pendencia else'revisar',

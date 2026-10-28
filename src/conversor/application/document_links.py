@@ -27,15 +27,13 @@ def hash_perfil(perfil_saida):
     return hash_dados(perfil_saida.model_dump(mode='json', exclude={'endereco_padrao','evidencia'}))
 
 
-def candidatos_documentais(repo: RepositorioVinculosDocumentais, lote, *, referencia, financeiro, perfil, perfil_saida, codigo,
-                            revisao_esperada, responsavel, sessao_sha256, apenas_novos=False):
+def _candidatos_comprovados(repo, lote, *, referencia, perfil, perfil_saida, codigo):
     prova=delimitar_escopo_destino(lote,referencia=referencia,perfil_saida=perfil_saida,perfil=perfil,codigo_origem=codigo)
-    s=repo.consultar();pessoas={p.unidade_id:p for p in lote.pessoas};unidades={u.id:u for u in lote.unidades}
+    pessoas={p.unidade_id:p for p in lote.pessoas};unidades={u.id:u for u in lote.unidades}
     registros=[];now=datetime.now(timezone.utc)
     for m in prova.unidades:
         if m.estado!='comprovado_documentalmente':continue
         u=unidades[m.unidade_id];identity=identidade_origem(lote,u,codigo)
-        if apenas_novos and identity.id in s.registros:continue
         ev=tuple(EvidenciaVinculo(papel='referencia',origem=o,conciliacao_sha256=hash_dados(m.recibos_comprovantes))for o in m.evidencias)
         ev+=(EvidenciaVinculo(papel='financeiro',origem=u.origem,conciliacao_sha256=hash_dados(m.recibos_comprovantes)),)
         registros.append(VinculoDocumental(id=identity.id,identidade=identity,codigos_observados=(codigo,),
@@ -44,11 +42,32 @@ def candidatos_documentais(repo: RepositorioVinculosDocumentais, lote, *, refere
             perfil_versao=perfil_saida.versao,perfil_sha256=hash_perfil(perfil_saida),evidencias=ev,
             recibos_historicos=m.recibos_comprovantes,registrado_em=now,atualizado_em=now,
             motivo='CONFRONTO_DOCUMENTAL_ESTRITO_APROVACAO_PENDENTE'))
+    return tuple(registros)
+
+
+def candidatos_documentais(repo: RepositorioVinculosDocumentais, lote, *, referencia, financeiro, perfil, perfil_saida, codigo,
+                            revisao_esperada, responsavel, sessao_sha256, apenas_novos=False):
+    s=repo.consultar()
+    registros=_candidatos_comprovados(repo,lote,referencia=referencia,perfil=perfil,perfil_saida=perfil_saida,codigo=codigo)
+    if apenas_novos:registros=tuple(r for r in registros if r.id not in s.registros)
     if registros:
         repo.guardar_fonte(financeiro);repo.guardar_fonte(referencia)
         return repo.candidatar(tuple(registros),revisao_esperada=revisao_esperada,responsavel=responsavel,sessao_sha256=sessao_sha256)
     if s.revisao!=revisao_esperada:raise ErroLeitura('VINCULOS_ALTERADOS_RECARREGUE')
     return s
+
+
+def comprovar_reabertura(repo, registro, lote, *, financeiro, referencia, perfil, perfil_saida, codigo):
+    """Reconcilia bytes históricos e contexto atual; não grava nem aprova vínculos."""
+    if not perfil.get('exigir_escopo_documental_destino') or perfil_saida is None:
+        raise ErroLeitura('REABERTURA_PERFIL_NAO_COMPROVADO')
+    hashes={(e.papel,e.origem.sha256)for e in registro.evidencias if e.papel in ('financeiro','referencia')}
+    if hashes!={('financeiro',sha256(financeiro).hexdigest()),('referencia',sha256(referencia).hexdigest())}:
+        raise ErroLeitura('REABERTURA_FONTES_ORIGINAIS_INCOMPATIVEIS')
+    candidatos=_candidatos_comprovados(repo,lote,referencia=referencia,perfil=perfil,perfil_saida=perfil_saida,codigo=codigo)
+    prova=next((r for r in candidatos if r.id==registro.id),None)
+    if prova is None:raise ErroLeitura('REABERTURA_CONCILIACAO_ORIGINAL_NAO_COMPROVADA')
+    return prova
 
 
 def _unidades_na_referencia(referencia, perfil_saida, lote):

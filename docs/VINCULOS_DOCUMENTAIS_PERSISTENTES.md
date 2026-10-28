@@ -134,8 +134,42 @@ atual, com Python 3.13:
 Para mudanças de identidade ou evidências: analise os novos documentos e use
 **Preparar candidatos da análise atual**, que revalida os bytes originais e a
 revisão. É necessária nova decisão individual. Revogação/recusa não é anulada
-automaticamente pela mesma referência; uma nova comprovação é exigida.
+automaticamente pela mesma referência.
 JSON antigo `escopo_destino.json` não é uma migração ou autorização válida.
+
+### Recuperação de revogação acidental
+
+No cartão **revogado**, informe responsável e justificativa, confira e marque as
+evidências daquela unidade e clique **Reabrir para revisão**. Confirme o diálogo
+com bloco/unidade e destino. A sessão deve estar autenticada. O servidor verifica
+o histórico HMAC, checkpoints e bytes de todas as evidências armazenadas, relê o
+financeiro original e reconcilia a referência original pelo mesmo procedimento
+estrito, usando o perfil atual. Não é necessário reenviar os arquivos originais.
+
+A reabertura acrescenta um evento `reabrir` e uma nova versão **candidato**, sem
+aprovação vigente. IDs, evidências, checkpoints anteriores, revogação e demais
+vínculos são preservados. A aprovação posterior é uma ação individual separada,
+com nova confirmação, justificativa e hash do candidato reaberto. Reprocessar
+após a aprovação; resultados anteriores não são reaproveitados silenciosamente.
+
+Destino, identidade, perfil, conciliação ou integridade incompatíveis impedem a
+reabertura. Restrições documentadas antes ou depois da revogação continuam no
+histórico e exigem nova comprovação, não a simples reabertura por prova antiga.
+Recusa não pode ser reaberta por esta ação. Conflitos de CPF/CNPJ e contatos são
+independentes e permanecem retidos mesmo após nova aprovação de pertencimento.
+Nova revogação exige confirmação visual do bloco/unidade/destino e confirmação
+explícita no servidor. Não editar JSON, chaves ou checkpoints nem reinicializar a
+pasta privada. A extensão aditiva do evento mantém os históricos existentes 1.0
+legíveis sem migração; atualizar o servidor antes de produzir eventos `reabrir`.
+Exportação operacional e integração easyCollector continuam desabilitadas.
+
+Validação desta correção: 40 regressões sintéticas novas; 1.879 testes regulares
+e 60 históricos aprovados (1.939 distintos). Os 95 testes de vínculos/reabertura
+também passaram em Python 3.13.5 no Linux. Chromium verificou cancelamento sem
+gravação, confirmação de revogação/reabertura, candidato sem aprovação herdada,
+nova aprovação, conflito documental retido, reinício e layout móvel. A validação
+nativa no Windows e a decisão de reabrir qualquer vínculo real continuam humanas;
+nenhum cadastro real foi reaberto ou alterado nesta correção.
 
 Os endpoints de consulta, preparação e decisão são locais, autenticados e
 protegidos contra origens cruzadas. Não são APIs de integração com CRM.
