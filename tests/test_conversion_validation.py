@@ -48,6 +48,15 @@ def _validar(arq, registros, infos, decisoes, **extra):
                             decisoes=decisoes, **extra)
 
 
+def _symlink_ou_skip_1314(link, destino):
+    try:
+        link.symlink_to(destino)
+    except OSError as erro:
+        if getattr(erro, 'winerror', None) == 1314:
+            pytest.skip('WinError 1314: Windows impediu criar symlink sem privilégio adicional; somente o cenário de link real foi omitido.')
+        raise
+
+
 def test_xlsx_correto_apresenta_indicadores(tmp_path):
     r = _validar(*_cenario(tmp_path))
     assert r["estado"] == "conforme"
@@ -159,7 +168,7 @@ def test_arquivo_indisponivel_nao_tem_resultado_positivo(tmp_path,tipo):
     if tipo=='ausente':arq.unlink()
     elif tipo=='corrompido':arq.write_bytes(b'ZIP INVALIDO')
     else:
-        outro=tmp_path/'fora.xlsx';arq.rename(outro);arq.symlink_to(outro)
+        outro=tmp_path/'fora.xlsx';arq.rename(outro);_symlink_ou_skip_1314(arq,outro)
     r=_validar(arq,reg,info,ds)
     assert r['estado']=='erro_critico'and not r['arquivo']['conferido_integralmente']
 
@@ -289,7 +298,7 @@ def test_download_reconfere_artefatos_e_nao_modifica_originais(tmp_path,tipo):
         arq=path/('validacao_conversao.json'if tipo.startswith('laudo')else'TESTE_LOCAL_NAO_IMPORTAR.xlsx')
         if tipo.endswith('ausente'):arq.unlink()
         elif tipo.endswith('link'):
-            outro=tmp_path/'copiado.xlsx';arq.rename(outro);arq.symlink_to(outro)
+            outro=tmp_path/'copiado.xlsx';arq.rename(outro);_symlink_ou_skip_1314(arq,outro)
         else:arq.write_bytes(b'CONTEUDO ALTERADO SINTETICO')
         endpoint='validacao-conversao.json'if tipo.startswith('laudo')else'arquivo-teste.xlsx'
         resp=c.get('/api/processamentos/'+j['id']+'/'+endpoint)
@@ -450,3 +459,55 @@ def test_partes_ativas_nao_podem_ser_ocultadas_em_xlsx_com_celulas_corretas(tmp_
     with ZipFile(arq,'a',ZIP_DEFLATED)as z:z.writestr(membro,b'<conteudo_sintetico/>'if membro.endswith('.xml')else b'BINARIO SINTETICO')
     r=_validar(arq,reg,info,ds)
     assert r['estado']=='erro_critico'and 'CONTEUDO_EXECUTAVEL'in r['contagem_erros']
+
+
+def test_symlink_sem_privilegio_1314_omite_somente_o_cenario(tmp_path,monkeypatch):
+    link=tmp_path/'link_sintetico';erro=OSError(13,'Restricao sintetica de criacao de link');erro.winerror=1314
+    def impedir(*args,**kwargs):raise erro
+    monkeypatch.setattr(type(link),'symlink_to',impedir)
+    with pytest.raises(pytest.skip.Exception,match='WinError 1314'):
+        _symlink_ou_skip_1314(link,tmp_path/'destino_sintetico')
+    assert not link.exists()
+
+
+@pytest.mark.parametrize('winerror',[None,5,87,1315])
+def test_outros_erros_de_symlink_nao_sao_ignorados(tmp_path,monkeypatch,winerror):
+    link=tmp_path/'link_sintetico';erro=OSError(13,'Falha sintetica que deve ser propagada')
+    if winerror is not None:erro.winerror=winerror
+    def impedir(*args,**kwargs):raise erro
+    monkeypatch.setattr(type(link),'symlink_to',impedir)
+    with pytest.raises(OSError)as captura:
+        _symlink_ou_skip_1314(link,tmp_path/'destino_sintetico')
+    assert captura.value is erro
+
+
+def test_rejeita_caminho_simbolico_sem_criar_link_real(tmp_path,monkeypatch):
+    arq,reg,info,ds=_cenario(tmp_path);antes=arq.read_bytes()
+    classe=type(arq);is_symlink=classe.is_symlink;abrir=classe.open
+    def simbolico(p):return p==arq or is_symlink(p)
+    def nao_ler_alvo(p,*args,**kwargs):
+        if p==arq:pytest.fail('O validador tentou ler um caminho identificado como simbolico.')
+        return abrir(p,*args,**kwargs)
+    with monkeypatch.context()as m:
+        m.setattr(classe,'is_symlink',simbolico);m.setattr(classe,'open',nao_ler_alvo)
+        r=_validar(arq,reg,info,ds)
+    assert r['estado']=='erro_critico'and not r['arquivo']['conferido_integralmente']
+    assert r['arquivo']['sha256']is None and arq.read_bytes()==antes
+
+
+def test_download_rejeita_caminho_simbolico_sem_criar_link_real(tmp_path,monkeypatch):
+    root=tmp_path/'mvp'
+    with TestClient(criar_app(root,acesso=KEY))as c:
+        c.post('/api/session',json={'chave':KEY});j=_upload_demo(c)
+        arq=root/'processamentos'/j['id']/'TESTE_LOCAL_NAO_IMPORTAR.xlsx';antes=arq.read_bytes()
+        classe=type(arq);is_symlink=classe.is_symlink;abrir=classe.open
+        def simbolico(p):return p==arq or is_symlink(p)
+        def nao_ler_alvo(p,*args,**kwargs):
+            if p==arq:pytest.fail('O endpoint tentou ler um caminho identificado como simbolico.')
+            return abrir(p,*args,**kwargs)
+        with monkeypatch.context()as m:
+            m.setattr(classe,'is_symlink',simbolico);m.setattr(classe,'open',nao_ler_alvo)
+            response=c.get('/api/processamentos/'+j['id']+'/arquivo-teste.xlsx')
+        assert response.status_code==409
+        assert response.json()['detail']=='ARQUIVO_PRIVADO_INDISPONIVEL_REPROCESSAR'
+        assert arq.read_bytes()==antes

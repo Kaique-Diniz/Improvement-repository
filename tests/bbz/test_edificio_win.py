@@ -206,7 +206,9 @@ def test_bloqueio_critico_nao_e_contornado(tmp_path):
 
 
 def test_idempotencia_de_canonico_e_xlsx(tmp_path):
-    a=executar(tmp_path/'um');b=executar(tmp_path/'dois')
+    # A prova de idempotência exige os mesmos bytes de entrada, inclusive metadados XLSX.
+    raw=financeiro()
+    a=executar(tmp_path/'um',raw);b=executar(tmp_path/'dois',raw)
     assert a['decisoes']==b['decisoes']
     for nome in ('canonico.json','canonico_extraido.json','TESTE_LOCAL_NAO_IMPORTAR.xlsx'):
         assert (tmp_path/'um'/nome).read_bytes()==(tmp_path/'dois'/nome).read_bytes()

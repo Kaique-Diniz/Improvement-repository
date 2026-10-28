@@ -149,8 +149,8 @@ Windows/produção com base nos testes Linux.
 
 ### Testes e revisão antes do merge
 
-- **2.006 testes distintos aprovados:** 1.946 regulares e 60 históricos explícitos.
-  A Central tem 67 casos focados (7 anteriores e 60 novos).
+- Na entrega inicial da V2, **2.006 testes distintos aprovados:** 1.946 regulares
+  e 60 históricos explícitos. A Central tinha 67 casos focados (7 anteriores e 60 novos).
   Os 162 casos de Central/vínculos/reabertura também passaram em Python 3.13.5
   no Linux; execuções repetidas não são somadas como casos novos.
 - 22 cenários privados: 20 dos seis condomínios anteriores com canônicos/XLSX
@@ -178,3 +178,38 @@ E/A00223 já aprovada pelo responsável, comparar as 30 colunas com os anexos,
 confirmar retenções, download/laudo e invalidação após nova decisão de vínculo.
 Não alterar manualmente registros, chaves ou checkpoints para executar o teste.
 O PR é para revisão; merge e liberação operacional não são automáticos.
+
+### Portabilidade dos testes de symlink — Windows sem privilégios
+
+Na execução Windows 11/Python 3.13 informada pelo responsável, os dois cenários
+de link real da Central falharam na preparação com `WinError 1314`; isso não era
+falha do bloqueio em produção. Esses cenários agora tentam criar o symlink e usam
+`SKIPPED` **somente** quando o `OSError` apresenta `winerror == 1314`, com motivo
+explícito. Outros erros são propagados. Não há skip geral para Windows; os testes
+reais continuam executando onde a operação é permitida.
+
+Há dois testes adicionais, sem criar links, que sinalizam um caminho como
+simbólico e verificam a rejeição pelo validador e pelo endpoint antes de qualquer
+leitura do alvo. Testes do helper confirmam o skip específico e a propagação de
+outros erros de criação. Nenhum código de produção, contrato, vínculo, regra ou
+geração de Excel foi alterado por essa correção.
+
+Reexecutar `python -m pytest -q -rs tests/test_conversion_validation.py` no Windows.
+Em ambiente que negue os dois links por 1314, somente esses dois cenários devem
+aparecer como skips justificados. A simulação dessa restrição no Linux não
+constitui homologação Windows completa nem certifica a portabilidade das outras
+suítes, que têm seus próprios testes de sistema de arquivos.
+
+Na regressão completa desta correção foi identificada uma instabilidade no teste
+de idempotência WIN: ele recriava o XLSX sintético em cada execução, produzindo
+hashes de entrada diferentes; as divergências observadas eram apenas os hashes
+de origem. O teste agora reutiliza os mesmos bytes nas duas execuções, mantendo
+integralmente as comparações de decisões, canônicos e XLSX. O gerador de fixtures
+e o código de produção não foram alterados.
+
+Após a correção: **74 testes focados aprovados, 0 falhas, 0 skips**, em Linux
+com Python 3.12 e 3.13.5. Injeção explícita do erro 1314: **72 aprovados, 0 falhas,
+2 skips**, apenas os dois cenários de link real. Regressão completa em Python
+3.12/Linux: **1.953 regulares + 60 históricos = 2.013 testes distintos aprovados**,
+sem falhas ou skips. O warning de depreciação existente permanece. Esses resultados
+não equivalem a uma nova execução nativa Windows.
