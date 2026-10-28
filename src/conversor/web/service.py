@@ -325,6 +325,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         raise ErroLeitura('SELECAO_DIVERGENTE_DO_CABECALHO')
     progresso('Extraindo unidades, cotas e composições')
     lote, ctx = ler(conteudo, perfil, codigo, leitor, 'inadimplencia')
+    lote_validacao = lote  # Canônico do leitor antes de interpretação/enriquecimento.
     lote_extraido = lote if perfil['familia'] == 'bbz' else None
     descricoes_recibos = {}
     if perfil['familia'] == 'bbz':
@@ -641,12 +642,21 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'Reconciliação integral comprovada somente para XLSX DIAGNÓSTICO LOCAL. A ocorrência crítica '
         'original permanece preservada; confira o fechamento. Exportação operacional e importação no CRM proibidas.')
     # Conferência pós-escrita: apenas observa o XLSX, sem recalcular elegibilidade.
+    retencoes_central = set(retencoes_vinculos)
+    if cadastro_bbz:
+        retencoes_central.update(uid for uid, info in cadastro_bbz['unidades'].items()
+            if {'documentos','telefones','emails'}.intersection(info.get('dados_retidos', ())))
     validacao = validar_conversao(
         output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
         registros=(materializar(linha).valores for linha in linhas),
         linhas_info=linhas_info, decisoes=decisoes,
         escopo_destino=escopo_destino,
-        unidades_contato_retido=retencoes_vinculos,
+        unidades_contato_retido=retencoes_central,
+        lote_origem=lote_validacao,
+        contexto={'condominio':perfil['nome'], 'administradora':perfil['administradora'],
+                  'condominio_id':perfil['condominio_id'], 'administradora_id':perfil['administradora_id'],
+                  'data_ref':pedido.data_ref.isoformat(), 'modo':pedido.modo},
+        fontes=fontes, fechamento=fechamento,
     )
     escrever_json(output / 'validacao_conversao.json', validacao)
     # Erro crítico bloqueia o endpoint de download; o artefato fica privado para auditoria.

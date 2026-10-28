@@ -15,7 +15,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from filelock import Timeout
@@ -26,6 +26,7 @@ from conversor.adapters.document_links_json import RepositorioVinculosJSON
 from conversor.adapters.billing_authority import ler_protegido, sem_links
 from conversor.application.ports import ErroAplicacao
 from conversor.application.document_links import candidatos_documentais, comprovar_reabertura
+from conversor.application.conversion_validation import MAX_BYTES
 from conversor.domain.billing_rules import hash_modelo
 from conversor.domain.base import Data, Hash, Texto
 from conversor.domain.base import Modelo
@@ -488,16 +489,42 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
     @app.get('/api/processamentos/{id_}/arquivo-teste.xlsx')
     def excel(id_: str, request: Request):
         job = job_do_usuario(id_, request)
-        if job['estado'] != 'concluido' or not job['resultado']['arquivo_teste_disponivel']:
+        if job['estado'] != 'concluido':
             raise HTTPException(409, 'SEM_REGISTROS_APTOS_PARA_ARQUIVO_DE_TESTE')
+        validacao=job['resultado']['validacao_conversao']
+        if validacao['estado']=='erro_critico':
+            raise HTTPException(409,'VALIDACAO_CRITICA_DOWNLOAD_BLOQUEADO')
+        if not job['resultado']['arquivo_teste_disponivel']:
+            raise HTTPException(409,'SEM_REGISTROS_APTOS_PARA_ARQUIVO_DE_TESTE')
+        if not validacao['arquivo']['conferido_integralmente']:
+            raise HTTPException(409,'VALIDACAO_CRITICA_DOWNLOAD_BLOQUEADO')
         digest=job['resultado'].get('escopo_destino',{}).get('cadastro_sha256')
-        if digest:
-            try:
-                if vinculos.consultar().sha256!=digest:raise ErroLeitura('VINCULOS_ALTERADOS_REPROCESSAR')
-            except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
-        return FileResponse(job['path'] / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
-            filename=f'TESTE_LOCAL_NAO_IMPORTAR_{id_[:8]}.xlsx',
-            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        def bytes_conferidos():
+            raw=arquivo_privado_conferido(job['path']/'TESTE_LOCAL_NAO_IMPORTAR.xlsx',MAX_BYTES)
+            if sha256(raw).hexdigest()!=validacao['arquivo']['sha256']:
+                raise HTTPException(409,'XLSX_ALTERADO_APOS_VALIDACAO_REPROCESSAR')
+            return raw
+        try:
+            if digest:
+                snapshot=vinculos.consultar()
+                if snapshot.sha256!=digest:raise ErroLeitura('VINCULOS_ALTERADOS_REPROCESSAR')
+                with vinculos.conferir_snapshot(snapshot):raw=bytes_conferidos()
+            else:raw=bytes_conferidos()
+        except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
+        # Servir os mesmos bytes conferidos, sem reabrir o path após liberar a trava.
+        return Response(raw,media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition':f'attachment; filename="TESTE_LOCAL_NAO_IMPORTAR_{id_[:8]}.xlsx"'})
+
+    def arquivo_privado_conferido(path, limite):
+        try:
+            if (path.stat().st_nlink!=1 or any(p.exists() and getattr(p.lstat(),'st_file_attributes',0)&0x400
+                    for p in (path,*path.parents))):raise ErroAplicacao('ARQUIVO_NAO_REGULAR')
+            if path.stat().st_size>limite:raise ErroAplicacao('ARQUIVO_FORA_DO_LIMITE')
+            raw=ler_protegido(path)
+            if len(raw)>limite:raise ErroAplicacao('ARQUIVO_FORA_DO_LIMITE')
+            return raw
+        except (OSError,ErroAplicacao):
+            raise HTTPException(409,'ARQUIVO_PRIVADO_INDISPONIVEL_REPROCESSAR')from None
 
     @app.get('/api/processamentos/{id_}/inconsistencias.json')
     def inconsistencias(id_: str, request: Request):
@@ -529,8 +556,11 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
         job = job_do_usuario(id_, request)
         if job['estado'] != 'concluido':
             raise HTTPException(409, 'PROCESSAMENTO_NAO_CONCLUIDO')
-        return FileResponse(job['path'] / 'validacao_conversao.json',
-            filename=f'VALIDACAO_CONVERSAO_{id_[:8]}.json', media_type='application/json')
+        raw=arquivo_privado_conferido(job['path']/'validacao_conversao.json',32*1024*1024)
+        esperado=(json.dumps(job['resultado']['validacao_conversao'],ensure_ascii=False,sort_keys=True,indent=2,allow_nan=False)+'\n').encode()
+        if sha256(raw).digest()!=sha256(esperado).digest():raise HTTPException(409,'LAUDO_ALTERADO_APOS_ANALISE')
+        return Response(raw,media_type='application/json',
+            headers={'Content-Disposition':f'attachment; filename="VALIDACAO_CONVERSAO_{id_[:8]}.json"'})
 
     @app.get('/api/processamentos/{id_}/operacional.xlsx')
     def operacional(id_: str, request: Request):
