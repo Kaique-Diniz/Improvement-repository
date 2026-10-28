@@ -43,7 +43,7 @@ from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
 from conversor.readers.habita_closing import conferir_fechamento_habita
 from conversor.readers.operational import GRAMATICAS, RegistroLeitores, validar_assinatura_para_leitura
 from conversor.readers.bbz_xlsx import LeitorBBZXLSX, identificar as identificar_bbz
-from conversor.readers.bbz_cadastro import LeitorCadastroBBZ, identificar as identificar_cadastro_bbz, conferir_emissoes
+from conversor.readers.bbz_cadastro import LeitorCadastroBBZ, identificar as identificar_cadastro_bbz, conferir_emissoes, codigo_origem as codigo_origem_bbz
 from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
@@ -57,7 +57,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win'] = 'auto'
 
 
 def normalizar(s):
@@ -68,7 +68,7 @@ def normalizar(s):
 def _perfil_bbz(codigo,nome,repositorio_identidades=None):
     repo=repositorio_identidades or RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH)
     catalogo,digest=repo.carregar()
-    candidatos=catalogo.candidatos(nome,codigo)
+    candidatos=catalogo.candidatos(nome,codigo_origem_bbz(codigo))
     if len(candidatos)!=1:
         raise ErroLeitura('CONDOMINIO_DESCONHECIDO_OU_AMBIGUO')
     identidade=candidatos[0]
@@ -357,6 +357,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'produto': perfil_saida.produto if perfil_saida else perfil['nome'],
             'unidade_original': u.unidade_original, 'bloco_original': u.bloco_original,
             'chave_normalizada': u.chave_normalizada, 'origem_unidade': u.origem.model_dump(mode='json')}
+        if perfil_saida and perfil_saida.codificador == 'bloco_tipo_unidade' and estado == 'codificado_para_teste':
+            formato = next(f for f in perfil_saida.formatos_unidade if f.bloco_original == u.bloco_original)
+            identificadores[u.id]['evidencia_codificacao'] = {
+                'sha256_original_referencia': perfil_saida.evidencia.sha256,
+                'aba': perfil_saida.evidencia.aba, 'formato': formato.model_dump(mode='json'),
+                'limite': 'Padrão documental de apresentação; não presume vínculo individual com uma linha histórica nem identidade pessoal.'}
     fontes = [{'papel': 'inadimplencia', 'sha256': sha256(conteudo).hexdigest(), 'leitor': leitor + '@1'}]
     if perfil.get('origem_regua'):
         fontes.append({'papel':'regua_requisitos_documentais','evidencia':perfil['origem_regua'],
@@ -366,7 +372,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True)
-        if (pc['id'], cc) != (perfil['id'], codigo):
+        mesmo_codigo = (codigo_origem_bbz(cc) == codigo_origem_bbz(codigo)) if perfil['familia']=='bbz' else cc == codigo
+        if pc['id'] != perfil['id'] or not mesmo_codigo:
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
         cad, contexto_cadastro = ler(cadastro, pc, cc, lc, 'cadastro')
         if perfil['familia']=='bbz':
@@ -382,6 +389,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
+    if not cadastro and perfil.get('informar_ausencia_cadastro'):
+        ocorrencias.append(Ocorrencia(id='cadastro_ausente_' + sha256(processamento_id.encode()).hexdigest(),
+            processamento_id=processamento_id, codigo='CADASTRO_GERAL_NAO_FORNECIDO',
+            gravidade='informativo', escopo='processamento'))
     estado_historico = estado_historico or ('carregado' if historico else 'nao_disponivel')
     if estado_historico == 'nao_disponivel':
         ocorrencias.append(Ocorrencia(id='historico_info_' + sha256(processamento_id.encode()).hexdigest(),
@@ -652,6 +663,11 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'decisoes': decisoes, 'linhas_teste': linhas_info,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
         'arquivo_teste_disponivel': bool(linhas), 'comparacao': None}
+    if perfil.get('informar_ausencia_cadastro'):
+        resultado['cadastro_complementar'] = manifesto['cadastro_complementar'] = {
+            'estado': 'fornecido' if cadastro else 'nao_fornecido',
+            'codigo': None if cadastro else 'CADASTRO_GERAL_NAO_FORNECIDO',
+            'ausencia_nao_e_falha_de_leitura_nem_conflito': True}
     if referencia:
         progresso('Comparando com a referência, sem ajustar os dados')
         try:

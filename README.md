@@ -6,6 +6,23 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## EDIFÍCIO WIN — quarto piloto BBZ
+
+Extensão diagnóstica `feature/bbz-edificio-win`, dependente do NOVA REBOUÇAS
+`c8d7d24`. Identidade easyCollector **567** distinta da origem BBZ **117**.
+Com referência **26/10/2026** e hipótese **atraso > 31 dias**: **45 unidades,
+672 recibos, 2.111 componentes; 631 dívidas no A; mesmas 631 + 41 cadastros no B**.
+As 631 dívidas e descrições coincidem com o histórico, sem importar seus 243
+cadastros. Preservados vencimentos desde 2016, centavo/composições e marcadores.
+
+**CADASTRO_GERAL_NAO_FORNECIDO** é informativo: nomes do financeiro são mantidos;
+documentos/contatos sem fonte ficam vazios. Os identificadores seguem padrões
+comprovados por tipo de unidade, sem lista de unidades reais no código.
+O `.xls` permanece referência privada. ABROLHOS continua desabilitado, assim
+como exportação operacional e integração easyCollector. Sem publicação.
+**1.801 testes aprovados**, oito schemas e upload/download real no navegador.
+Veja [leitura, comparação e pendências WIN](docs/BBZ_EDIFICIO_WIN.md).
+
 ## NOVA REBOUÇAS — terceiro piloto BBZ
 
 Extensão diagnóstica em `feature/bbz-nova-reboucas`, dependente da ponta validada

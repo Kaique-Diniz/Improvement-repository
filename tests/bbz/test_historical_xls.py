@@ -86,3 +86,19 @@ def test_numero_sem_formato_nao_ganha_zeros_inventados():
 def test_celulas_fora_do_template_sao_rejeitadas():
     with pytest.raises(ErroLeitura,match='FORA_DO_TEMPLATE'):
         converter_referencia_xls(xls(alterar=lambda w,s:s.write(2,30,'ANOTACAO FICTICIA')))
+
+
+def test_coluna_apenas_formatada_exige_vazio_comprovado_em_todas_as_linhas():
+    def formatar(w,s):s.write(3,30,None,xlwt.easyxf(num_format_str='0.00'))
+    raw=xls(alterar=formatar);data,a=converter_referencia_xls(raw)
+    w=load_workbook(BytesIO(data));assert w.active.max_column==30;w.close()
+    assert a['versao']=='conversao_referencia_biff8@1.1' and a['colunas_originais']==31
+    assert len(a['colunas_extras_integralmente_vazias'])==4
+    assert all(e['valor_original']=='' for e in a['colunas_extras_integralmente_vazias'])
+    assert a['sha256_original']==sha256(raw).hexdigest()
+
+
+@pytest.mark.parametrize('valor',[0,' ',False])
+def test_extra_com_dado_nunca_e_confundido_com_coluna_vazia(valor):
+    with pytest.raises(ErroLeitura,match='FORA_DO_TEMPLATE'):
+        converter_referencia_xls(xls(alterar=lambda w,s:s.write(2,30,valor)))

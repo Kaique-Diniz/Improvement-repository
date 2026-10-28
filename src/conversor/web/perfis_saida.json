@@ -141,5 +141,48 @@
         "produto": "Z2:Z96"
       }
     }
+  },
+  {
+    "id": "bbz_win_template_diagnostico",
+    "versao": "1.0",
+    "uso": "diagnostico_nao_operacional",
+    "administradora_id": "adm_bbz",
+    "condominio_id": "cond_bbz_edificio_win",
+    "nome_cedente": "BBZ",
+    "produto": "CONDOMÍNIO EDIFÍCIO WIN",
+    "largura_unidade": 4,
+    "torres": {},
+    "codificador": "bloco_tipo_unidade",
+    "evidencia": {
+      "arquivo": "567 - CONDOMÍNIO EDIFÍCIO WIN - Template.xls",
+      "sha256": "5f6dfbee331da29239992b86e9034584c06ec625cb748997620b3928adae5df1",
+      "aba": "Planilha1",
+      "celulas": {
+        "apartamentos": "37 unidades com vínculos B/G/Y: CEDENTE BL00-UNID + número com 4 dígitos + -567; complemento BL0-UNI + número sem preenchimento. B2:B875 e G2:G875.",
+        "vagas": "Cinco unidades, identidade nominal e recibos coincidentes: CEDENTE BL00- + literal VG + -567; complemento BL0- + literal. Não altera bloco canônico VG.",
+        "limites": "Três unidades atuais sem linha histórica; codificadas pelo padrão documentado, sem presumir correspondência individual ou contatos.",
+        "coluna_extra": "AE integralmente vazia; tipos e formatos preservados no manifesto privado BIFF8."
+      }
+    },
+    "sufixo_cedente": "567",
+    "formatos_unidade": [
+      {
+        "bloco_original": "0",
+        "tipo": "numerica",
+        "bloco_cedente": "00",
+        "bloco_complemento": "0",
+        "prefixo_cedente": "UNID",
+        "prefixo_complemento": "UNI",
+        "largura_cedente": 4,
+        "largura_complemento": 1
+      },
+      {
+        "bloco_original": "VG",
+        "tipo": "literal",
+        "bloco_cedente": "00",
+        "bloco_complemento": "0",
+        "padrao_literal": "VG[0-9]{3}[MPG]"
+      }
+    ]
   }
 ]

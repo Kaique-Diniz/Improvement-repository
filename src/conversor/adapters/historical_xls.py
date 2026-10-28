@@ -50,8 +50,17 @@ def converter_referencia_xls(conteudo, *, revisar_cabecalho_y=False):
         if antigo.biff_version != 80 or antigo.nsheets != 1:
             raise ErroLeitura('REFERENCIA_XLS_AMBIGUA_OU_NAO_SUPORTADA')
         aba = antigo.sheet_by_index(0)
-        if aba.ncols != 30 or not 1 <= aba.nrows <= 100000:
+        if not 30 <= aba.ncols <= 64 or not 1 <= aba.nrows <= 100000:
             raise ErroLeitura('REFERENCIA_XLS_FORA_DO_TEMPLATE')
+        extras = []
+        for i in range(aba.nrows):
+            for j in range(30, aba.ncols):
+                c = aba.cell(i, j)
+                if c.ctype not in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK):
+                    raise ErroLeitura('REFERENCIA_XLS_FORA_DO_TEMPLATE')
+                extras.append({'linha': i + 1, 'coluna': j + 1, 'tipo_original': c.ctype,
+                    'valor_original': c.value,
+                    'formato_original': antigo.format_map[antigo.xf_list[c.xf_index].format_key].format_str})
         headers = tuple(str(aba.cell_value(0, j)).strip() for j in range(30))
         esperado = list(COLUNAS)
         corrigir_y = headers[24] == COLUNAS[26] and headers != COLUNAS
@@ -130,7 +139,7 @@ def converter_referencia_xls(conteudo, *, revisar_cabecalho_y=False):
                     raise ErroLeitura('REFERENCIA_XLS_CONVERSAO_NAO_RECONCILIADA')
         finally:
             conferir.close()
-        return convertido, {'versao': 'conversao_referencia_biff8@1', 'somente_comparacao': True,
+        auditoria = {'versao': 'conversao_referencia_biff8@1', 'somente_comparacao': True,
             'sha256_original': sha256(conteudo).hexdigest(), 'bytes_original': len(conteudo),
             'sha256_convertido': sha256(convertido).hexdigest(), 'aba': aba.name,
             'linhas_incluindo_cabecalho': aba.nrows, 'colunas': 30, 'datemode': antigo.datemode,
@@ -138,6 +147,10 @@ def converter_referencia_xls(conteudo, *, revisar_cabecalho_y=False):
             'cabecalho_y_revisado_explicitamente': corrigir_y,
             'formulas_macros_links_executados': False, 'celulas_conferidas': celulas,
             'limitacoes': limitacoes, 'original_modificado': False}
+        if extras:
+            auditoria.update(versao='conversao_referencia_biff8@1.1', colunas_originais=aba.ncols,
+                colunas_extras_integralmente_vazias=extras)
+        return convertido, auditoria
     except ErroLeitura:
         raise
     except Exception:

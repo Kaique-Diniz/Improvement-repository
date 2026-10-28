@@ -142,5 +142,49 @@
       "Cadastro de período anterior exige alerta temporal e associação por papel e identidade comprovada. Divergências retêm documentos e contatos sem alterar elegibilidade financeira.",
       "Vigência operacional não comprovada; nenhum plano real aprovado ou ativado. Template XLS é evidência histórica, não fonte para substituir valores ou identidades."
     ]
+  },
+  {
+    "id": "edificio_win",
+    "condominio_id": "cond_bbz_edificio_win",
+    "administradora_id": "adm_bbz",
+    "nome": "CONDOMÍNIO EDIFÍCIO WIN",
+    "administradora": "BBZ",
+    "familia": "bbz",
+    "configuracao_versao": "1.0.0",
+    "codigo_easycollector": "567",
+    "codigo_administrativo": "117",
+    "aliases": [
+      "CONDOMINIO EDIFICIO WIN"
+    ],
+    "vigente_de": null,
+    "vigente_ate": null,
+    "politica_descricoes": "descricao_obrigacao_bbz_condominio@1.1.0",
+    "informar_ausencia_cadastro": true,
+    "zero_original_cadastral": true,
+    "exclusoes": [
+      {
+        "id": "win_original_zero",
+        "tipo": "valor_original",
+        "operador": "eq",
+        "valor": "0.00"
+      }
+    ],
+    "regra_prazo": "win_prazo_31",
+    "dias": 31,
+    "prioridade_exclusao": 1,
+    "prioridade_prazo": 0,
+    "origem_regua": {
+      "arquivo_id": "regua_bbz_20261026",
+      "sha256": "17f065b659288e8b364cc056a374e87ee6797fc905587876ef05a94f5c904f0d",
+      "leitor_versao": "vinculacao_documental_regua@1",
+      "identificador": "aba_REGUA_E166_extrajudicial",
+      "linha": 166
+    },
+    "ressalvas": [
+      "Somente diagnóstico: atraso > 31 dias corridos é hipótese autorizada; inclusividade operacional e vigência pendentes. Data de referência explícita.",
+      "Prazo judicial de 61 dias não é filtro. Dívidas antigas, marcadores A/AJ/J/AE e valores de centavo não herdam vetos TREE. Original zero é preservado sem dívida e pode motivar cadastro no B.",
+      "Cadastro Geral é opcional. Sem fonte cadastral atribuível, documentos e contatos permanecem vazios; não copiar dados pessoais do template histórico.",
+      "Codificação por padrões documentais comprovados, incluindo vagas, sem presumir vínculo individual com o histórico. Grafias fora dos padrões ficam provisórias. Nenhum plano real aprovado ou ativado."
+    ]
   }
 ]

@@ -1,5 +1,15 @@
 # 01 — Plano do projeto e fases
 
+## Expansão incremental autorizada — EDIFÍCIO WIN / BBZ
+
+Autorizada exclusivamente a extensão diagnóstica WIN (567), reutilizando leitores
+BBZ e motor, a partir do NOVA REBOUÇAS `c8d7d24`, que incorpora INNOVA `4a7d362`.
+A branch `feature/bbz-edificio-win` mantém essa dependência; não reinicia de uma
+main sem as extensões. Evidências e limitações estão no
+[relatório WIN](docs/BBZ_EDIFICIO_WIN.md). Não habilita ABROLHOS, publicação,
+produção, cobrança, exportação operacional ou integração CRM. A homologação
+manual Windows permanece posterior; os marcos abaixo são históricos.
+
 ## Expansão incremental autorizada — NOVA REBOUÇAS / BBZ
 
 Autorizada a extensão diagnóstica NOVA REBOUÇAS (696), reutilizando os leitores,

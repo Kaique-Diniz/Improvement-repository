@@ -237,6 +237,9 @@ def test_upload_download_com_e_sem_cadastro_e_autenticacao(tmp_path):
 
 
 @pytest.mark.parametrize('codigo,nome',[('117','CONDOMINIO EDIFICIO WIN'),('575','CONDOMINIO JARDINS DO BRASIL')])
-def test_outros_condominios_nao_habilitados(codigo,nome):
+def test_catalogo_habilita_win_sem_habilitar_abrolhos(codigo,nome):
+    if codigo=='117':
+        assert reconhecer(planilha(codigo=codigo,nome=nome))[0]['id']=='edificio_win'
+        return
     with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):
         reconhecer(planilha(codigo=codigo,nome=nome))

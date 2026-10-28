@@ -139,6 +139,7 @@ function mostrar() {
   stats.push(['Dívidas disponíveis só para teste',r.resumo.dividas_efetivamente_geradas]);
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
+  if(r.cadastro_complementar?.codigo==='CADASTRO_GERAL_NAO_FORNECIDO')$('avisos').append(elemento('p','CADASTRO_GERAL_NAO_FORNECIDO: complemento opcional não enviado. A análise financeira continua; CPF/CNPJ e contatos sem fonte ficam vazios. Isso não é falha do leitor nem conflito cadastral.'));
   if(r.cadastro_bbz)$('avisos').append(elemento('p','Cadastro Geral BBZ PDF reconhecido e vinculado ao condomínio identificado · '+r.cadastro_bbz.resumo.paginas+' páginas. A conferência técnica não é um atesto humano.'));
   if(r.cadastro_bbz?.referencia_temporal?.periodo_anterior)$('avisos').append(elemento('p','Cadastro Geral emitido em período anterior à referência do processamento. A associação exige identidade concordante; a emissão não comprova titularidade atual. Divergências permanecem retidas.'));
   const endereco=r.endereco_condominio;
