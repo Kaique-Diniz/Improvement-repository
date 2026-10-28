@@ -524,6 +524,14 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
         return FileResponse(job['path'] / 'manifesto_diagnostico.json',
             filename=f'MANIFESTO_DIAGNOSTICO_NAO_IMPORTAR_{id_[:8]}.json', media_type='application/json')
 
+    @app.get('/api/processamentos/{id_}/validacao-conversao.json')
+    def validacao_conversao(id_: str, request: Request):
+        job = job_do_usuario(id_, request)
+        if job['estado'] != 'concluido':
+            raise HTTPException(409, 'PROCESSAMENTO_NAO_CONCLUIDO')
+        return FileResponse(job['path'] / 'validacao_conversao.json',
+            filename=f'VALIDACAO_CONVERSAO_{id_[:8]}.json', media_type='application/json')
+
     @app.get('/api/processamentos/{id_}/operacional.xlsx')
     def operacional(id_: str, request: Request):
         job_do_usuario(id_, request)
