@@ -6,6 +6,20 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## Central de Validação de Conversões
+
+A Central confere os bytes do XLSX diagnóstico, o planejamento, as decisões
+existentes e os valores/vencimentos canônicos anteriores ao enriquecimento.
+Mostra resumo, verificações com limites explícitos, filtros de inconsistências
+e laudo JSON privado. Fidelidade integral à fonte não é presumida por comparação
+interna. Erro crítico bloqueia o download; retenções corretamente aplicadas são
+ressalvas. O download reconfere hash e vínculos, sem alterar os arquivos.
+
+Consulte [arquitetura, relatório JSON e checklist Windows](docs/CENTRAL_VALIDACAO_CONVERSOES.md).
+Os baselines ABROLHOS A/B fornecidos pelo responsável são usados apenas em
+regressão privada. A pasta de vínculos aprovada no Windows não é substituída nem
+reinicializada. Não há integração CRM, exportação operacional ou merge automático.
+
 ## Vínculos documentais persistentes — revisão local
 
 O ABROLHOS pode reutilizar vínculos individuais comprovados e aprovados pela
@@ -20,8 +34,9 @@ código genérico não autorizam associação. Contratos históricos são preser
 os seis condomínios anteriores mantêm o comportamento existente. Somente
 XLSX diagnóstico, sem CRM ou exportação operacional. Consulte a
 [inicialização no Windows, arquitetura e limitações](docs/VINCULOS_DOCUMENTAIS_PERSISTENTES.md).
-As seções abaixo registram os marcos anteriores; as aprovações humanas reais
-dos novos vínculos continuam pendentes.
+O responsável informou a homologação diagnóstica ABROLHOS sem template no
+Windows; a pasta aprovada permanece naquele ambiente. Novos vínculos continuam
+exigindo conferência e aprovação individual. Os marcos abaixo são históricos.
 
 ## ABROLHOS — quinto piloto BBZ, cobertura parcial de identidade
 

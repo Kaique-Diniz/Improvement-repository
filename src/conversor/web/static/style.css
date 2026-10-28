@@ -24,3 +24,6 @@
 .vinculo-card{border:1px solid var(--border,#d8e0e5);padding:14px;margin:12px 0;border-radius:8px;overflow-wrap:anywhere}
 .vinculo-card button{margin:8px 8px 0 0}.vinculo-card label{display:block;margin-top:10px}
 .vinculo-card input[type=checkbox]{width:auto;display:inline}.vinculo-card details p{font-size:12px}
+
+/* Central reutiliza os componentes do painel; cada estado expõe o seu limite. */
+.central-validacao{margin-bottom:22px;min-width:0}.central-validacao h3{font-size:17px;margin:0}.central-validacao h4{font-size:13px;margin:22px 0 10px}.central-validacao .metrica strong{font-size:17px;overflow-wrap:anywhere}.central-validacao .resumo{grid-template-columns:repeat(auto-fit,minmax(145px,1fr))}.central-validacao td{overflow-wrap:anywhere;min-width:110px}.central-validacao td:last-child{min-width:220px}.central-validacao .verificacao{display:inline-block;border:1px solid #d0d5dd;border-radius:5px;padding:5px;font-size:10px}.verificacao.conforme{color:#027a48;background:#ecfdf3}.verificacao.conforme_com_ressalvas{color:#82580d;background:#fffaf0}.verificacao.erro_critico{color:#b42318;background:#fff1f3}.verificacao.nao_verificavel,.verificacao.nao_aplicavel{color:#475467;background:#f2f4f7}.central-filtros{flex-wrap:wrap}.central-filtros label{min-width:100px}a[aria-disabled=true]{opacity:.5;pointer-events:none}

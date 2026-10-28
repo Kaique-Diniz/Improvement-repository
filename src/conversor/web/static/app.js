@@ -23,7 +23,7 @@ function atualizarArquivo(id) {
 }
 function limparResultado() {
   atual=null;$('resultado').hidden=true;$('central-validacao').hidden=true;$('erro').hidden=true;$('progresso').hidden=true;$('vazio').hidden=false;
-  for(const id of ['download','inconsistencias','manifesto']) { $(id).hidden=true;$(id).removeAttribute('href'); }
+  for(const id of ['download','inconsistencias','manifesto','central-validacao-laudo']) { $(id).hidden=true;$(id).removeAttribute('href'); }
   $('fechamento-global').hidden=true;$('fechamento-global').replaceChildren();
   $('endereco-resultado').replaceChildren();
   for(const id of ['linhas','grupos-cotas','previa-linhas','previa-cabecalho','resumo','avisos','comparacao','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
@@ -133,18 +133,7 @@ async function acompanhar(id,revisao) {
 function mostrar() {
   const r=atual;$('progresso').hidden=true;$('resultado').hidden=false;
   $('contexto').textContent=r.administradora+' · '+r.condominio+(r.identidade_integracao?' · easyCollector '+r.identidade_integracao.codigo_easycollector+' · origem '+r.identidade_integracao.codigo_origem_observado:'')+' · Referência '+r.data_ref.split('-').reverse().join('/')+' · Modo '+r.modo+(r.origem_execucao==='exemplo_sintetico'?' · EXEMPLO SINTÉTICO':' · DIAGNÓSTICO PRIVADO');
-  const val=r.validacao_conversao;
-  $('central-validacao').hidden=!val;
-  if(val){
-    const estados={conforme:'Estrutura e conteúdo conferidos',conforme_com_ressalvas:'Conforme com ressalvas para revisão',erro_critico:'Erro crítico: download do XLSX bloqueado',sem_arquivo:'Sem linhas aptas para XLSX'};
-    $('central-validacao-estado').textContent=estados[val.estado]||val.estado;
-    const i=val.indicadores||{};
-    const cards=[['Dívidas',i.linhas_divida],['Cadastros adicionais',i.linhas_cadastrais],['Unidades no XLSX',i.unidades_no_xlsx],['Valor financeiro (R$)',i.valor_financeiro_xlsx]];
-    $('central-validacao-indicadores').replaceChildren(...cards.map(([label,n])=>{const e=elemento('div',undefined,'metrica');e.append(elemento('span',label),elemento('strong',String(n??'—')));return e;}));
-    const msgs=[...(val.erros||[]),...(val.avisos||[])];
-    $('central-validacao-mensagens').replaceChildren(...(msgs.length?msgs.map(m=>elemento('p',(val.erros||[]).includes(m)?'Erro: '+m.descricao:'Atenção: '+m.descricao+(m.quantidade?' ('+m.quantidade+')':''))):[elemento('p','Nenhum problema adicional identificado nas verificações disponíveis.') ]));
-    $('central-validacao-laudo').href='/api/processamentos/'+r.id+'/validacao-conversao.json';
-  }
+  mostrarValidacao(r);
   const stats=[['Unidades / cotas',r.resumo.cotas],['Boletos extraídos',r.resumo.boletos],['Cotas elegíveis pela régua',r.resumo.cotas_elegiveis_pela_regua],['Cotas excluídas por veto coletivo',r.resumo.cotas_excluidas_por_veto],['Boletos selecionados pela régua',r.resumo.boletos_selecionados_pela_regua],['Boletos fora do prazo',r.resumo.boletos_nao_selecionados_prazo],['Cotas retidas tecnicamente',r.resumo.cotas_retidas],['Boletos retidos tecnicamente',r.resumo.boletos_retidos],['Cadastros adicionais',r.resumo.cadastros_adicionais]];
   if(r.resumo.boletos_nao_selecionados_zero)stats.push(['Recibos não elegíveis: original zero',r.resumo.boletos_nao_selecionados_zero]);
   if(r.cadastro_bbz){const c=r.cadastro_bbz.resumo;stats.push(['Unidades no Cadastro BBZ',c.unidades_cadastrais_lidas],['Unidades financeiras localizadas',c.unidades_financeiras_localizadas||0],['Documentos vinculados',c.documentos_validos_vinculados||0],['Telefones aproveitados',c.telefones_aproveitados||0],['E-mails aproveitados',c.emails_aproveitados||0],['Associações cadastrais em revisão',c.associacoes_retidas],['Documentos ausentes nas unidades financeiras',c.documentos_ausentes],['Documentos inválidos nas unidades financeiras',c.documentos_invalidos]);}
