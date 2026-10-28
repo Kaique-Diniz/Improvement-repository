@@ -24,6 +24,7 @@ from conversor.adapters.scope_reference import delimitar_escopo_destino
 from conversor.adapters.integration_identity_json import RepositorioIdentidadesIntegracaoJSON
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
+from conversor.application.conversion_validation import validar_conversao
 from conversor.application.debt_descriptions import interpretar_lote_bbz, POLITICA_BBZ, POLITICAS_BBZ
 from conversor.application.bbz_cadastro import cruzar_cadastro_bbz, reter_documentos_historicos_conflitantes, registrar_temporalidade_cadastro
 from conversor.application.bbz_cadastro import reter_associacoes_persistentes
@@ -639,6 +640,18 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     aviso_fechamento = ('Habita/VG: o subtotal impresso diverge do VG calculado e repete o total geral. '
         'Reconciliação integral comprovada somente para XLSX DIAGNÓSTICO LOCAL. A ocorrência crítica '
         'original permanece preservada; confira o fechamento. Exportação operacional e importação no CRM proibidas.')
+    # Conferência pós-escrita: apenas observa o XLSX, sem recalcular elegibilidade.
+    validacao = validar_conversao(
+        output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
+        registros=(materializar(linha).valores for linha in linhas),
+        linhas_info=linhas_info, decisoes=decisoes,
+        escopo_destino=escopo_destino,
+        unidades_contato_retido=retencoes_vinculos,
+    )
+    escrever_json(output / 'validacao_conversao.json', validacao)
+    if validacao['estado'] == 'erro_critico':
+        # Um XLSX incongruente não pode ser oferecido para download.
+        (output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx').unlink(missing_ok=True)
     manifesto = {'versao': 'manifesto_xlsx_diagnostico@1', 'processamento_id': processamento_id,
         'finalidade': 'DIAGNOSTICO_LOCAL_NAO_IMPORTAR', 'autoriza_cobranca': False,
         'permite_exportacao_operacional': False, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
@@ -652,6 +665,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'politica_aplicacao': POLITICA_ENDERECO_CONDOMINIO if padrao_endereco else 'endereco_da_fonte',
             'configuracao': padrao_endereco.model_dump(mode='json') if padrao_endereco else None},
         'aviso': aviso_fechamento if reconciliadas_diagnostico else 'Somente diagnóstico local. Não importar no CRM.',
+        'validacao_conversao': {'arquivo': 'validacao_conversao.json', 'estado': validacao['estado']},
         'arquivo': {'nome': 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
             'sha256': sha256((output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx').read_bytes()).hexdigest(),
             'linhas_divida': sum(l.tipo == 'divida' for l in linhas),
@@ -715,7 +729,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'cotas': cotas, 'hierarquia': 'condominio_bloco_unidade_cota_boletos_componentes@1',
         'decisoes': decisoes, 'linhas_teste': linhas_info,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
-        'arquivo_teste_disponivel': bool(linhas), 'comparacao': None}
+        'arquivo_teste_disponivel': bool(linhas) and validacao['estado'] != 'erro_critico',
+        'validacao_conversao': validacao, 'comparacao': None}
     if escopo_destino:
         dados_escopo = escopo_destino.model_dump(mode='json')
         dados_escopo['sha256_conteudo'] = hash_modelo(escopo_destino)
