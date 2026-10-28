@@ -74,6 +74,29 @@ def endereco_fisico(texto):
     return Endereco(logradouro=m[1].rstrip(','),numero=m[2],bairro=bairro,cidade=cidade,uf=uf,cep=cep.replace('-',''))
 
 
+def reter_associacoes_persistentes(lote, auditoria, pendencias):
+    """Pertencimento aprovado não libera CPF/contatos previamente contestados."""
+    if not pendencias:return lote,auditoria
+    saida=deepcopy(auditoria);pessoas={p.unidade_id:p for p in lote.pessoas};ressalvas=list(lote.ressalvas)
+    for uid,registros in pendencias.items():
+        p=pessoas[uid];info=saida['unidades'][uid]
+        info.update(estado='associacao_retida',documento_vinculado=False,telefones_aproveitados=0,emails_aproveitados=0,
+            dados_retidos=['documentos','telefones','emails'],conflitos_persistentes=[x.model_dump(mode='json')for x in registros])
+        info['motivos']=sorted(set(info['motivos']+['BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE']))
+        pessoas[uid]=Pessoa.model_validate(p.model_dump()|{'documento':None,'documento_origem':None,
+            'evidencias_documentais':(),'contato':Contato(endereco=p.contato.endereco,origem=p.contato.origem)})
+        origens=tuple(e.origem for r in registros for e in r.evidencias)
+        ressalvas.append(RessalvaLeitura(codigo='BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE',gravidade='alerta',registro_id=uid,
+            origens=origens,valores_originais=(json.dumps(info['conflitos_persistentes'],ensure_ascii=False),)))
+    infos=saida['unidades'].values();saida['resumo'].update(
+        documentos_validos_vinculados=sum(i['documento_vinculado']for i in infos),
+        telefones_aproveitados=sum(i['telefones_aproveitados']for i in infos),
+        emails_aproveitados=sum(i['emails_aproveitados']for i in infos),
+        associacoes_retidas=sum(i['estado']=='associacao_retida'for i in infos),documentos_retidos_revisao=len(pendencias),
+        conflitos_documentais_historicos=len(pendencias))
+    return lote.model_copy(update={'pessoas':tuple(pessoas[p.unidade_id]for p in lote.pessoas),'ressalvas':tuple(ressalvas)}),saida
+
+
 def cruzar_cadastro_bbz(lote, cadastro, *, endereco_configurado=None, unidades_permitidas=None):
     financeiras={u.id:u for u in lote.unidades};cadastrais={}
     if unidades_permitidas is not None and not set(unidades_permitidas) <= set(financeiras):

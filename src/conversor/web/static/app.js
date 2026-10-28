@@ -60,6 +60,7 @@ async function configurar() {
   for(const caso of c.fontes_privadas) { const b=elemento('button',caso.nome,'secundario');b.type='button';b.onclick=()=>executar('privado',caso.id);$('casos').append(b); }
   $('fontes-privadas').hidden=!c.fontes_privadas.length;
   catalogoCondominios=c.condominios;
+  if(typeof preencherCondominiosVinculos==='function')preencherCondominiosVinculos(c.condominios);
   const admins=[...new Map(c.condominios.map(p=>[p.administradora_id,p.administradora])).entries()];
   $('endereco-administradora').replaceChildren(...admins.map(([id,nome])=>new Option(nome,id)));
   await selecionarCondominioEndereco();
@@ -141,6 +142,8 @@ function mostrar() {
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
   if(r.cadastro_complementar?.codigo==='CADASTRO_GERAL_NAO_FORNECIDO')$('avisos').append(elemento('p','CADASTRO_GERAL_NAO_FORNECIDO: complemento opcional não enviado. A análise financeira continua; CPF/CNPJ e contatos sem fonte ficam vazios. Isso não é falha do leitor nem conflito cadastral.'));
   if(r.escopo_destino){const m=r.escopo_destino.unidades;const n=m.filter(u=>u.estado==='comprovado_documentalmente').length;$('avisos').append(elemento('p','Escopo do destino: '+n+' unidades com vínculo documental; '+(m.length-n)+' pendentes. O código do empreendimento e os prefixos não comprovam, isoladamente, pertencimento à torre. Unidades sem prova não geram dívida nem cadastro no XLSX. A evidência histórica não é aprovação operacional.'));}
+  if(r.escopo_destino?.resumo_cadastro){const s=r.escopo_destino.resumo_cadastro;$('avisos').append(elemento('p','Origem dos vínculos: '+s.comprovadas_cadastro_persistente+' pelo cadastro persistente aprovado; '+s.comprovadas_referencia_atual+' pela referência atual. '+s.pendentes+' pendentes.'));
+    const b=elemento('button','Conferir vínculos e candidatos','secundario');b.type='button';b.onclick=async()=>{$('vinculo-condominio').value=r.administradora_id+'/'+r.condominio_id;$('cadastro-vinculos').open=true;await consultarVinculos();$('cadastro-vinculos').scrollIntoView({behavior:'smooth'});};$('avisos').append(b);}
   if(r.cadastro_bbz)$('avisos').append(elemento('p','Cadastro Geral BBZ PDF reconhecido e vinculado ao condomínio identificado · '+r.cadastro_bbz.resumo.paginas+' páginas. A conferência técnica não é um atesto humano.'));
   if(r.cadastro_bbz?.referencia_temporal?.periodo_anterior)$('avisos').append(elemento('p','Cadastro Geral emitido em período anterior à referência do processamento. A associação exige identidade concordante; a emissão não comprova titularidade atual. Divergências permanecem retidas.'));
   const endereco=r.endereco_condominio;
@@ -208,6 +211,7 @@ function desenharTabela() {
     const estado=elemento('td');estado.append(elemento('span',nomes[d.situacao],'status '+d.situacao));
     if(d.apto_xlsx_diagnostico)estado.append(elemento('small','Disponível exclusivamente para XLSX diagnóstico'));
     const motivo=elemento('td',d.motivos.map(motivoLegivel).join(' · ')||'Condições avaliadas','motivo');
+    if(d.vinculo_destino)motivo.append(elemento('small','Vínculo: '+(d.vinculo_destino.origem_comprovacao||d.vinculo_destino.estado_vinculo)+' · '+motivoLegivel(d.vinculo_destino.motivo_codigo)));
     const detalhe=elemento('td');const b=elemento('button','Detalhes','secundario');b.onclick=()=>abrirDetalhes(d);detalhe.append(b);
     tr.append(unidade,cota,valor,regra,contato,documental,estado,motivo,detalhe);return tr;
   }));

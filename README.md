@@ -6,6 +6,23 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## Vínculos documentais persistentes — revisão local
+
+O ABROLHOS pode reutilizar vínculos individuais comprovados e aprovados pela
+interface **Vínculos de condomínios**, sem reenviar o template a cada análise.
+A referência conciliada prepara candidatos; cada aprovação é explícita e
+individual. Documentos/contatos em conflito permanecem retidos separadamente.
+Tudo é armazenado no `--private-dir`, com histórico, integridade, concorrência
+e fontes verificáveis; nenhum JSON precisa ser editado manualmente.
+
+Sem vínculo aprovado e sem referência, a unidade continua retida. Prefixo e
+código genérico não autorizam associação. Contratos históricos são preservados;
+os seis condomínios anteriores mantêm o comportamento existente. Somente
+XLSX diagnóstico, sem CRM ou exportação operacional. Consulte a
+[inicialização no Windows, arquitetura e limitações](docs/VINCULOS_DOCUMENTAIS_PERSISTENTES.md).
+As seções abaixo registram os marcos anteriores; as aprovações humanas reais
+dos novos vínculos continuam pendentes.
+
 ## ABROLHOS — quinto piloto BBZ, cobertura parcial de identidade
 
 Extensão diagnóstica `feature/bbz-abrolhos`, dependente do WIN `eaa8fc8`.

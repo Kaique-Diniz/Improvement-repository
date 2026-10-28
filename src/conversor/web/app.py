@@ -22,13 +22,20 @@ from filelock import Timeout
 
 from conversor.adapters.private_json import escrever_json
 from conversor.adapters.condominium_addresses import RepositorioEnderecos
+from conversor.adapters.document_links_json import RepositorioVinculosJSON
+from conversor.adapters.billing_authority import ler_protegido, sem_links
+from conversor.application.ports import ErroAplicacao
+from conversor.application.document_links import candidatos_documentais
+from conversor.domain.billing_rules import hash_modelo
+from conversor.domain.base import Data, Hash, Texto
 from conversor.domain.base import Modelo
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
 from conversor.domain.canonical import Endereco, Ocorrencia
 from conversor.export.identifiers import OrigemEnderecoUsuario, selecionar_perfil
 from conversor.readers.text_support import ErroLeitura
 from conversor.validacao_leitores import _area_fora_do_git
-from .service import LIMIT, PERFIS, PERFIS_SAIDA_PATH, PedidoDiagnostico, analisar
+from .service import LIMIT, PERFIS, PERFIS_SAIDA_PATH, PedidoDiagnostico, analisar, reconhecer, ler
+from typing import Literal
 
 MAX_REQUEST = 3 * LIMIT + 1024 * 1024
 
@@ -111,7 +118,13 @@ class RegistroPrivado:
 
 
 def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
-    raiz = Path(raiz)
+    raiz = Path(os.path.abspath(raiz))
+    try:
+        sem_links(raiz)
+        if any(p.exists() and getattr(p.lstat(),'st_file_attributes',0)&0x400 for p in (raiz,*raiz.parents)):
+            raise ErroAplicacao('CAMINHO_REPARSE')
+    except ErroAplicacao:
+        raise RuntimeError('AREA_PRIVADA_NAO_PODE_SER_LINK')from None
     raiz.mkdir(mode=0o700, parents=True, exist_ok=True)
     if raiz.is_symlink():
         raise RuntimeError('AREA_PRIVADA_NAO_PODE_SER_LINK')
@@ -148,6 +161,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
     lock = threading.Lock()
     registry = RegistroPrivado(raiz, catalogo)
     enderecos = RepositorioEnderecos(raiz)
+    vinculos = RepositorioVinculosJSON(raiz)
     app.state.raiz = raiz
 
     @app.middleware('http')
@@ -270,6 +284,67 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
             raise HTTPException(404, 'ANALISE_NAO_ENCONTRADA')
         return job
 
+    class PrepararVinculos(Modelo):
+        revisao_esperada: int = Field(strict=True, ge=0)
+        responsavel: Texto
+
+    class DecidirVinculo(PrepararVinculos):
+        acao: Literal['aprovar','recusar','revogar']
+        conteudo_sha256: Hash
+        fundamento: Texto
+        confirmar_evidencias: bool = Field(default=False, strict=True)
+        revalidar_ate: Data | None = None
+
+    def resposta_vinculos(snapshot, administradora_id=None, condominio_id=None):
+        registros=[r for r in snapshot.registros.values() if
+            (not administradora_id or r.identidade.administradora_id==administradora_id)and
+            (not condominio_id or r.condominio_destino_id==condominio_id)]
+        ids={r.id for r in registros}
+        return {'versao_contrato':'1.0','revisao':snapshot.revisao,'sha256':snapshot.sha256,
+            'registros':[r.model_dump(mode='json')|{'conteudo_sha256':hash_modelo(r)}for r in registros],
+            'historico':[e.model_dump(mode='json',exclude={'assinatura'})for e in snapshot.acervo.eventos if e.registro.id in ids],
+            'limite':'Aprovar pertencimento não aprova CPF, contatos, regras financeiras ou exportação operacional.'}
+
+    @app.get('/api/vinculos')
+    def consultar_vinculos(administradora_id: str | None=None, condominio_id: str | None=None):
+        if bool(administradora_id)!=bool(condominio_id):raise HTTPException(422,'INFORME_ADMINISTRADORA_E_CONDOMINIO')
+        if administradora_id:perfil_condominio(administradora_id,condominio_id)
+        try:return resposta_vinculos(vinculos.consultar(),administradora_id,condominio_id)
+        except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
+
+    @app.post('/api/vinculos/candidatos/{id_}')
+    def preparar_vinculos(id_: str, dados: PrepararVinculos, request: Request):
+        job=job_do_usuario(id_,request)
+        if job['estado']!='concluido':raise HTTPException(409,'ANALISE_AINDA_NAO_CONCLUIDA')
+        try:
+            raw=ler_protegido(job['path']/'inadimplencia.xlsx');ref=ler_protegido(job['path']/'referencia.xlsx')
+            fontes={f['papel']:f for f in job['resultado']['fontes']}
+            if sha256(raw).hexdigest()!=fontes['inadimplencia']['sha256'] or sha256(ref).hexdigest()!=fontes['referencia']['sha256']:
+                raise ErroLeitura('FONTES_DA_ANALISE_ALTERADAS')
+            p,code,reader=reconhecer(raw)
+            if not p.get('exigir_escopo_documental_destino'):raise ErroLeitura('PERFIL_NAO_EXIGE_VINCULO_DE_DESTINO')
+            lote,_=ler(raw,p,code,reader,'inadimplencia')
+            saida=selecionar_perfil(json.loads(Path(perfis_saida or PERFIS_SAIDA_PATH).read_bytes()),
+                administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
+            if saida is None:saida=selecionar_perfil(json.loads(PERFIS_SAIDA_PATH.read_bytes()),
+                administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
+            s=candidatos_documentais(vinculos,lote,referencia=ref,financeiro=raw,perfil=p,perfil_saida=saida,codigo=code,
+                revisao_esperada=dados.revisao_esperada,responsavel=dados.responsavel,
+                sessao_sha256=sha256(request.cookies['conversor_session'].encode()).hexdigest())
+            return resposta_vinculos(s,p['administradora_id'],p['condominio_id'])
+        except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
+        except (OSError,KeyError,ValueError,ErroAplicacao):raise HTTPException(409,'REFERENCIA_ORIGINAL_VERIFICAVEL_NECESSARIA')from None
+
+    @app.post('/api/vinculos/{vinculo_id}/decisao')
+    def decidir_vinculo(vinculo_id: str, dados: DecidirVinculo, request: Request):
+        if not re.fullmatch('[a-f0-9]{64}',vinculo_id):raise HTTPException(404,'VINCULO_NAO_ENCONTRADO')
+        try:
+            s=vinculos.decidir(vinculo_id,**dados.model_dump(exclude={'responsavel'}),responsavel=dados.responsavel,
+                sessao_sha256=sha256(request.cookies['conversor_session'].encode()).hexdigest())
+            r=s.registros[vinculo_id]
+            return resposta_vinculos(s,r.identidade.administradora_id,r.condominio_destino_id)
+        except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
+
     def iniciar(request, pedido, arquivos, *, historico=None, origem='upload', mapeamento=None, contexto=None,
                 estado_historico='nao_disponivel'):
         with lock:
@@ -298,6 +373,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
                     mapeamento_referencia=mapeamento,
                     perfis_saida=perfis_saida,
                     buscar_endereco=enderecos.obter,
+                    repositorio_vinculos=vinculos,
                     progresso=lambda etapa: job.update(etapa=etapa))
                 with lock:
                     job.update(estado='concluido', resultado=result)
@@ -392,6 +468,11 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
         job = job_do_usuario(id_, request)
         if job['estado'] != 'concluido' or not job['resultado']['arquivo_teste_disponivel']:
             raise HTTPException(409, 'SEM_REGISTROS_APTOS_PARA_ARQUIVO_DE_TESTE')
+        digest=job['resultado'].get('escopo_destino',{}).get('cadastro_sha256')
+        if digest:
+            try:
+                if vinculos.consultar().sha256!=digest:raise ErroLeitura('VINCULOS_ALTERADOS_REPROCESSAR')
+            except ErroLeitura as e:raise HTTPException(409,e.codigo)from None
         return FileResponse(job['path'] / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
             filename=f'TESTE_LOCAL_NAO_IMPORTAR_{id_[:8]}.xlsx',
             media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

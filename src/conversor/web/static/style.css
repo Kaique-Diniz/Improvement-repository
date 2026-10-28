@@ -21,3 +21,6 @@
 .endereco-grid label{display:block;font-size:12px;font-weight:600}.endereco-grid input,.endereco-grid select{display:block;margin-top:6px}.endereco-largo{grid-column:1/-1}
 #endereco-cadastro-status{min-height:22px}#endereco-resultado button{font-size:11px;padding:5px 9px;margin:0 0 10px}
 @media(max-width:600px){.endereco-grid{grid-template-columns:1fr}.cadastro-condominio>summary span{display:block;margin-left:0}}
+.vinculo-card{border:1px solid var(--border,#d8e0e5);padding:14px;margin:12px 0;border-radius:8px;overflow-wrap:anywhere}
+.vinculo-card button{margin:8px 8px 0 0}.vinculo-card label{display:block;margin-top:10px}
+.vinculo-card input[type=checkbox]{width:auto;display:inline}.vinculo-card details p{font-size:12px}

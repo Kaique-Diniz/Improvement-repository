@@ -4,6 +4,7 @@ Não usa repositórios de planos nem fabrica assinaturas/atestos. As decisões d
 negócio confirmadas alimentam apenas as funções puras diagnósticas existentes.
 """
 from collections import Counter
+from contextlib import nullcontext
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
@@ -25,6 +26,8 @@ from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
 from conversor.application.debt_descriptions import interpretar_lote_bbz, POLITICA_BBZ, POLITICAS_BBZ
 from conversor.application.bbz_cadastro import cruzar_cadastro_bbz, reter_documentos_historicos_conflitantes, registrar_temporalidade_cadastro
+from conversor.application.bbz_cadastro import reter_associacoes_persistentes
+from conversor.application.document_links import resolver_vinculos, registrar_conflitos, retencoes_do_snapshot
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
@@ -314,7 +317,7 @@ def comparar_referencia(conteudo, lote, decisoes, mapeamento=None, identificador
 def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
              cadastro=None, referencia=None, historico=None, origem='upload',
              mapeamento_referencia=None, estado_historico=None, progresso=lambda etapa: None,
-             perfis_saida=None, buscar_endereco=None):
+             perfis_saida=None, buscar_endereco=None, repositorio_vinculos=None):
     progresso('Reconhecendo formato e condomínio')
     perfil, codigo, leitor = reconhecer(conteudo)
     if pedido.condominio != 'auto' and pedido.condominio != perfil['id']:
@@ -366,6 +369,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 'limite': 'Padrão documental de apresentação; não presume vínculo individual com uma linha histórica nem identidade pessoal.'}
     escopo_destino = (delimitar_escopo_destino(lote_extraido, referencia=referencia, perfil_saida=perfil_saida,
         perfil=perfil, codigo_origem=codigo) if perfil.get('exigir_escopo_documental_destino') else None)
+    snapshot_vinculos=None
+    if escopo_destino and repositorio_vinculos:
+        escopo_destino,snapshot_vinculos=resolver_vinculos(repositorio_vinculos,lote_extraido,
+            financeiro=conteudo,referencia=referencia,perfil=perfil,perfil_saida=perfil_saida,codigo=codigo,data_ref=pedido.data_ref)
     fontes = [{'papel': 'inadimplencia', 'sha256': sha256(conteudo).hexdigest(), 'leitor': leitor + '@1'}]
     if perfil.get('origem_regua'):
         fontes.append({'papel':'regua_requisitos_documentais','evidencia':perfil['origem_regua'],
@@ -385,14 +392,44 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if perfil.get('auditar_temporalidade_cadastro'):
                 lote,cadastro_bbz=registrar_temporalidade_cadastro(lote,cadastro_bbz,
                     conferir_emissoes(cadastro,contexto=contexto_cadastro),data_ref=pedido.data_ref)
-            if referencia:
+            if escopo_destino and repositorio_vinculos and snapshot_vinculos:
+                referencias={sha256(referencia).hexdigest():referencia} if referencia else {}
+                origens_por_unidade={}
+                for m in escopo_destino.unidades:
+                    if m.unidade_id not in escopo_destino.permitidas or not m.vinculo_id:continue
+                    registro=snapshot_vinculos.registros[m.vinculo_id]
+                    origens_por_unidade[m.unidade_id]={e.origem.sha256 for e in registro.evidencias if e.papel=='referencia'}
+                    for digest in origens_por_unidade[m.unidade_id]:
+                        if digest not in referencias:referencias[digest]=repositorio_vinculos.ler_fonte(digest)
+                # Reutilizar os bytes comprovantes também detecta conflito quando
+                # o Cadastro é fornecido pela primeira vez após aprovar o destino.
+                for digest,original_ref in referencias.items():
+                    conflitos=confrontar_documentos_historicos(original_ref,lote=lote,
+                        identificadores=identificadores,perfil_saida=perfil_saida)
+                    conflitos=tuple(c for c in conflitos if digest in origens_por_unidade.get(c['unidade_id'],set()))
+                    snapshot_vinculos=registrar_conflitos(repositorio_vinculos,snapshot_vinculos,lote,
+                        codigo=codigo,conflitos=conflitos,cadastro_bytes=cadastro,referencia_bytes=original_ref)
+            elif referencia:
                 conflitos=confrontar_documentos_historicos(referencia,lote=lote,
                     identificadores=identificadores,perfil_saida=perfil_saida)
                 lote,cadastro_bbz=reter_documentos_historicos_conflitantes(lote,cadastro_bbz,conflitos)
+            if escopo_destino and snapshot_vinculos:
+                lote,cadastro_bbz=reter_associacoes_persistentes(lote,cadastro_bbz,
+                    retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo))
         else:
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
+    if escopo_destino and snapshot_vinculos:
+        escopo_destino=escopo_destino.model_copy(update={'cadastro_revisao':snapshot_vinculos.revisao,
+            'cadastro_sha256':snapshot_vinculos.sha256,
+            'unidades':tuple(m.model_copy(update={'vinculo_versao':snapshot_vinculos.registros[m.vinculo_id].versao})
+                if m.vinculo_id in snapshot_vinculos.registros else m for m in escopo_destino.unidades)})
+        if not cadastro:
+            for uid in retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo):
+                ocorrencias.append(Ocorrencia(id='retencao_doc_'+sha256((processamento_id+uid).encode()).hexdigest(),
+                    processamento_id=processamento_id,codigo='BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE',
+                    gravidade='alerta',escopo='registro',registro_id=uid))
     if escopo_destino:
         for u in lote.unidades:
             if u.id not in escopo_destino.permitidas:
@@ -436,6 +473,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     fora_vigencia = bool(perfil['vigente_de'] and pedido.data_ref < date.fromisoformat(perfil['vigente_de']))
     decisoes, linhas, linhas_info, previa = [], [], [], []
     rotulos_template, enderecos_template = {}, {}
+    retencoes_vinculos=retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo) if snapshot_vinculos else {}
 
     def prever(tipo, u, base, *, decisao=None, divida=None, bloqueios=(), parcela_final=None):
         # Somente visualização. Nunca encaminha linhas retidas ao escritor XLSX
@@ -481,6 +519,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         pendencias_documentais = sorted(set(
             (list(documento.codigos) if documento and documento.bloqueante else []) +
             [o.codigo for o in problemas if o.codigo in ('DOCUMENTOS_CONFLITANTES', 'DOCUMENTO_TITULAR_NAO_CONFIRMADO')]))
+        if u.id in retencoes_vinculos:pendencias_documentais.append('BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE')
         decisoes.append({'id': b.id, 'unidade_id': u.id, 'condominio': perfil['nome'],
             'bloco': u.bloco_original, 'unidade': u.unidade_original, 'cota': b.identificador,
             'boleto': b.identificador, 'cota_id': u.id, 'veto_coletivo': veto,
@@ -510,6 +549,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
             'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
+        if escopo_destino and repositorio_vinculos:
+            membro=next(m for m in escopo_destino.unidades if m.unidade_id==u.id)
+            decisoes[-1]['vinculo_destino']=membro.model_dump(mode='json')
     cotas = projetar_cotas(lote, decisoes, avaliacoes_unidade)
     # Uma cota/unidade vetada não afeta outras unidades; linhas são por boleto.
     for u in lote.unidades:
@@ -590,9 +632,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     output.mkdir(mode=0o700, parents=True, exist_ok=True)
     if linhas:
         progresso('Gerando o arquivo de teste com as 30 colunas')
-        escrever_xlsx(linhas, Template(id='mvp_teste', nome='Universal local', versao='1.1', espaco_final_coluna_27=False),
-                      output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx', data_ref=pedido.data_ref,
-                      titulo='TESTE LOCAL DIAGNOSTICO - NAO IMPORTAR - SEM APROVACAO OPERACIONAL')
+        with (repositorio_vinculos.conferir_snapshot(snapshot_vinculos) if snapshot_vinculos else nullcontext()):
+            escrever_xlsx(linhas, Template(id='mvp_teste', nome='Universal local', versao='1.1', espaco_final_coluna_27=False),
+                          output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx', data_ref=pedido.data_ref,
+                          titulo='TESTE LOCAL DIAGNOSTICO - NAO IMPORTAR - SEM APROVACAO OPERACIONAL')
     aviso_fechamento = ('Habita/VG: o subtotal impresso diverge do VG calculado e repete o total geral. '
         'Reconciliação integral comprovada somente para XLSX DIAGNÓSTICO LOCAL. A ocorrência crítica '
         'original permanece preservada; confira o fechamento. Exportação operacional e importação no CRM proibidas.')
@@ -681,6 +724,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'sha256_conteudo': dados_escopo['sha256_conteudo'],
             'unidades_comprovadas': len(escopo_destino.permitidas),
             'unidades_pendentes': len(escopo_destino.unidades)-len(escopo_destino.permitidas)}
+        if snapshot_vinculos or repositorio_vinculos:
+            manifesto['escopo_destino']['cadastro_persistente']={k:dados_escopo.get(k)for k in
+                ('cadastro_revisao','cadastro_sha256','resumo_cadastro','erro_cadastro')}
         escrever_json(output/'escopo_destino.json', dados_escopo)
     if perfil.get('informar_ausencia_cadastro'):
         resultado['cadastro_complementar'] = manifesto['cadastro_complementar'] = {

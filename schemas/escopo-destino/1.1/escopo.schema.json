@@ -1,0 +1,354 @@
+{
+  "$defs": {
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "UnidadeEscopoPersistente": {
+      "additionalProperties": false,
+      "properties": {
+        "chave_original": {
+          "title": "Chave Original",
+          "type": "string"
+        },
+        "estado": {
+          "enum": [
+            "comprovado_documentalmente",
+            "nao_comprovado"
+          ],
+          "title": "Estado",
+          "type": "string"
+        },
+        "estado_vinculo": {
+          "default": "nao_registrado",
+          "title": "Estado Vinculo",
+          "type": "string"
+        },
+        "evidencias": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Origem"
+          },
+          "title": "Evidencias",
+          "type": "array"
+        },
+        "motivo_codigo": {
+          "default": "SEM_EVIDENCIA_INDIVIDUAL_DE_DESTINO",
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Motivo Codigo",
+          "type": "string"
+        },
+        "origem_comprovacao": {
+          "anyOf": [
+            {
+              "enum": [
+                "referencia_atual",
+                "cadastro_persistente"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origem Comprovacao"
+        },
+        "recibos_comprovantes": {
+          "default": [],
+          "items": {
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+            "type": "string"
+          },
+          "title": "Recibos Comprovantes",
+          "type": "array"
+        },
+        "unidade_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Unidade Id",
+          "type": "string"
+        },
+        "vinculo_id": {
+          "anyOf": [
+            {
+              "pattern": "^[0-9a-f]{64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vinculo Id"
+        },
+        "vinculo_versao": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vinculo Versao"
+        }
+      },
+      "required": [
+        "unidade_id",
+        "chave_original",
+        "estado"
+      ],
+      "title": "UnidadeEscopoPersistente",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:escopo-destino:1.1:escopo",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "1.1 é aditivo; o contrato histórico 1.0 não é reinterpretado.",
+  "properties": {
+    "administradora_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Administradora Id",
+      "type": "string"
+    },
+    "atesto_humano": {
+      "default": null,
+      "title": "Atesto Humano",
+      "type": "null"
+    },
+    "cadastro_revisao": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Cadastro Revisao"
+    },
+    "cadastro_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Cadastro Sha256"
+    },
+    "codigo_destino": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Codigo Destino",
+      "type": "string"
+    },
+    "codigo_origem": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Codigo Origem",
+      "type": "string"
+    },
+    "condominio_candidato_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Candidato Id",
+      "type": "string"
+    },
+    "erro_cadastro": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Erro Cadastro"
+    },
+    "exportacao_operacional": {
+      "const": false,
+      "default": false,
+      "title": "Exportacao Operacional",
+      "type": "boolean"
+    },
+    "fonte_financeira_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Fonte Financeira Sha256",
+      "type": "string"
+    },
+    "hashes_fontes_verificadas": {
+      "items": {
+        "pattern": "^[0-9a-f]{64}$",
+        "type": "string"
+      },
+      "title": "Hashes Fontes Verificadas",
+      "type": "array"
+    },
+    "limite": {
+      "default": "Vínculo de destino não aprova identidade pessoal, vigência financeira ou importação operacional.",
+      "title": "Limite",
+      "type": "string"
+    },
+    "motivo_referencia": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Motivo Referencia",
+      "type": "string"
+    },
+    "origem_documental": {
+      "const": "empreendimento_compartilhado",
+      "default": "empreendimento_compartilhado",
+      "title": "Origem Documental",
+      "type": "string"
+    },
+    "perfil_saida_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Perfil Saida Sha256"
+    },
+    "referencia_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Referencia Sha256"
+    },
+    "resumo_cadastro": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Resumo Cadastro",
+      "type": "object"
+    },
+    "unidades": {
+      "items": {
+        "$ref": "#/$defs/UnidadeEscopoPersistente"
+      },
+      "title": "Unidades",
+      "type": "array"
+    },
+    "versao": {
+      "const": "escopo_destino_documental@1.1.0",
+      "default": "escopo_destino_documental@1.1.0",
+      "title": "Versao",
+      "type": "string"
+    }
+  },
+  "required": [
+    "administradora_id",
+    "condominio_candidato_id",
+    "codigo_destino",
+    "codigo_origem",
+    "perfil_saida_sha256",
+    "referencia_sha256",
+    "fonte_financeira_sha256",
+    "unidades",
+    "motivo_referencia",
+    "cadastro_revisao",
+    "cadastro_sha256",
+    "hashes_fontes_verificadas",
+    "resumo_cadastro"
+  ],
+  "title": "EscopoDestinoPersistente",
+  "type": "object"
+}

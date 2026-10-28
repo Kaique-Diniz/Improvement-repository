@@ -1,0 +1,412 @@
+{
+  "$defs": {
+    "AprovacaoVinculo": {
+      "additionalProperties": false,
+      "properties": {
+        "aprovado_em": {
+          "format": "date-time",
+          "title": "Aprovado Em",
+          "type": "string"
+        },
+        "conteudo_aprovado_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Conteudo Aprovado Sha256",
+          "type": "string"
+        },
+        "fundamento": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Fundamento",
+          "type": "string"
+        },
+        "responsavel": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Responsavel",
+          "type": "string"
+        },
+        "sessao_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sessao Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "responsavel",
+        "sessao_sha256",
+        "aprovado_em",
+        "fundamento",
+        "conteudo_aprovado_sha256"
+      ],
+      "title": "AprovacaoVinculo",
+      "type": "object"
+    },
+    "EvidenciaVinculo": {
+      "additionalProperties": false,
+      "properties": {
+        "conciliacao_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Conciliacao Sha256",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "papel": {
+          "enum": [
+            "financeiro",
+            "referencia",
+            "cadastro",
+            "confronto"
+          ],
+          "title": "Papel",
+          "type": "string"
+        }
+      },
+      "required": [
+        "papel",
+        "origem",
+        "conciliacao_sha256"
+      ],
+      "title": "EvidenciaVinculo",
+      "type": "object"
+    },
+    "IdentidadeOrigem": {
+      "additionalProperties": false,
+      "properties": {
+        "administradora_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Administradora Id",
+          "type": "string"
+        },
+        "bloco_literal": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Bloco Literal",
+          "type": "string"
+        },
+        "codigo_original": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Codigo Original",
+          "type": "string"
+        },
+        "empreendimento": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Empreendimento",
+          "type": "string"
+        },
+        "unidade_literal": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Unidade Literal",
+          "type": "string"
+        }
+      },
+      "required": [
+        "administradora_id",
+        "empreendimento",
+        "codigo_original",
+        "bloco_literal",
+        "unidade_literal"
+      ],
+      "title": "IdentidadeOrigem",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "properties": {
+        "arquivo_id": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Arquivo Id",
+          "type": "string"
+        },
+        "continuacao_de": {
+          "anyOf": [
+            {
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continuacao De"
+        },
+        "data_fonte": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data Fonte"
+        },
+        "identificador": {
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+          "title": "Identificador",
+          "type": "string"
+        },
+        "leitor_versao": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Leitor Versao",
+          "type": "string"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linha"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "arquivo_id",
+        "sha256",
+        "leitor_versao",
+        "identificador"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "PendenciaDocumental": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "const": "DOCUMENTOS_VALIDOS_CONFLITANTES",
+          "default": "DOCUMENTOS_VALIDOS_CONFLITANTES",
+          "title": "Codigo",
+          "type": "string"
+        },
+        "documentos_hmac": {
+          "items": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "minItems": 2,
+          "title": "Documentos Hmac",
+          "type": "array"
+        },
+        "estado": {
+          "const": "pendente",
+          "default": "pendente",
+          "title": "Estado",
+          "type": "string"
+        },
+        "evidencias": {
+          "items": {
+            "$ref": "#/$defs/EvidenciaVinculo"
+          },
+          "minItems": 1,
+          "title": "Evidencias",
+          "type": "array"
+        },
+        "id": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "documentos_hmac",
+        "evidencias"
+      ],
+      "title": "PendenciaDocumental",
+      "type": "object"
+    }
+  },
+  "$id": "urn:conversor:vinculos:1.0:vinculo",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "aprovacao": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AprovacaoVinculo"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "atualizado_em": {
+      "format": "date-time",
+      "title": "Atualizado Em",
+      "type": "string"
+    },
+    "codigo_destino": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Codigo Destino",
+      "type": "string"
+    },
+    "codigos_observados": {
+      "items": {
+        "maxLength": 500,
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Codigos Observados",
+      "type": "array"
+    },
+    "condicao_revalidacao": {
+      "const": "mudanca_identidade_perfil_ou_evidencia",
+      "default": "mudanca_identidade_perfil_ou_evidencia",
+      "title": "Condicao Revalidacao",
+      "type": "string"
+    },
+    "condominio_destino_id": {
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+      "title": "Condominio Destino Id",
+      "type": "string"
+    },
+    "estado": {
+      "enum": [
+        "candidato",
+        "aprovado",
+        "pendente",
+        "conflitante",
+        "revogado",
+        "recusado"
+      ],
+      "title": "Estado",
+      "type": "string"
+    },
+    "evidencias": {
+      "items": {
+        "$ref": "#/$defs/EvidenciaVinculo"
+      },
+      "minItems": 2,
+      "title": "Evidencias",
+      "type": "array"
+    },
+    "id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Id",
+      "type": "string"
+    },
+    "identidade": {
+      "$ref": "#/$defs/IdentidadeOrigem"
+    },
+    "motivo": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Motivo",
+      "type": "string"
+    },
+    "nome_financeiro_hmac": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Nome Financeiro Hmac",
+      "type": "string"
+    },
+    "pendencias_documentais": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PendenciaDocumental"
+      },
+      "title": "Pendencias Documentais",
+      "type": "array"
+    },
+    "perfil_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "title": "Perfil Sha256",
+      "type": "string"
+    },
+    "perfil_versao": {
+      "maxLength": 500,
+      "minLength": 1,
+      "title": "Perfil Versao",
+      "type": "string"
+    },
+    "recibos_historicos": {
+      "items": {
+        "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$",
+        "type": "string"
+      },
+      "minItems": 1,
+      "title": "Recibos Historicos",
+      "type": "array"
+    },
+    "registrado_em": {
+      "format": "date-time",
+      "title": "Registrado Em",
+      "type": "string"
+    },
+    "revalidar_ate": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Revalidar Ate"
+    },
+    "versao": {
+      "minimum": 1,
+      "title": "Versao",
+      "type": "integer"
+    },
+    "versao_contrato": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Versao Contrato",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "identidade",
+    "codigos_observados",
+    "condominio_destino_id",
+    "codigo_destino",
+    "versao",
+    "estado",
+    "nome_financeiro_hmac",
+    "perfil_versao",
+    "perfil_sha256",
+    "evidencias",
+    "recibos_historicos",
+    "registrado_em",
+    "atualizado_em",
+    "motivo"
+  ],
+  "title": "VinculoDocumental",
+  "type": "object"
+}

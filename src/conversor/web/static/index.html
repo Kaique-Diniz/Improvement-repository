@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Conversor Inteligente de Inadimplência</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<title>Conversor Inteligente de Inadimplência</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script><script src="/vinculos.js" defer></script></head>
 <body><header><a class="marca" href="/">CI<span>Conversor Inteligente<small>Organização de inadimplência</small></span></a><div class="header-right"><span class="privado">● Ambiente privado</span><span class="tag">MVP · DESENVOLVIMENTO</span><button id="sair" class="discreto" hidden>Sair</button></div></header>
 <main><section class="intro"><div><p class="sobretitulo">DOCUMENTOS → ANÁLISE → EXCEL</p><h1>Da inadimplência à informação organizada.</h1><p>Envie os documentos, confira cada cota e baixe uma prévia em Excel. Os bloqueios acompanham toda a análise.</p></div><div class="selo">Sem envio ao CRM<br><strong>Você confere os resultados.</strong></div></section>
 <section id="login" class="card acesso"><div><span class="numero">01</span><h2>Acesso ao ambiente local</h2><p>Use a chave do arquivo <code>acesso-local.txt</code>, na pasta privada indicada ao iniciar o servidor.</p></div><form id="login-form"><label for="chave">Chave de acesso</label><div class="inline"><input id="chave" type="password" autocomplete="current-password" required><button class="primario">Entrar</button></div><p id="login-error" role="alert"></p></form></section>
@@ -20,6 +20,17 @@
 <button id="salvar-endereco" class="primario" type="submit" disabled>Salvar endereço</button>
 <button id="recarregar-endereco" class="secundario" type="button">Recarregar cadastro</button>
 </form></details>
+<details id="cadastro-vinculos" class="card cadastro-condominio"><summary>Vínculos de condomínios</summary>
+<p>Uma referência conciliada registra candidatos. Aprove cada unidade explicitamente para reutilizar a comprovação sem reenviar o template. Aprovar pertencimento não libera CPF/contatos em conflito nem autoriza importação operacional.</p>
+<div class="endereco-grid"><label>Administradora e condomínio<select id="vinculo-condominio"></select></label>
+<label>Responsável pela decisão<input id="vinculo-responsavel" maxlength="150" autocomplete="username"></label>
+<label class="endereco-largo">Fundamento da decisão<input id="vinculo-fundamento" maxlength="500"></label>
+<label>Revalidar até (opcional)<input id="vinculo-revalidar" type="date"></label></div>
+<p><button id="recarregar-vinculos" type="button" class="secundario">Consultar vínculos</button>
+<button id="candidatos-vinculos" type="button" class="secundario">Preparar candidatos da análise atual</button></p>
+<p id="vinculos-status" role="status" aria-live="polite"></p><div id="vinculos-lista"></div>
+<details><summary>Histórico de vínculos</summary><div id="vinculos-historico"></div></details>
+</details>
 <div class="workspace"><section class="card entrada"><div class="section-title"><span class="numero">01</span><div><h2>Preparar análise</h2><p>Habita / TREE, FL / Plaza Mayor e pilotos BBZ</p></div></div>
 <form id="converter"><label for="condominio">Administradora e condomínio</label><select id="condominio"><option value="auto">Reconhecer automaticamente pelo documento</option><option value="tree">Habita · TREE MORUMBI</option><option value="plaza">FL · PLAZA MAYOR IPIRANGA</option><option value="nova_york">BBZ · NOVA YORK PENTHOUSES</option><option value="innova_blue">BBZ · INNOVA BLUE</option><option value="nova_reboucas">BBZ · NOVA REBOUÇAS</option><option value="edificio_win">BBZ · EDIFÍCIO WIN</option><option value="abrolhos">BBZ · JARDINS DO BRASIL ABROLHOS</option></select>
 <label for="inadimplencia">Relatório de inadimplência <span>obrigatório</span></label><div class="file-field"><div class="upload-control"><div class="arquivo-selecao"><input type="file" id="inadimplencia" accept="application/pdf,.pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,.xlsx" aria-describedby="inadimplencia-nome"><span class="arquivo-escolher" aria-hidden="true">Escolher</span><span id="inadimplencia-nome" class="arquivo-nome" aria-live="polite">Nenhum arquivo selecionado</span></div><button type="button" id="remover-inadimplencia" class="remover-arquivo" aria-label="Remover Relatório de inadimplência" title="Remover Relatório de inadimplência" hidden>×</button></div><small>PDF com texto ou XLSX BBZ · até 20 MB</small></div>
