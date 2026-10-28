@@ -225,7 +225,9 @@ def test_upload_comum_e_download_autenticado_sem_cadastro(tmp_path):
             w=load_workbook(BytesIO(c.get('/api/processamentos/'+j['id']+'/arquivo-teste.xlsx').content));assert w['Dados'].max_column==30;w.close()
 
 
-def test_abrolhos_e_formato_desconhecido_permanecem_bloqueados():
-    with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):
-        reconhecer(planilha(codigo='575',nome='CONDOMINIO JARDINS DO BRASIL'))
+def test_abrolhos_sem_evidencia_de_destino_e_formato_desconhecido_bloqueados(tmp_path):
+    r=analisar(planilha(codigo='575',nome='CONDOMINIO JARDINS DO BRASIL'),
+        PedidoDiagnostico(data_ref=REF,modo='B'),processamento_id='escopo_ficticio',destino=tmp_path)
+    assert r['resumo']['dividas_efetivamente_geradas']==r['resumo']['cadastros_adicionais']==0
+    assert all('DESTINO_TORRE_NAO_COMPROVADO'in d['bloqueios']for d in r['decisoes'])
     with pytest.raises(ErroLeitura):reconhecer(b'arquivo inteiramente ficticio')

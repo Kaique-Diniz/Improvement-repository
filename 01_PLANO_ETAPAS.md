@@ -128,6 +128,19 @@ simulação financeira real, início da Fase 5 ou homologação para produção.
 
 ## Entrega incremental ao Codex
 
+### Prioridade posterior: rodada diagnóstica BBZ do MVP
+
+As solicitações posteriores autorizaram extensões diagnósticas incrementais de
+NOVA YORK, INNOVA, NOVA REBOUÇAS, WIN e ABROLHOS, reutilizando a arquitetura e
+mantendo exportação operacional/CRM desativados. O marco atual ABROLHOS depende
+de WIN `eaa8fc8`: 90 unidades, 216 recibos e 1.472 componentes reconciliados;
+25 unidades têm vínculo histórico de destino, 65 seguem retidas por falta de
+prova adicional, confirmada pelo responsável. A: 103 dívidas; B: 103 + 24
+cadastros no escopo demonstrado. Isso não encerra fases operacionais nem
+comprova homologação integral. Veja a
+[conferência de requisitos ABROLHOS](docs/BBZ_ABROLHOS.md). A próxima integração
+das branches e a conferência Windows dependem de autorização posterior.
+
 ### Estado autorizado após o aceite dos leitores
 
 Fase 3 tecnicamente encerrada pelo responsável, com 458 testes aprovados, 884

@@ -226,9 +226,6 @@ def test_politica_nao_registrada_nao_e_substituida_silenciosamente(tmp_path,monk
 @pytest.mark.parametrize('codigo,nome', [('117','CONDOMINIO EDIFICIO WIN'),
     ('286','CONDOMINIO EDIFICIO NOVA REBOUÇAS'), ('575','CONDOMINIO JARDINS DO BRASIL')])
 def test_condominios_bbz_respeitam_habilitacao_incremental(codigo,nome):
-    if codigo in ('286','117'):
-        perfil,origem,_=reconhecer(planilha(codigo=codigo,nome=nome))
-        assert origem==codigo and perfil['id']==('nova_reboucas' if codigo=='286'else 'edificio_win')
-    else:
-        with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):
-            reconhecer(planilha(codigo=codigo,nome=nome))
+    perfil,origem,_=reconhecer(planilha(codigo=codigo,nome=nome))
+    assert origem==codigo and perfil['id']=={'286':'nova_reboucas','117':'edificio_win','575':'abrolhos'}[codigo]
+    if codigo=='575':assert perfil['exigir_escopo_documental_destino']

@@ -19,6 +19,7 @@ from pydantic import Field
 
 from conversor.adapters.document_probe import SondadorLocal
 from conversor.adapters.cadastral_reference import confrontar_documentos_historicos
+from conversor.adapters.scope_reference import delimitar_escopo_destino
 from conversor.adapters.integration_identity_json import RepositorioIdentidadesIntegracaoJSON
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
@@ -57,7 +58,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos'] = 'auto'
 
 
 def normalizar(s):
@@ -363,6 +364,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 'sha256_original_referencia': perfil_saida.evidencia.sha256,
                 'aba': perfil_saida.evidencia.aba, 'formato': formato.model_dump(mode='json'),
                 'limite': 'Padrão documental de apresentação; não presume vínculo individual com uma linha histórica nem identidade pessoal.'}
+    escopo_destino = (delimitar_escopo_destino(lote_extraido, referencia=referencia, perfil_saida=perfil_saida,
+        perfil=perfil, codigo_origem=codigo) if perfil.get('exigir_escopo_documental_destino') else None)
     fontes = [{'papel': 'inadimplencia', 'sha256': sha256(conteudo).hexdigest(), 'leitor': leitor + '@1'}]
     if perfil.get('origem_regua'):
         fontes.append({'papel':'regua_requisitos_documentais','evidencia':perfil['origem_regua'],
@@ -377,7 +380,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
         cad, contexto_cadastro = ler(cadastro, pc, cc, lc, 'cadastro')
         if perfil['familia']=='bbz':
-            lote,cadastro_bbz=cruzar_cadastro_bbz(lote,cad,endereco_configurado=padrao_endereco)
+            lote,cadastro_bbz=cruzar_cadastro_bbz(lote,cad,endereco_configurado=padrao_endereco,
+                unidades_permitidas=escopo_destino.permitidas if escopo_destino else None)
             if perfil.get('auditar_temporalidade_cadastro'):
                 lote,cadastro_bbz=registrar_temporalidade_cadastro(lote,cadastro_bbz,
                     conferir_emissoes(cadastro,contexto=contexto_cadastro),data_ref=pedido.data_ref)
@@ -389,6 +393,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
+    if escopo_destino:
+        for u in lote.unidades:
+            if u.id not in escopo_destino.permitidas:
+                ocorrencias.append(Ocorrencia(id='escopo_' + sha256((processamento_id+u.id).encode()).hexdigest(),
+                    processamento_id=processamento_id, codigo='DESTINO_TORRE_NAO_COMPROVADO',
+                    gravidade='critico', escopo='registro', registro_id=u.id, origem=u.origem))
     if not cadastro and perfil.get('informar_ausencia_cadastro'):
         ocorrencias.append(Ocorrencia(id='cadastro_ausente_' + sha256(processamento_id.encode()).hexdigest(),
             processamento_id=processamento_id, codigo='CADASTRO_GERAL_NAO_FORNECIDO',
@@ -663,6 +673,15 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'decisoes': decisoes, 'linhas_teste': linhas_info,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
         'arquivo_teste_disponivel': bool(linhas), 'comparacao': None}
+    if escopo_destino:
+        dados_escopo = escopo_destino.model_dump(mode='json')
+        dados_escopo['sha256_conteudo'] = hash_modelo(escopo_destino)
+        resultado['escopo_destino'] = dados_escopo
+        manifesto['escopo_destino'] = {'arquivo': 'escopo_destino.json',
+            'sha256_conteudo': dados_escopo['sha256_conteudo'],
+            'unidades_comprovadas': len(escopo_destino.permitidas),
+            'unidades_pendentes': len(escopo_destino.unidades)-len(escopo_destino.permitidas)}
+        escrever_json(output/'escopo_destino.json', dados_escopo)
     if perfil.get('informar_ausencia_cadastro'):
         resultado['cadastro_complementar'] = manifesto['cadastro_complementar'] = {
             'estado': 'fornecido' if cadastro else 'nao_fornecido',

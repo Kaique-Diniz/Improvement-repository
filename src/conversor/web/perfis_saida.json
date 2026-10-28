@@ -184,5 +184,57 @@
         "padrao_literal": "VG[0-9]{3}[MPG]"
       }
     ]
+  },
+  {
+    "id": "bbz_abrolhos_template_diagnostico",
+    "versao": "1.0",
+    "uso": "diagnostico_nao_operacional",
+    "administradora_id": "adm_bbz",
+    "condominio_id": "cond_bbz_abrolhos",
+    "nome_cedente": "BBZ",
+    "produto": "JARDINS DO BRASIL ABROLHOS",
+    "largura_unidade": 6,
+    "torres": {},
+    "codificador": "bloco_tipo_unidade",
+    "sufixo_cedente": "788",
+    "formatos_unidade": [
+      {
+        "bloco_original": "0",
+        "tipo": "literal",
+        "bloco_cedente": "0",
+        "bloco_complemento": "0",
+        "prefixo_cedente": "UNI",
+        "prefixo_complemento": "UNI",
+        "padrao_literal": "[0-9]{1}SS[0-9]{3}"
+      },
+      {
+        "bloco_original": "D",
+        "tipo": "literal",
+        "bloco_cedente": "D",
+        "bloco_complemento": "D",
+        "prefixo_cedente": "UNI",
+        "prefixo_complemento": "UNI",
+        "padrao_literal": "[ABC][0-9]{5}"
+      },
+      {
+        "bloco_original": "E",
+        "tipo": "literal",
+        "bloco_cedente": "E",
+        "bloco_complemento": "E",
+        "prefixo_cedente": "UNI",
+        "prefixo_complemento": "UNI",
+        "padrao_literal": "[AB][0-9]{5}"
+      }
+    ],
+    "evidencia": {
+      "arquivo": "788 - JARDINS DO BRASIL ABROLHOS - Template.xlsx",
+      "sha256": "c0c1f646bbc940b3e13ae0593bf54e89c2d450897602458ef9fc43138458a7d7",
+      "aba": "Dados",
+      "celulas": {
+        "identificadores": "B2:B104, G2:G104, Y2:Y104; CEDENTE = complemento + -788. Preservar bloco e literal completo, sem equivalência de prefixos.",
+        "produto": "Z2:Z104, destino ABROLHOS explícito; não prova todas as unidades do empreendimento.",
+        "escopo": "Somente vínculos individuais com nome e recibo/data/original únicos; mapa privado versionado por execução."
+      }
+    }
   }
 ]

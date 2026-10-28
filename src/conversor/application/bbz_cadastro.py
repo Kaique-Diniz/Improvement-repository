@@ -54,7 +54,8 @@ def reter_documentos_historicos_conflitantes(lote, auditoria, conflitos):
         telefones_aproveitados=sum(i['telefones_aproveitados'] for i in infos),
         emails_aproveitados=sum(i['emails_aproveitados'] for i in infos),
         associacoes_retidas=sum(i['estado']=='associacao_retida' for i in infos),
-        documentos_ausentes=sum(not resolver_documento(p).evidencias for uid,p in pessoas.items() if uid not in por_unidade),
+        documentos_ausentes=sum(not resolver_documento(p).evidencias for uid,p in pessoas.items()
+            if uid not in por_unidade and saida['unidades'][uid]['estado'] != 'escopo_nao_comprovado'),
         documentos_retidos_revisao=len(por_unidade),
         conflitos_documentais_historicos=len(por_unidade))
     return LoteCanonico(unidades=lote.unidades,boletos=lote.boletos,pessoas=tuple(pessoas[p.unidade_id] for p in lote.pessoas),
@@ -73,8 +74,10 @@ def endereco_fisico(texto):
     return Endereco(logradouro=m[1].rstrip(','),numero=m[2],bairro=bairro,cidade=cidade,uf=uf,cep=cep.replace('-',''))
 
 
-def cruzar_cadastro_bbz(lote, cadastro, *, endereco_configurado=None):
+def cruzar_cadastro_bbz(lote, cadastro, *, endereco_configurado=None, unidades_permitidas=None):
     financeiras={u.id:u for u in lote.unidades};cadastrais={}
+    if unidades_permitidas is not None and not set(unidades_permitidas) <= set(financeiras):
+        raise ErroLeitura('ESCOPO_CADASTRAL_DE_OUTRO_LOTE')
     if {(u.administradora_id,u.condominio_id)for u in cadastro.unidades}!={(u.administradora_id,u.condominio_id)for u in lote.unidades}:
         raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
     if cadastro.boletos:raise ErroLeitura('CADASTRO_NAO_PODE_CRIAR_BOLETOS')
@@ -104,6 +107,12 @@ def cruzar_cadastro_bbz(lote, cadastro, *, endereco_configurado=None):
         info={'unidade_id':uid,'politica':POLITICA,'estado':'sem_cadastro','motivos':[],
               'documento_vinculado':False,'telefones_aproveitados':0,'emails_aproveitados':0,
               'financeiro_original':original.model_dump(mode='json'),'dados_retidos':[]}
+        if unidades_permitidas is not None and uid not in unidades_permitidas:
+            info.update(estado='escopo_nao_comprovado', motivos=['DESTINO_TORRE_NAO_COMPROVADO'],
+                        dados_retidos=['documentos','telefones','emails','endereco'])
+            stats['unidades_financeiras_sem_escopo'] += 1
+            auditoria[uid] = info
+            continue
         if cad is None:
             info['motivos']=['CADASTRO_COMPLEMENTAR_AUSENTE']
             alerta('CADASTRO_COMPLEMENTAR_AUSENTE',u,(u.origem,));auditoria[uid]=info;continue
@@ -167,6 +176,10 @@ def cruzar_cadastro_bbz(lote, cadastro, *, endereco_configurado=None):
         associacoes_retidas=sum(i['estado']=='associacao_retida'for i in auditoria.values()),
         documentos_ausentes=sum(not resolver_documento(p).evidencias for p in pessoas.values()),
         documentos_invalidos=sum('DOCUMENTO_INVALIDO'in resolver_documento(p).codigos for p in pessoas.values()))
+    if unidades_permitidas is not None:
+        resumo['unidades_cadastrais_fora_da_selecao_comprovada'] = len(cadastro.unidades) - stats['unidades_financeiras_localizadas']
+        resumo['documentos_sem_associacao_por_escopo'] = sum(uid not in unidades_permitidas for uid in pessoas)
+        resumo['documentos_ausentes'] = sum(not resolver_documento(p).evidencias for uid,p in pessoas.items() if uid in unidades_permitidas)
     divergencias_endereco=[]
     if endereco_configurado and fisico!=Endereco():
         divergencias_endereco=[k for k in ('logradouro','numero','cep','bairro','cidade','uf')

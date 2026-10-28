@@ -237,9 +237,7 @@ def test_upload_download_com_e_sem_cadastro_e_autenticacao(tmp_path):
 
 
 @pytest.mark.parametrize('codigo,nome',[('117','CONDOMINIO EDIFICIO WIN'),('575','CONDOMINIO JARDINS DO BRASIL')])
-def test_catalogo_habilita_win_sem_habilitar_abrolhos(codigo,nome):
-    if codigo=='117':
-        assert reconhecer(planilha(codigo=codigo,nome=nome))[0]['id']=='edificio_win'
-        return
-    with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):
-        reconhecer(planilha(codigo=codigo,nome=nome))
+def test_catalogo_habilita_win_e_abrolhos_com_escopo_obrigatorio(codigo,nome):
+    p,_,_=reconhecer(planilha(codigo=codigo,nome=nome))
+    assert p['id']==('edificio_win'if codigo=='117'else'abrolhos')
+    if codigo=='575':assert p['exigir_escopo_documental_destino']

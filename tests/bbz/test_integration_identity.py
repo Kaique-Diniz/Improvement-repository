@@ -49,10 +49,10 @@ def test_catalogo_invalido_falha_sem_expor_conteudo(tmp_path,raw):
     assert raw not in str(exc.value)
 
 
-def test_cinco_relacoes_cadastradas_respeitam_quatro_pilotos_habilitados():
+def test_cinco_relacoes_cadastradas_respeitam_cinco_pilotos_habilitados():
     c,_=RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH).carregar()
     assert {i.codigo_easycollector for i in c.identidades}=={'363','567','696','788','884'}
-    assert[p['id']for p in PERFIS.values()if p['familia']=='bbz']==['nova_york','innova_blue','nova_reboucas','edificio_win']
+    assert[p['id']for p in PERFIS.values()if p['familia']=='bbz']==['nova_york','innova_blue','nova_reboucas','edificio_win','abrolhos']
 
 
 def test_reconhecimento_por_conteudo_captura_snapshot_sem_usar_filename(xlsx):
@@ -63,9 +63,13 @@ def test_reconhecimento_por_conteudo_captura_snapshot_sem_usar_filename(xlsx):
 
 
 def test_identidade_conhecida_sem_perfil_financeiro_nao_processa(xlsx):
-    cat,_=RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH).carregar();i=next(i for i in cat.identidades if i.codigo_easycollector=='788')
-    raw=xlsx(codigo=i.codigos_origem[0],nome=i.nomes_documentais[0])
-    with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):reconhecer(raw)
+    i=IdentidadeIntegracao(codigo_easycollector='999',administradora_id='adm_bbz',condominio_id='cond_nao_habilitado',
+        nome_integracao='CONDOMINIO NAO HABILITADO FICTICIO',nomes_documentais=('CONDOMINIO NAO HABILITADO FICTICIO',),codigos_origem=('999',))
+    class Memoria:
+        def carregar(self):return CatalogoIdentidadesIntegracao(versao='1',identidades=(i,)),'a'*64
+    raw=xlsx(codigo='999',nome=i.nome_integracao)
+    with pytest.raises(ErroLeitura,match='CONDOMINIO_IDENTIFICADO_LEITOR_NAO_HABILITADO'):
+        reconhecer(raw,repositorio_identidades=Memoria())
 
 
 def test_mistura_nome_nova_york_com_codigo_de_outro_condominio_bloqueia(xlsx):

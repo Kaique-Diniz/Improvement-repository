@@ -51,8 +51,8 @@ class FormatoTipoUnidade(Modelo):
     @model_validator(mode='after')
     def formato_explicito(self):
         if self.tipo == 'literal':
-            # Apenas gramática limitada: prefixo, largura numérica, letras finais.
-            if not self.padrao_literal or not re.fullmatch(r'[A-Z]+\[0-9\]\{[1-9]\}\[[A-Z]+\]', self.padrao_literal):
+            # Gramática finita: literais, larguras numéricas e classes de letras.
+            if not self.padrao_literal or not re.fullmatch(r'(?:[A-Z0-9]+|\[0-9\]\{[1-9]\}|\[[A-Z]+\])+', self.padrao_literal):
                 raise ValueError('PADRAO_LITERAL_DE_UNIDADE_INVALIDO')
         elif self.padrao_literal is not None:
             raise ValueError('PADRAO_LITERAL_INCOMPATIVEL')

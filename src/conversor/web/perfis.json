@@ -186,5 +186,52 @@
       "Cadastro Geral é opcional. Sem fonte cadastral atribuível, documentos e contatos permanecem vazios; não copiar dados pessoais do template histórico.",
       "Codificação por padrões documentais comprovados, incluindo vagas, sem presumir vínculo individual com o histórico. Grafias fora dos padrões ficam provisórias. Nenhum plano real aprovado ou ativado."
     ]
+  },
+  {
+    "id": "abrolhos",
+    "condominio_id": "cond_bbz_abrolhos",
+    "administradora_id": "adm_bbz",
+    "nome": "JARDINS DO BRASIL ABROLHOS",
+    "administradora": "BBZ",
+    "familia": "bbz",
+    "configuracao_versao": "1.0.0",
+    "codigo_easycollector": "788",
+    "codigo_administrativo": "575",
+    "aliases": [
+      "CONDOMINIO JARDINS DO BRASIL",
+      "JARDINS DO BRASIL ABROLHOS"
+    ],
+    "vigente_de": null,
+    "vigente_ate": null,
+    "politica_descricoes": "descricao_obrigacao_bbz_condominio@1.1.0",
+    "exigir_escopo_documental_destino": true,
+    "auditar_temporalidade_cadastro": true,
+    "informar_ausencia_cadastro": true,
+    "zero_original_cadastral": true,
+    "exclusoes": [
+      {
+        "id": "abrolhos_original_zero",
+        "tipo": "valor_original",
+        "operador": "eq",
+        "valor": "0.00"
+      }
+    ],
+    "regra_prazo": "abrolhos_prazo_60",
+    "dias": 60,
+    "prioridade_exclusao": 1,
+    "prioridade_prazo": 0,
+    "origem_regua": {
+      "arquivo_id": "regua_bbz_20261026",
+      "sha256": "17f065b659288e8b364cc056a374e87ee6797fc905587876ef05a94f5c904f0d",
+      "leitor_versao": "vinculacao_documental_regua@1",
+      "identificador": "aba_REGUA_E174_extrajudicial",
+      "linha": 174
+    },
+    "ressalvas": [
+      "Somente diagnóstico: atraso > 60 dias corridos é hipótese autorizada; inclusividade e vigência operacionais pendentes. Prazo judicial de 90 dias não é filtro.",
+      "O código 575 identifica empreendimento compartilhado. Vínculo adicional ao destino 788 exige referência específica e unidade/nome/recibo/vencimento/original comprovados. Prefixo ou endereço isolado não comprova torre.",
+      "Sem prova de pertencimento, preservar leitura e elegibilidade financeira, reter cadastro e ambas as modalidades de linhas. Referência opcional para leitura, necessária ao escopo enquanto não houver outra evidência aprovada.",
+      "A/AJ/J/AE e centavo não herdam vetos TREE. Original zero é preservado em auditoria, sem dívida; Cadastro não cria boletos nem inclui todas as suas unidades. Nenhum plano real aprovado ou ativado."
+    ]
   }
 ]

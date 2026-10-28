@@ -6,6 +6,28 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## ABROLHOS — quinto piloto BBZ, cobertura parcial de identidade
+
+Extensão diagnóstica `feature/bbz-abrolhos`, dependente do WIN `eaa8fc8`.
+Origem BBZ **575/0575** identifica o empreendimento compartilhado; destino
+easyCollector **788** exige prova individual adicional. O arquivo denominado
+`Cadastro.xlsx` contém o financeiro, reconhecido pelo conteúdo.
+
+Referência **26/10/2026**, hipótese **atraso > 60 dias**: **90 unidades,
+216 recibos, 1.472 componentes; A: 103 dívidas; B: mesmas 103 + 24 cadastros**.
+O template comprova vínculo histórico diagnóstico para **25 unidades**; as
+outras **65 continuam retidas**, sem associação de documentos/contatos. Sem
+referência de escopo, a análise financeira funciona, mas não produz linhas para
+destino não comprovado. Prefixos e código genérico não substituem essa prova.
+
+Cadastro PDF: 529 unidades; somente 25 localizadas no escopo, duas associações
+documentais retidas. Quatro descrições continuam neutras em revisão.
+**1.844 testes**, oito verificações de schemas, upload/download no navegador e
+regressão dos seis anteriores com canônicos/XLSX byte a byte idênticos.
+Somente diagnóstico; sem publicação ou homologação integral.
+Veja a [matriz de requisitos e limitações ABROLHOS](docs/BBZ_ABROLHOS.md).
+As seções seguintes registram marcos históricos de cada extensão.
+
 ## EDIFÍCIO WIN — quarto piloto BBZ
 
 Extensão diagnóstica `feature/bbz-edificio-win`, dependente do NOVA REBOUÇAS
