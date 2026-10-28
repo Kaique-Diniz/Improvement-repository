@@ -1,6 +1,7 @@
 """Associação BBZ por unidade e identidade pessoal; nunca prefere cadastro por suposição."""
 from collections import Counter
 from copy import deepcopy
+from datetime import date
 import json
 import re
 
@@ -13,6 +14,20 @@ from conversor.domain.recognition import normalizar_assinatura
 from conversor.readers.text_support import ErroLeitura
 
 POLITICA = 'bbz_associacao_por_papel@1.0.0'
+
+
+def registrar_temporalidade_cadastro(lote, auditoria, emissoes, *, data_ref):
+    """Defasagem comprovada é ressalva; não prova troca de titular ou vigência."""
+    anteriores = [e for e in emissoes if date.fromisoformat(e['emitido_em'][:10]) < data_ref]
+    referencia = {'data_referencia_processamento': data_ref.isoformat(), 'emissoes': emissoes,
+        'periodo_anterior': bool(anteriores), 'atualidade_atestada': False,
+        'limite': 'Emissão não é vigência nem prova de titularidade atual. Associação exige unidade e identidade concordantes; conflitos ficam retidos.'}
+    ressalvas = list(lote.ressalvas)
+    if anteriores:
+        ressalvas.append(RessalvaLeitura(codigo='BBZ_CADASTRO_PERIODO_ANTERIOR', gravidade='alerta',
+            origens=tuple(Origem.model_validate(e['origem']) for e in anteriores),
+            valores_originais=(json.dumps(referencia, ensure_ascii=False),)))
+    return lote.model_copy(update={'ressalvas': tuple(ressalvas)}), auditoria | {'referencia_temporal': referencia}
 
 
 def reter_documentos_historicos_conflitantes(lote, auditoria, conflitos):

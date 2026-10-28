@@ -115,5 +115,31 @@
         "produto": "Z2:Z640"
       }
     }
+  },
+  {
+    "id": "bbz_nova_reboucas_template_diagnostico",
+    "versao": "1.0",
+    "uso": "diagnostico_nao_operacional",
+    "administradora_id": "adm_bbz",
+    "condominio_id": "cond_bbz_nova_reboucas",
+    "nome_cedente": "BBZ",
+    "produto": "COND. EDIF. NOVA REBOUÇAS",
+    "largura_unidade": 4,
+    "torres": {
+      "0": "0"
+    },
+    "codificador": "bloco_unidade_sufixo",
+    "sufixo_cedente": "696",
+    "evidencia": {
+      "arquivo": "696 - COND. EDIF. NOVA REBOUÇAS - Template.xls",
+      "sha256": "69a025b247892b603e79294b94386f4351ce2587c5a21cfc11633b9f31ba2f6c",
+      "aba": "Planilha2",
+      "celulas": {
+        "nome_cedente": "A2:A148",
+        "identificadores": "B2:B148 e G2:G148; bloco 0 e largura numérica 4 comprovados",
+        "contrato": "Y2:Y96; 95 contratos iguais a CEDENTE, cabeçalho histórico duplicado de AA",
+        "produto": "Z2:Z96"
+      }
+    }
   }
 ]

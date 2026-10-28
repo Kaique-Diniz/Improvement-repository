@@ -140,6 +140,7 @@ function mostrar() {
   $('resumo').replaceChildren(...stats.map(([label,n])=>{const d=elemento('div',undefined,'metrica');d.append(elemento('span',label),elemento('strong',String(n)));return d;}));
   $('avisos').replaceChildren(...r.avisos.map(x=>elemento('p',x)));
   if(r.cadastro_bbz)$('avisos').append(elemento('p','Cadastro Geral BBZ PDF reconhecido e vinculado ao condomínio identificado · '+r.cadastro_bbz.resumo.paginas+' páginas. A conferência técnica não é um atesto humano.'));
+  if(r.cadastro_bbz?.referencia_temporal?.periodo_anterior)$('avisos').append(elemento('p','Cadastro Geral emitido em período anterior à referência do processamento. A associação exige identidade concordante; a emissão não comprova titularidade atual. Divergências permanecem retidas.'));
   const endereco=r.endereco_condominio;
   $('endereco-resultado').replaceChildren(elemento('p',endereco?.cadastrado?'Endereço cadastrado do condomínio aplicado em todas as linhas do XLSX; endereços das fontes preservados na auditoria.':'Endereço não cadastrado. O diagnóstico pode continuar normalmente.'));
   const cadastrar=elemento('button',endereco?.cadastrado?'Conferir endereço do condomínio':'Cadastrar endereço','secundario');cadastrar.type='button';

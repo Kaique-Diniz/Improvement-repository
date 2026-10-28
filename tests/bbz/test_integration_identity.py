@@ -49,10 +49,10 @@ def test_catalogo_invalido_falha_sem_expor_conteudo(tmp_path,raw):
     assert raw not in str(exc.value)
 
 
-def test_cinco_relacoes_cadastradas_habilitam_apenas_dois_pilotos():
+def test_cinco_relacoes_cadastradas_respeitam_tres_pilotos_habilitados():
     c,_=RepositorioIdentidadesIntegracaoJSON(IDENTIDADES_PATH).carregar()
     assert {i.codigo_easycollector for i in c.identidades}=={'363','567','696','788','884'}
-    assert[p['id']for p in PERFIS.values()if p['familia']=='bbz']==['nova_york','innova_blue']
+    assert[p['id']for p in PERFIS.values()if p['familia']=='bbz']==['nova_york','innova_blue','nova_reboucas']
 
 
 def test_reconhecimento_por_conteudo_captura_snapshot_sem_usar_filename(xlsx):

@@ -23,7 +23,7 @@ from conversor.adapters.integration_identity_json import RepositorioIdentidadesI
 from conversor.adapters.private_json import escrever_json
 from conversor.application.cadastro import cruzar_cadastro, reavaliar_pendencias_cadastrais
 from conversor.application.debt_descriptions import interpretar_lote_bbz, POLITICA_BBZ, POLITICAS_BBZ
-from conversor.application.bbz_cadastro import cruzar_cadastro_bbz, reter_documentos_historicos_conflitantes
+from conversor.application.bbz_cadastro import cruzar_cadastro_bbz, reter_documentos_historicos_conflitantes, registrar_temporalidade_cadastro
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
@@ -43,7 +43,7 @@ from conversor.readers.habita_point_coverage import conferir_apontamentos_habita
 from conversor.readers.habita_closing import conferir_fechamento_habita
 from conversor.readers.operational import GRAMATICAS, RegistroLeitores, validar_assinatura_para_leitura
 from conversor.readers.bbz_xlsx import LeitorBBZXLSX, identificar as identificar_bbz
-from conversor.readers.bbz_cadastro import LeitorCadastroBBZ, identificar as identificar_cadastro_bbz
+from conversor.readers.bbz_cadastro import LeitorCadastroBBZ, identificar as identificar_cadastro_bbz, conferir_emissoes
 from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
@@ -57,7 +57,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas'] = 'auto'
 
 
 def normalizar(s):
@@ -368,9 +368,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         pc, cc, lc = reconhecer(cadastro, cadastro=True)
         if (pc['id'], cc) != (perfil['id'], codigo):
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
-        cad, _ = ler(cadastro, pc, cc, lc, 'cadastro')
+        cad, contexto_cadastro = ler(cadastro, pc, cc, lc, 'cadastro')
         if perfil['familia']=='bbz':
             lote,cadastro_bbz=cruzar_cadastro_bbz(lote,cad,endereco_configurado=padrao_endereco)
+            if perfil.get('auditar_temporalidade_cadastro'):
+                lote,cadastro_bbz=registrar_temporalidade_cadastro(lote,cadastro_bbz,
+                    conferir_emissoes(cadastro,contexto=contexto_cadastro),data_ref=pedido.data_ref)
             if referencia:
                 conflitos=confrontar_documentos_historicos(referencia,lote=lote,
                     identificadores=identificadores,perfil_saida=perfil_saida)

@@ -1,5 +1,6 @@
 """Família BBZ Relatório de Unidades - Completo. Não seleciona dívidas ou titulares."""
 from dataclasses import dataclass
+from datetime import datetime
 from hashlib import sha256
 from io import BytesIO
 import json
@@ -149,6 +150,24 @@ class FonteCadastroBBZ:
 
 def identificar(conteudo):
     return FonteCadastroBBZ(conteudo).identidade
+
+
+def conferir_emissoes(conteudo, *, contexto):
+    """Metadados adicionais opt-in, sem mudar os canônicos históricos do leitor."""
+    fonte = FonteCadastroBBZ(conteudo)
+    evidencias = []
+    for pagina in fonte.paginas:
+        rodape = next(l for l in pagina if l.y < 45 and l.texto().startswith('Emitido em '))
+        m = re.fullmatch(r'Emitido em (\d{2}/\d{2}/\d{4} \d{2}:\d{2}:\d{2}) - Página \d+ de \d+', rodape.texto())
+        try:
+            emitido_em = datetime.strptime(m[1], '%d/%m/%Y %H:%M:%S').isoformat()
+        except (TypeError, ValueError):
+            falha('BBZ_CADASTRO_EMISSAO_INVALIDA', rodape)
+        evidencias.append({'emitido_em_original': m[1], 'emitido_em': emitido_em,
+            'fuso_documental': None, 'origem': Origem(arquivo_id=contexto.arquivo_id,
+                sha256=fonte.digest, leitor_versao=FORMATO+'@1', pagina=rodape.pagina,
+                linha=rodape.numero, identificador=f'p{rodape.pagina}_l{rodape.numero}_rodape').model_dump(mode='json')})
+    return tuple(evidencias)
 
 
 def _telefone(texto):

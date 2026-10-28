@@ -6,6 +6,23 @@ universal existente. **Desenvolvimento e testes privados; não homologado para p
 A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
 puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
 
+## NOVA REBOUÇAS — terceiro piloto BBZ
+
+Extensão diagnóstica em `feature/bbz-nova-reboucas`, dependente da ponta validada
+INNOVA `4a7d362`. Código easyCollector **696** separado do código de origem **286**.
+Com referência explícita **26/10/2026** e hipótese **atraso > 30 dias**: 12 unidades,
+102 recibos e 123 componentes; **95 dívidas no A; as mesmas 95 + sete cadastros
+no B**. Cadastro opcional: 144 unidades em 58 páginas, emitido em 2025; alerta
+temporal e associação por papel. Um conflito com o histórico retém documento e
+contatos de uma unidade, sem alterar as dívidas. As 102 descrições têm evidência.
+
+O template legado `.xls` é somente referência; sua conversão privada auditada
+fica isolada do leitor financeiro. WIN/ABROLHOS continuam desabilitados, assim
+como exportação operacional e integração easyCollector. Não houve publicação.
+**1.751 testes aprovados**, oito schemas e regressão privada dos quatro
+condomínios anteriores com canônicos/XLSX byte a byte idênticos.
+Veja [implementação, conversão e pendências](docs/BBZ_NOVA_REBOUCAS.md).
+
 ## INNOVA BLUE — segundo piloto BBZ
 
 Envie o XLSX financeiro do INNOVA, com Cadastro Geral PDF e referência opcionais.
@@ -13,7 +30,8 @@ O piloto diagnóstico usa referência explícita de 26/10/2026 e a hipótese
 `atraso > 31 dias`, cuja inclusividade ainda exige confirmação operacional.
 Reconciliação: 108 unidades, 645 recibos, 4.095 componentes; 639 dívidas no A e
 as mesmas 639 + seis cadastros no B. Original zero não gera dívida nem veto
-coletivo. Não se habilitam WIN, NOVA REBOUÇAS ou ABROLHOS.
+coletivo. Neste marco ainda não se habilitavam os demais BBZ; a extensão
+posterior NOVA REBOUÇAS está descrita acima.
 
 O Cadastro reconcilia 885 unidades, mas só complementa as 108 unidades
 financeiras comprovadas. INAT é preservado; não se inventa equivalência com

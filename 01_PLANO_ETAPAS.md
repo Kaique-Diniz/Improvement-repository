@@ -1,5 +1,15 @@
 # 01 — Plano do projeto e fases
 
+## Expansão incremental autorizada — NOVA REBOUÇAS / BBZ
+
+Autorizada a extensão diagnóstica NOVA REBOUÇAS (696), reutilizando os leitores,
+políticas e associação por papel do INNOVA validado em `4a7d362`. A branch
+`feature/bbz-nova-reboucas` depende dessa ponta ainda não integrada à main na
+abertura da tarefa. Escopo, evidências e ressalvas estão no
+[relatório NOVA REBOUÇAS](docs/BBZ_NOVA_REBOUCAS.md). Implementar WIN e ABROLHOS
+somente por autorização posterior. Não há homologação operacional, publicação,
+liberação de cobrança ou integração ao CRM. Marcos anteriores são históricos.
+
 ## Expansão incremental autorizada — INNOVA BLUE / BBZ
 
 Após a publicação do Cadastro Geral NOVA YORK, foi autorizada exclusivamente a
