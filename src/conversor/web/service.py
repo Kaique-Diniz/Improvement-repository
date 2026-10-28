@@ -649,9 +649,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         unidades_contato_retido=retencoes_vinculos,
     )
     escrever_json(output / 'validacao_conversao.json', validacao)
-    if validacao['estado'] == 'erro_critico':
-        # Um XLSX incongruente não pode ser oferecido para download.
-        (output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx').unlink(missing_ok=True)
+    # Erro crítico bloqueia o endpoint de download; o artefato fica privado para auditoria.
     manifesto = {'versao': 'manifesto_xlsx_diagnostico@1', 'processamento_id': processamento_id,
         'finalidade': 'DIAGNOSTICO_LOCAL_NAO_IMPORTAR', 'autoriza_cobranca': False,
         'permite_exportacao_operacional': False, 'data_ref': pedido.data_ref.isoformat(), 'modo': pedido.modo,
