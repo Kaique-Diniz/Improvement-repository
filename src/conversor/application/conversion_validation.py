@@ -61,6 +61,8 @@ def descrever_motivo(codigo):
         'SUBTOTAL_BLOCO_DIVERGENTE': 'O fechamento financeiro exige conferência; a ocorrência original foi preservada.',
         'BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE': 'CPF/CNPJ e contatos permanecem retidos por conflito documental.',
         'BBZ_DOCUMENTO_HISTORICO_CONFLITANTE_ASSOCIACAO_RETIDA': 'Documentos divergentes entre fontes; CPF/CNPJ e contatos retidos.',
+        'CONFLITO_DOCUMENTAL_IDENTIFICADO': 'As evidências identificam conflito documental; CPF/CNPJ e contatos permanecem retidos.',
+        'DADOS_CADASTRAIS_PROTEGIDOS': 'Dados cadastrais protegidos por outro motivo ou motivo ainda não classificado; isso não comprova conflito entre documentos.',
         'CONDICAO_INDETERMINADA': 'Faltam evidências suficientes para concluir a condição.',
         'VINCULOS_ALTERADOS_REPROCESSAR': 'O cadastro de vínculos mudou. Faça novo processamento.',
         'PRAZO_NAO_ATINGIDO': 'O boleto não atende ao prazo financeiro configurado.',
@@ -76,7 +78,8 @@ def _origem(o):
 
 def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
                       escopo_destino=None, unidades_contato_retido=(),
-                      lote_origem=None, contexto=None, fontes=(), fechamento=None):
+                      lote_origem=None, contexto=None, fontes=(), fechamento=None,
+                      motivos_contato_retido=None):
     """Distingue observação dos bytes, consistência interna e limites da evidência.
 
     lote_origem é o canônico extraído antes do enriquecimento. Não equivale a
@@ -88,6 +91,16 @@ def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
     decisoes = tuple(decisoes)
     contexto = contexto or {}
     retidas = set(unidades_contato_retido)
+    motivos_contatos = {uid:set(m) for uid,m in (motivos_contato_retido or {}).items()}
+    for uid in retidas:motivos_contatos.setdefault(uid,{'MOTIVO_NAO_CLASSIFICADO'})
+    if escopo_destino:
+        for u in escopo_destino.unidades:
+            if u.estado!='comprovado_documentalmente':
+                motivos_contatos.setdefault(u.unidade_id,set()).add('PERTENCIMENTO_NAO_COMPROVADO')
+    retidas.update(motivos_contatos)
+    conflitos = {uid for uid,m in motivos_contatos.items() if 'CONFLITO_DOCUMENTAL' in m}
+    outras_retidas = {uid for uid,m in motivos_contatos.items()
+                     if m-{'CONFLITO_DOCUMENTAL','PERTENCIMENTO_NAO_COMPROVADO'}}
     erros, avisos, detalhes = [], [], []
     contagens_erros = Counter()
     categorias_erros = set()
@@ -133,8 +146,10 @@ def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
             erro('CADASTRO_SEM_FUNDAMENTO', 'O cadastro adicional não atende às decisões do modo A/B.', 'elegibilidade', meta=meta)
 
     permitidas = None
+    sem_pertencimento = set()
     if escopo_destino is not None:
         permitidas = set(escopo_destino.permitidas)
+        sem_pertencimento = {u.unidade_id for u in escopo_destino.unidades if u.estado!='comprovado_documentalmente'}
         if any(m.get('unidade_id') not in permitidas for m in infos):
             erro('UNIDADE_FORA_DO_ESCOPO', 'Há linha prevista para unidade sem pertencimento comprovado.', 'vinculos')
         if getattr(escopo_destino, 'erro_cadastro', None) and infos:
@@ -265,8 +280,10 @@ def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
 
     pendentes = Counter(c for d in decisoes if d.get('situacao') == 'revisao' for c in (d.get('bloqueios') or ['CONDICAO_INDETERMINADA']))
     aviso('BOLETOS_EM_REVISAO', 'Boletos retidos permanecem fora do XLSX.', sum(d.get('situacao') == 'revisao' for d in decisoes))
-    aviso('CONTATOS_DOCUMENTAIS_RETIDOS', 'Unidades com CPF/CNPJ e contatos protegidos por conflito documental.', len(retidas))
-    aviso('ESCOPO_NAO_COMPROVADO', 'Unidades sem pertencimento comprovado permanecem fora do XLSX.', len(escopo_destino.unidades)-len(permitidas) if permitidas is not None else 0)
+    aviso('CONTATOS_DOCUMENTAIS_RETIDOS', 'Unidades com dados pessoais protegidos; os motivos podem se sobrepor e são discriminados no laudo.', len(retidas))
+    aviso('CONFLITOS_DOCUMENTAIS_IDENTIFICADOS','Unidades com conflito documental identificado nas evidências.',len(conflitos))
+    aviso('OUTROS_DADOS_PROTEGIDOS','Unidades com dados protegidos por outros motivos cadastrais ou ainda não classificados.',len(outras_retidas))
+    aviso('ESCOPO_NAO_COMPROVADO', 'Unidades sem pertencimento comprovado permanecem fora do XLSX.', len(sem_pertencimento))
     aviso('DESCRICOES_NEUTRAS', 'Descrições neutras preservadas; não foi inventada uma competência.', neutras)
     if fechamento and fechamento.get('estado') == 'reconciliado_somente_diagnostico':
         aviso('FECHAMENTO_HABITA_RECONCILIADO', 'Anomalia Habita/VG preservada. Reconciliação vale exclusivamente para diagnóstico.', 1)
@@ -275,11 +292,12 @@ def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
         if d.get('situacao') == 'revisao' and not codigos:codigos = ['CONDICAO_INDETERMINADA']
         if d.get('situacao') == 'nao_elegivel':
             codigos.append({'veto_coletivo':'VETO_COLETIVO','valor_original_zero':'VALOR_ORIGINAL_ZERO'}.get(d.get('motivo_selecao'),'PRAZO_NAO_ATINGIDO'))
-        if d.get('unidade_id') in retidas:codigos.append('BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE')
+        if d.get('unidade_id') in conflitos:codigos.append('CONFLITO_DOCUMENTAL_IDENTIFICADO')
+        if d.get('unidade_id') in outras_retidas:codigos.append('DADOS_CADASTRAIS_PROTEGIDOS')
         for codigo in dict.fromkeys(codigos):
             detalhes.append(dict(unidade_id=d.get('unidade_id'),bloco=d.get('bloco',''),unidade=d.get('unidade',''),
                 boleto_id=d['id'],boleto=d.get('boleto',''),estado='ressalva' if d.get('situacao') == 'elegivel' else d.get('situacao'),
-                categoria='documental' if codigo == 'BBZ_CONFLITO_DOCUMENTAL_PERSISTENTE' else 'financeira' if d.get('situacao') == 'nao_elegivel' else 'retencao',
+                categoria='documental' if codigo in ('CONFLITO_DOCUMENTAL_IDENTIFICADO','DADOS_CADASTRAIS_PROTEGIDOS') else 'financeira' if d.get('situacao') == 'nao_elegivel' else 'retencao',
                 codigo=codigo,descricao=descrever_motivo(codigo),origens=[_origem(o) for o in boletos[d['id']].origens] if d['id'] in boletos else []))
     checks = []
     def check(id_, descricao, categorias, *, aplicavel=True, disponivel=True, ressalva=False, evidencia):
@@ -299,6 +317,7 @@ def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
         contexto={k:contexto[k] for k in ('condominio','administradora','data_ref','modo') if k in contexto},
         arquivo={'sha256':digest,'conferido_integralmente':arquivo_conferido},
         vinculos={'cadastro_sha256':getattr(escopo_destino,'cadastro_sha256',None),'cadastro_revisao':getattr(escopo_destino,'cadastro_revisao',None)},
+        retencoes_classificadas=[dict(unidade_id=uid,motivos=sorted(m))for uid,m in sorted(motivos_contatos.items())],
         indicadores=dict(boletos_analisados=len(decisoes),boletos_elegiveis=sum(d.get('situacao') == 'elegivel' for d in decisoes),
             boletos_elegiveis_financeiros=sum(d.get('situacao_financeira') == 'elegivel_na_simulacao' for d in decisoes),
             boletos_excluidos_financeiros=sum(d.get('situacao_financeira') == 'excluido' or d.get('situacao') == 'nao_elegivel' for d in decisoes),
@@ -306,9 +325,11 @@ def validar_conversao(path: Path, *, registros, linhas_info, decisoes,
             linhas_cadastrais=cadastros_lidos,linhas_divida_planejadas=len(dividas),linhas_cadastrais_planejadas=len(cadastros),
             linhas_lidas_xlsx=lidas,unidades_no_xlsx=len(unidades_lidas),
             unidades_escopo_comprovado=len(permitidas) if permitidas is not None else None,
-            unidades_escopo_pendente=len(escopo_destino.unidades)-len(permitidas) if permitidas is not None else None,
+            unidades_escopo_pendente=len(sem_pertencimento) if permitidas is not None else None,
             unidades_vinculo_persistente=sum(getattr(u,'origem_comprovacao',None) == 'cadastro_persistente' and u.estado == 'comprovado_documentalmente' for u in escopo_destino.unidades) if escopo_destino else None,
             unidades_contato_retido=len(retidas),linhas_com_contato_retido=retidas_lidas,
+            unidades_conflito_documental=len(conflitos),unidades_outros_dados_protegidos=len(outras_retidas),
+            linhas_financeiras_contatos_retidos=retidas_lidas,
             descricoes_neutras=neutras,valor_financeiro_xlsx=f'{total_obtido:.2f}',valor_financeiro_planejado=f'{total_planejado:.2f}',
             valor_financeiro_canonico=f'{total_canonico:.2f}' if lote_origem is not None else None),
         verificacoes=checks,motivos_retencao=[dict(codigo=k,quantidade=v,descricao=descrever_motivo(k)) for k,v in sorted(pendentes.items())],

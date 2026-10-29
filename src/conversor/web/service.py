@@ -642,16 +642,17 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'Reconciliação integral comprovada somente para XLSX DIAGNÓSTICO LOCAL. A ocorrência crítica '
         'original permanece preservada; confira o fechamento. Exportação operacional e importação no CRM proibidas.')
     # Conferência pós-escrita: apenas observa o XLSX, sem recalcular elegibilidade.
-    retencoes_central = set(retencoes_vinculos)
-    if cadastro_bbz:
-        retencoes_central.update(uid for uid, info in cadastro_bbz['unidades'].items()
-            if {'documentos','telefones','emails'}.intersection(info.get('dados_retidos', ())))
+    from conversor.application.contact_retention import classificar_retencoes
+    motivos_retencoes = classificar_retencoes(pendencias_persistentes=retencoes_vinculos,
+        cadastro=cadastro_bbz,escopo=escopo_destino)
+    retencoes_central = set(motivos_retencoes)
     validacao = validar_conversao(
         output / 'TESTE_LOCAL_NAO_IMPORTAR.xlsx',
         registros=(materializar(linha).valores for linha in linhas),
         linhas_info=linhas_info, decisoes=decisoes,
         escopo_destino=escopo_destino,
         unidades_contato_retido=retencoes_central,
+        motivos_contato_retido=motivos_retencoes,
         lote_origem=lote_validacao,
         contexto={'condominio':perfil['nome'], 'administradora':perfil['administradora'],
                   'condominio_id':perfil['condominio_id'], 'administradora_id':perfil['administradora_id'],
