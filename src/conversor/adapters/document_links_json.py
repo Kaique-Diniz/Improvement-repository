@@ -21,6 +21,7 @@ from .billing_authority import sem_links, ler_protegido
 from .json_repository import ler_json_bytes, _gravar, _sincronizar_diretorio
 from .private_json import escrever_json
 from .private_simulation_json import conferir_local_privado
+from .private_permissions import criar_diretorio_privado
 
 
 def protegido(func):
@@ -44,7 +45,7 @@ class RepositorioVinculosJSON:
         conferir_local_privado(self.privado)
         self.raiz = self.privado / 'vinculos_documentais'
         self._caminho(self.raiz)
-        self.raiz.mkdir(mode=0o700, exist_ok=True)
+        criar_diretorio_privado(self.raiz)
         conferir_local_privado(self.raiz)
         self.path = self.raiz / 'registro.json'
         self.key = self.raiz / 'chave.bin'
@@ -141,7 +142,7 @@ class RepositorioVinculosJSON:
 
     def _persistir(self, snapshot):
         body=snapshot.acervo.model_dump(mode='json')
-        self.cabecas.mkdir(mode=0o700,exist_ok=True)
+        criar_diretorio_privado(self.cabecas)
         path=self._caminho(self.cabecas/f'{snapshot.revisao:020d}.json')
         if path.exists():raise ValueError('REVISAO_IMUTAVEL_JA_EXISTE')
         head={'revisao':snapshot.revisao,'sha256':snapshot.sha256}
@@ -172,7 +173,7 @@ class RepositorioVinculosJSON:
         with self._travar():
             self._carregar()  # Nunca substituir acervo inválido.
             self._chave(criar=True)
-            self.fontes.mkdir(mode=0o700, exist_ok=True)
+            criar_diretorio_privado(self.fontes)
             path=self._caminho(self.fontes/(digest+'.bin'))
             if path.exists():
                 if sha256(ler_protegido(path)).hexdigest()!=digest: raise ValueError('FONTE_ADULTERADA')

@@ -5,6 +5,7 @@ import os
 
 from filelock import FileLock
 import pytest
+from tests.fs_support import symlink_ou_skip_1314, assert_privado, ampliar_acesso_sintetico
 
 from conversor.adapters.private_simulation_json import RepositorioSimulacoesJSON
 from conversor.application.ports import ErroAplicacao
@@ -16,9 +17,7 @@ def test_pacote_persistido_assinado_0600_e_imutavel(laboratorio):
     c.armazenamento.gravar_pacote(c.pacote, credencial=c.gestor)
     assert c.armazenamento.carregar_pacote(c.pacote.id) == c.pacote
     path, recibo = c.armazenamento._paths('pacote', c.pacote.id)
-    if os.name == 'posix':
-        assert path.stat().st_mode & 0o777 == recibo.stat().st_mode & 0o777 == 0o600
-        assert c.armazenamento.raiz.stat().st_mode & 0o777 == 0o700
+    for p in (path,recibo,c.armazenamento.raiz):assert_privado(p)
     assert c.gestor.segredo not in path.read_text() + recibo.read_text()
     assert json.loads(recibo.read_text())['responsavel_id'] == 'gestor'
     with pytest.raises(ErroAplicacao, match='IMUTAVEL_JA_EXISTE'):
@@ -75,13 +74,13 @@ def test_isolamento_git_links_e_permissoes(laboratorio, tmp_path, recurso):
         fonte = c.pacote.fontes[0].model_copy(update={'caminho': str(path)})
         c.pacote = c.pacote.model_copy(update={'fontes': (fonte, *c.pacote.fontes[1:])})
     elif recurso == 'symlink':
-        link = tmp_path / 'link'; link.symlink_to(c.primaria)
+        link = tmp_path / 'link'; symlink_ou_skip_1314(link,c.primaria)
         fonte = c.pacote.fontes[0].model_copy(update={'caminho': str(link)})
         c.pacote = c.pacote.model_copy(update={'fontes': (fonte, *c.pacote.fontes[1:])})
     elif recurso == 'permissao_fonte':
-        c.primaria.chmod(0o644)
+        ampliar_acesso_sintetico(c.primaria)
     else:
-        c.armazenamento.raiz.chmod(0o755)
+        ampliar_acesso_sintetico(c.armazenamento.raiz)
     with pytest.raises(ErroAplicacao):
         c.armazenamento.gravar_pacote(c.pacote, credencial=c.gestor)
 

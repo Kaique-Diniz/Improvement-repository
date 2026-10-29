@@ -1,3 +1,4 @@
+from tests.fs_support import assert_privado
 from hashlib import sha256
 import json
 import subprocess
@@ -59,7 +60,7 @@ def test_canonicos_so_por_opcao_explicita_na_area_privada(area):
     destino = raiz / "resultado"
     executar_validacao(raiz, manifesto, destino, salvar_canonicos=True)
     assert len(list(destino.glob("*.canonico.json"))) == 3
-    assert (destino / "habita.canonico.json").stat().st_mode & 0o777 == 0o600
+    assert_privado(destino / "habita.canonico.json")
 
 
 def test_conflito_documental_nao_confirma_gabarito_e_grava_auditoria_protegida(area,monkeypatch,capsys):
@@ -86,7 +87,7 @@ def test_conflito_documental_nao_confirma_gabarito_e_grava_auditoria_protegida(a
     assert not list(destino.glob('*.canonico.json'))
     for c in relatorio['casos']:
         auditoria=destino/c['auditoria_revisao']
-        assert auditoria.stat().st_mode & 0o777 == 0o600
+        assert_privado(auditoria)
         dados=json.loads(auditoria.read_text())
         fontes=dados['ocorrencias'][0]['evidencias_documentais']
         assert {f['documento']['tipo']for f in fontes}=={'cpf','cnpj'}

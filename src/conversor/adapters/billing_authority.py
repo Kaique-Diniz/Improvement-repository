@@ -13,16 +13,19 @@ from conversor.application.ports import ErroAplicacao
 from conversor.domain.base import Hash, Id, Modelo
 from conversor.domain.billing_rules import AcaoEvento, Ambiente, EventoPlano, bytes_canonicos, hash_modelo
 from .json_repository import _gravar, _sincronizar_diretorio, ler_json_bytes
+from .private_permissions import conferir_windows, criar_diretorio_privado
 
 
 def sem_links(path: Path):
-    if any(p.is_symlink() for p in (path, *path.parents)):
+    if any(p.is_symlink() or (p.exists() and getattr(p.lstat(),'st_file_attributes',0)&0x400)
+           for p in (path, *path.parents)):
         raise ErroAplicacao('CAMINHO_COM_LINK_NAO_PERMITIDO')
     return path
 
 
 def ler_protegido(path: Path):
     sem_links(path)
+    conferir_windows(path)
     if os.name == 'posix' and path.stat().st_mode & 0o077:
         raise ErroAplicacao('PERMISSOES_DE_AUTORIDADE_INSEGURAS')
     return path.read_bytes()
@@ -59,6 +62,7 @@ class AutoridadeHMAC:
         self._registro_path = self.raiz / 'operadores.json'
         try:
             sem_links(self.raiz)
+            conferir_windows(self.raiz)
             # O ambiente pode ter diretórios .git vazios de proteção. Só um
             # gitdir de worktree (arquivo) ou diretório com HEAD indica checkout.
             if any((p / '.git').is_file() or (p / '.git' / 'HEAD').is_file()
@@ -84,6 +88,7 @@ class AutoridadeHMAC:
     def conferir_protecao(self):
         for path in (self.raiz, self._chave_path, self._registro_path):
             sem_links(path)
+            conferir_windows(path)
             if os.name == 'posix' and path.stat().st_mode & 0o077:
                 raise ErroAplicacao('PERMISSOES_DE_AUTORIDADE_INSEGURAS')
         if not hmac.compare_digest(ler_protegido(self._chave_path), self._chave):
@@ -106,7 +111,7 @@ class AutoridadeHMAC:
         # Arquivar a política efetivamente consultada, para verificar a permissão
         # histórica sem depender da lista atual (que pode revogar um operador).
         pasta = sem_links(self.raiz / 'policies')
-        pasta.mkdir(mode=0o700, exist_ok=True)
+        criar_diretorio_privado(pasta)
         destino = sem_links(pasta / (digest_registro + '.json'))
         if not destino.exists():
             temporario = pasta / ('.' + uuid4().hex + '.tmp')

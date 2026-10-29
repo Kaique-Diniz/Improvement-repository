@@ -18,6 +18,7 @@ from conversor.domain.audit_identity import (PacoteReconciliado, ReconciliacaoOc
     PreparacaoTecnica, ReciboPreparacaoTecnica)
 from .billing_authority import ler_protegido, sem_links
 from .json_repository import _gravar, _sincronizar_diretorio, ler_json_bytes
+from .private_permissions import conferir_windows, criar_diretorio_privado
 
 
 def seguro(funcao):
@@ -45,6 +46,7 @@ def conferir_local_privado(caminho, *, arquivo=False):
         raise ErroAplicacao('FONTE_PRIVADA_INDISPONIVEL')
     if not arquivo and not path.is_dir():
         raise ErroAplicacao('DIRETORIO_PRIVADO_INDISPONIVEL')
+    conferir_windows(path)
     if os.name == 'posix' and path.stat().st_mode & 0o077:
         raise ErroAplicacao('PERMISSOES_PRIVADAS_INSEGURAS')
     return path
@@ -89,12 +91,12 @@ class RepositorioSimulacoesJSON:
             raise ErroAplicacao('ARTEFATO_PRIVADO_NAO_PODE_FICAR_NO_GIT')
         autoridade.conferir_protecao()
         autoridade.conferir_isolamento(self.raiz)
-        self.raiz.mkdir(mode=0o700, parents=True, exist_ok=True)
+        criar_diretorio_privado(self.raiz,parents=True)
         conferir_local_privado(self.raiz)
         self.autoridade = autoridade
         self.raiz_hash = sha256(str(self.raiz).encode()).hexdigest()
         self.ancoras = autoridade.raiz / ('simulacoes-' + self.id)
-        sem_links(self.ancoras).mkdir(mode=0o700, exist_ok=True)
+        criar_diretorio_privado(sem_links(self.ancoras))
         conferir_local_privado(self.ancoras)
         _sincronizar_diretorio(autoridade.raiz)
         self.timeout = timeout

@@ -21,6 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from filelock import Timeout
 
 from conversor.adapters.private_json import escrever_json
+from conversor.adapters.private_permissions import conferir_windows, proteger_novo_windows, criar_diretorio_privado
 from conversor.adapters.condominium_addresses import RepositorioEnderecos
 from conversor.adapters.document_links_json import RepositorioVinculosJSON
 from conversor.adapters.billing_authority import ler_protegido, sem_links
@@ -65,6 +66,7 @@ class LimitarCorpo:
 def gravar_privado(path, content):
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, 'wb') as f:
+        proteger_novo_windows(path)
         f.write(content)
 
 
@@ -126,7 +128,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
             raise ErroAplicacao('CAMINHO_REPARSE')
     except ErroAplicacao:
         raise RuntimeError('AREA_PRIVADA_NAO_PODE_SER_LINK')from None
-    raiz.mkdir(mode=0o700, parents=True, exist_ok=True)
+    criar_diretorio_privado(raiz,parents=True)
     if raiz.is_symlink():
         raise RuntimeError('AREA_PRIVADA_NAO_PODE_SER_LINK')
     _area_fora_do_git(raiz)
@@ -138,7 +140,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
             raise RuntimeError('PERFIL_PRIVADO_NAO_PODE_SER_LINK')
         _area_fora_do_git(perfis_saida.parent)
     os.chmod(raiz, 0o700)
-    (raiz / 'processamentos').mkdir(mode=0o700, exist_ok=True)
+    criar_diretorio_privado(raiz / 'processamentos')
     os.chmod(raiz / 'processamentos', 0o700)
     key_file = raiz / 'acesso-local.txt'
     if key_file.is_symlink():
@@ -375,7 +377,7 @@ def criar_app(raiz: Path, *, acesso=None, catalogo=None, perfis_saida=None):
                 raise HTTPException(429, 'AGUARDE_OS_PROCESSAMENTOS_EM_CURSO')
             id_ = uuid4().hex
             path = raiz / 'processamentos' / id_
-            path.mkdir(mode=0o700, parents=True)
+            criar_diretorio_privado(path,parents=True)
             for role, content in arquivos.items():
                 gravar_privado(path / (role + ('.xlsx' if content.startswith(b'PK') else '.pdf')), content)
             escrever_json(path / 'contexto.json', {

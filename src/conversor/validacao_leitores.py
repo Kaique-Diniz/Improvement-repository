@@ -122,6 +122,8 @@ def executar_validacao(raiz: Path, manifesto: Path, saida: Path, *, salvar_canon
     fontes = FontesLocaisProtegidas(raiz, {c.fonte.arquivo_id: c.arquivo for c in config.casos})
     registro = RegistroLeitores(fontes, _ContextosDeclarados(config.casos))
     saida.mkdir(parents=True, mode=0o700)
+    from conversor.adapters.private_permissions import proteger_novo_windows
+    proteger_novo_windows(saida,diretorio=True)
     relatorio = {"finalidade": config.finalidade, "natureza": config.natureza, "autorizacao_id": config.autorizacao_id,
         "manifesto_sha256": sha256(manifesto_bytes).hexdigest(), "homologado_producao": False,
         "contexto": "declarado_no_manifesto_nao_aprova_reconhecimento", "casos": []}

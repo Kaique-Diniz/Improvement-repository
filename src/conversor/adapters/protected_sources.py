@@ -6,11 +6,17 @@ import stat
 
 from conversor.readers.contracts import FonteProtegida
 from conversor.readers.text_support import ErroLeitura
+from conversor.application.ports import ErroAplicacao
+from .private_permissions import conferir_windows
 
 
 class FontesLocaisProtegidas:
     def __init__(self, raiz: Path, arquivos: dict[str, str], *, limite_bytes=20 * 1024 * 1024):
-        self.raiz = raiz.resolve()
+        # Não apagar a evidência de redirecionamento resolvendo a raiz antes de conferir.
+        self.raiz = Path(os.path.abspath(raiz))
+        if any(p.is_symlink() or (p.exists() and getattr(p.lstat(),'st_file_attributes',0)&0x400)
+               for p in (self.raiz,*self.raiz.parents)):
+            raise ErroLeitura('FONTE_CONTEM_LINK')
         self._arquivos = dict(arquivos)
         self.limite_bytes = limite_bytes
 
@@ -25,6 +31,10 @@ class FontesLocaisProtegidas:
             raise ErroLeitura("FONTE_CONTEM_LINK")
         if not caminho.is_file():
             raise ErroLeitura("FONTE_INDISPONIVEL")
+        try:
+            conferir_windows(self.raiz);conferir_windows(caminho)
+        except ErroAplicacao:
+            raise ErroLeitura('PERMISSOES_DA_FONTE_NAO_COMPROVADAS')from None
         try:
             with caminho.open("rb") as arquivo:
                 if not stat.S_ISREG(os.fstat(arquivo.fileno()).st_mode):

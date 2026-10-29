@@ -20,6 +20,7 @@ from fastapi.testclient import TestClient
 from conversor.domain.canonical import LoteCanonico
 from conversor.web.app import criar_app
 from conversor.web.service import analisar, PedidoDiagnostico
+from tests.fs_support import symlink_ou_skip_1314 as _symlink_ou_skip_1314
 from tests.web.test_mvp import KEY, aguardar
 from tests.bbz.test_abrolhos import financeiro, referencia, REF
 
@@ -48,13 +49,6 @@ def _validar(arq, registros, infos, decisoes, **extra):
                             decisoes=decisoes, **extra)
 
 
-def _symlink_ou_skip_1314(link, destino):
-    try:
-        link.symlink_to(destino)
-    except OSError as erro:
-        if getattr(erro, 'winerror', None) == 1314:
-            pytest.skip('WinError 1314: Windows impediu criar symlink sem privilégio adicional; somente o cenário de link real foi omitido.')
-        raise
 
 
 def test_xlsx_correto_apresenta_indicadores(tmp_path):

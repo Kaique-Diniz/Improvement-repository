@@ -46,3 +46,11 @@ def boleto(origem, unidade):
                                         {"codigo": "credito", "valor": "-0.10", "origem": origem}],
                               "total_original": "100.00"}, multa="2.00", juros="1.00",
                   saldo_acumulado="300.00", origens=(origem,))
+
+
+@pytest.fixture
+def tmp_path(tmp_path):
+    # Diretório novo de fixture: DACL restrita antes de criar qualquer segredo sintético.
+    from conversor.adapters.private_permissions import proteger_novo_windows
+    proteger_novo_windows(tmp_path,diretorio=True)
+    return tmp_path

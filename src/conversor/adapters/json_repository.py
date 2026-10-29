@@ -47,6 +47,8 @@ def _bytes(dados) -> bytes:
 def _gravar(path: Path, conteudo: bytes):
     with path.open("xb") as arquivo:
         os.chmod(path, 0o600)
+        from .private_permissions import proteger_novo_windows
+        proteger_novo_windows(path)
         arquivo.write(conteudo)
         arquivo.flush()
         os.fsync(arquivo.fileno())

@@ -1,6 +1,7 @@
 from hashlib import sha256
 
 import pytest
+from tests.fs_support import symlink_ou_skip_1314
 
 from conversor.adapters.protected_sources import FontesLocaisProtegidas
 from conversor.readers.contracts import FonteProtegida
@@ -32,7 +33,7 @@ def test_fontes_rejeitam_acesso_invalido_sem_conteudo_no_erro(tmp_path, falha, c
     elif falha == "escape": mapa["fonte"] = "../fora.pdf"
     elif falha == "absoluto": mapa["fonte"] = str(tmp_path / "fonte.pdf")
     elif falha == "link":
-        (tmp_path / "link.pdf").symlink_to(tmp_path / "fonte.pdf")
+        symlink_ou_skip_1314(tmp_path / "link.pdf",tmp_path / "fonte.pdf")
         mapa["fonte"] = "link.pdf"
     with pytest.raises(ErroLeitura, match=codigo) as erro:
         FontesLocaisProtegidas(tmp_path, mapa, limite_bytes=limite).ler(fonte)

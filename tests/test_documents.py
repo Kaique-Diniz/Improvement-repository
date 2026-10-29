@@ -1,4 +1,5 @@
 """Somente documentos gerados para teste; nenhum cadastro real é utilizado."""
+from tests.fs_support import assert_privado
 from datetime import date
 import json
 
@@ -189,7 +190,7 @@ def test_auditoria_documental_persiste_em_json_protegido(tmp_path,pessoa):
     from conversor.adapters.private_json import escrever_json
     destino=tmp_path/'auditoria.json'
     escrever_json(destino,o.model_dump(mode='json'))
-    assert destino.stat().st_mode & 0o777 == 0o600
+    assert_privado(destino)
     assert type(o).model_validate(json.loads(destino.read_text()))==o
 
 

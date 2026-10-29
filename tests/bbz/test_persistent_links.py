@@ -8,6 +8,7 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 from openpyxl import load_workbook
 import pytest
+from tests.fs_support import symlink_ou_skip_1314
 
 from conversor.adapters.document_links_json import RepositorioVinculosJSON
 from conversor.application.document_links import candidatos_documentais
@@ -180,16 +181,19 @@ def test_corrupcao_nao_reinicializa_nem_aprova_e_mantem_financeiro_visivel(tmp_p
 @pytest.mark.parametrize('caminho',['registro.json','chave.bin','escrita.lock','evidencias','cabecas'])
 def test_symlinks_rejeitados_sem_escrever_no_destino(tmp_path,caminho):
     r=repo(tmp_path);target=tmp_path/'externo';target.write_text('SENTINELA FICTICIA')
-    (r.raiz/caminho).symlink_to(target)
+    symlink_ou_skip_1314(r.raiz/caminho,target)
     with pytest.raises(ErroLeitura):r.consultar()
     assert target.read_text()=='SENTINELA FICTICIA'
 
 
-def test_raiz_link_ancestral_e_git_recusados(tmp_path):
-    root=tmp_path/'origem';root.mkdir(mode=0o700);link=tmp_path/'link';link.symlink_to(root,target_is_directory=True)
+def test_raiz_link_ancestral_recusados(tmp_path):
+    root=tmp_path/'origem';root.mkdir(mode=0o700);link=tmp_path/'link';symlink_ou_skip_1314(link,root,target_is_directory=True)
     with pytest.raises(ErroLeitura):RepositorioVinculosJSON(link/'interno')
     with pytest.raises(RuntimeError,match='AREA_PRIVADA_NAO_PODE_SER_LINK'):criar_app(link/'antes_de_gravar',acesso=KEY)
     assert not(root/'antes_de_gravar').exists()
+
+
+def test_raiz_git_recusada_sem_depender_de_symlink():
     with pytest.raises(ErroLeitura):RepositorioVinculosJSON(Path(__file__).resolve().parents[2])
 
 
@@ -336,7 +340,7 @@ def test_falha_atomica_preserva_json_anterior_e_retem_revisao_parcial(tmp_path,m
 
 def test_fonte_em_link_com_mesmos_bytes_tambem_e_recusada(tmp_path):
     r=repo(tmp_path);iniciar(tmp_path,r);fonte=next(r.fontes.iterdir());outside=tmp_path/'fonte_externa'
-    outside.write_bytes(fonte.read_bytes());outside.chmod(0o600);fonte.unlink();fonte.symlink_to(outside)
+    outside.write_bytes(fonte.read_bytes());outside.chmod(0o600);fonte.unlink();symlink_ou_skip_1314(fonte,outside)
     with pytest.raises(ErroLeitura):r.consultar()
 
 
