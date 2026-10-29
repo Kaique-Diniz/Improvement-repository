@@ -733,3 +733,131 @@ mas seu resultado Windows precisa ser confirmado. O probe anterior compilou e
 executou no Windows do responsável; a **v3 modificada** não foi compilada ou
 executada nativamente neste ambiente. A revisão de privacidade não encontrou
 dados reais ou credenciais nas mudanças. A main permanece fora desta publicação.
+
+### Regressões da suíte Windows na base `09b97d9`
+
+O responsável relatou 1.603 aprovados, cinco falhas, 495 erros e 12 skips no
+Windows/CPython 3.13. Os cinco IDs FAILED foram recebidos e conferidos. Os 12
+skips informados eram os dez casos reais de symlink sem privilégio 1314 e os
+dois testes específicos POSIX que já existiam. Não foram acrescentados skips,
+xfails ou tratamentos para transformar falha em aprovação nesta correção.
+
+#### Preparação de fixtures e demonstração
+
+A autoridade sintética de `tests/rules/conftest.py::seguranca` fazia mkdir 700,
+write_bytes/write_text e chmod. Como documentado acima, o mkdir 700 do CPython
+3.13/Windows pode criar OWNER RIGHTS, rejeitado pela política literal atual.
+Agora a raiz nova usa `criar_diretorio_privado`; a chave usa `_gravar` e o
+registro usa `escrever_json`, com DACL aplicada antes dos dados. Não há novo
+provisionador ou política de autoridade. A demonstração descartável de
+`examples/fase4/gerar_relatorio_4_2.py` usa os mesmos mecanismos e continua
+aceitando somente o cenário fixo sintético, sem documentos ou planos externos.
+
+A inspeção da coleção da **base** rastreou individualmente 497 nodeids até a
+mesma função de fixture (incluindo reexportações nos conftests). Dois desses
+casos são POSIX, restando 495 que executam no Windows:
+
+| Família de testes | Dependem de seguranca | Executam no Windows |
+|---|---:|---:|
+| rules | 71 | 69 |
+| evaluation | 119 | 119 |
+| integrated_processing | 83 | 83 |
+| private_simulation | 140 | 140 |
+| synthetic_processing | 84 | 84 |
+| Total na base 09b97d9 | 497 | 495 |
+
+Isso confirma a dependência comum por teste e a correspondência com a contagem
+relatada; não substitui tracebacks de cada erro. O trecho recebido listava os
+cinco FAILED, mas não os 495 IDs ERROR ou seus tracebacks completos. Assim,
+não se afirma que todas as causas observadas foram comprovadas individualmente
+nem que não surgirão falhas dos corpos dos testes após corrigir o setup. A nova
+suíte completa Windows é necessária para fechar essa classificação.
+
+Os cinco FAILED foram analisados separadamente:
+
+| Teste (nome abreviado) | Causa identificada no código | Correção |
+|---|---|---|
+| link_reopening::test_api_reabertura_rejeita_perfil_atual_modificado | Raiz MVP com mkdir 700 antes de construir o repositório | Criação protegida; perfil privado gravado com escritor JSON existente; verificação de perfil incompatível mantida |
+| test_conversion_validation::test_download_e_revogacao_concorrentes_usam_snapshot_coerente | Mesma falha de preparação da raiz, antes da concorrência | Criação protegida; sincronização/download/revogação preservados |
+| test_simulation_schema::test_demonstracao_sintetica_contem_as_quatro_decisoes | Autoridade temporária da demonstração sem provisionamento NTFS adequado | Provisionamento sintético protegido; quatro decisões e bloqueios operacionais preservados |
+| test_authority::test_autoridade_ausente_ou_chave_curta_nao_inicializa | ACL consultada antes de verificar ausência; segunda parte também criava raiz/chave sem proteção explícita adequada | Precedência de ausência e preparação protegida da chave intencionalmente curta |
+| test_authority::test_autoridade_nao_pode_ser_provisionada_em_checkout_git | ACL consultada antes de rejeitar destino Git inexistente | Rejeição Git anterior à existência/ACL, sem ler ou provisionar segredos |
+
+#### Precedência de erros e segurança preservada
+
+A ordem em `AutoridadeHMAC` agora é: rejeitar links/redirecionamentos; rejeitar
+checkout Git; exigir diretório existente; conferir ACL Windows e permissões
+POSIX; só então ler chave e registro. Ausência retorna AUTORIDADE_INDISPONIVEL;
+destino em checkout retorna AUTORIDADE_NAO_PODE_FICAR_NO_GIT, inclusive quando o
+subdiretório ainda não existe. Diretórios existentes válidos continuam exigindo
+as mesmas permissões. Não houve mudança na lista de identidades, nos leitores
+ACL ou em validar_acl/conferir_windows. OWNER RIGHTS continua sem aprovação.
+
+Os novos testes conferem privacidade real da plataforma para raiz/chave/registro,
+proteção dos arquivos ainda vazios antes da gravação, rejeição anterior ao backend
+para destinos inválidos e manutenção da consulta ACL em diretório existente.
+Grants realmente amplos na raiz, chave ou registro são rejeitados tanto na
+construção quanto no uso; os bytes dos arquivos são preservados. Os wrappers de
+observação dos testes chamam a proteção real; os sentinelas de precedência
+falham caso o backend seja consultado indevidamente, sem liberar nenhuma ACL.
+
+#### Demais criações revisadas, sem substituição em massa
+
+- A fixture compartilhada de vínculos já usa criação protegida. Foram corrigidas
+  as duas raízes individuais acima que a contornavam.
+- mkdir 700 nas fixtures nativas ACL representa cenários deliberados (inclusive
+  reprodução de OWNER RIGHTS) ou é seguido pela configuração explícita da ACL
+  sintética; esses testes foram mantidos.
+- Diretório usado como alvo de symlink e diretório de checkout Git nos testes
+  negativos não são autoridades válidas. Sua finalidade de rejeição foi mantida.
+- Fontes/JSON/XLSX inteiramente sintéticos dos conftests private_simulation e
+  integrated_processing são escritos diretamente sob tmp_path, cuja DACL já é
+  protegida pela fixture global antes da criação dos filhos. Nesses casos chmod
+  não é a única proteção NTFS. Não foi alterado o conteúdo das fontes.
+- As demais raízes web com mkdir padrão herdam a DACL protegida de tmp_path;
+  não aplicam o modo especial 700. Não exigem a mesma correção.
+- Sobrescritas de JSON, chave, evidência, checkpoint ou manifesto que testam
+  adulteração/rollback e alterações deliberadas de permissões foram preservadas.
+  Copiar bytes para um arquivo novo sob autoridade protegida também conserva a
+  herança segura; não se reformataram bytes de recibos para adequar testes.
+
+Não foi identificado defeito funcional de cálculo, regras financeiras, vínculos
+ou XLSX nesta revisão. Isso não equivale a afirmar que a execução Windows
+corrigida já passou: não há executor nativo disponível neste ambiente. Nenhuma
+pasta privada real, chave ou aprovação do responsável foi modificada. A revisão
+de privacidade compara as mudanças com padrões privados em memória, sem publicar
+seu conteúdo; não é reprocessamento financeiro nem auditoria da pasta Windows.
+A investigação ACL v3 da pasta original permanece separada e pendente.
+
+Para atualizar e repetir no Windows, na mesma conta comum:
+
+```powershell
+git switch feature/central-validacao-v2
+git pull --ff-only origin feature/central-validacao-v2
+python -X utf8 -m pytest -q tests/rules/test_authority.py tests/bbz/test_link_reopening.py tests/test_conversion_validation.py tests/evaluation/test_simulation_schema.py
+python -X utf8 -m pytest -q
+python -X utf8 -m pytest -q tests/homologacao/pacote_suite.py tests/homologacao/revisao_suite.py tests/homologacao/leitores_fase3_suite.py
+```
+
+Se restarem erros, conferir os IDs ERROR e o ponto de setup de cada grupo; não
+inferir causa apenas da contagem. Os skips legítimos existentes de POSIX/1314
+não devem esconder outras falhas. Não há merge na main nem homologação Windows
+concluída nesta entrega.
+
+Resultados disponíveis desta correção:
+
+| Execução | Aprovados | Falhas/erros | Skips |
+|---|---:|---:|---:|
+| Suíte completa Linux/Python 3.12 | 2.116 | 0 | 9 |
+| Suíte completa Linux/Python 3.13.5 | 2.116 | 0 | 9 |
+| Históricos explícitos Linux/Python 3.12 | 60 | 0 | 0 |
+| Quatro módulos focados nas cinco falhas | 173 | 0 | 0 |
+
+Total distinto aprovado: **2.176** (as reexecuções não são somadas). Os nove
+skips Linux são os cenários ACL Windows já existentes; nenhum foi adicionado
+para esta correção. O warning AnyIO/Starlette preexistente permanece.
+As nove verificações --check de schemas passaram; a CLI da demonstração produziu
+as mesmas quatro situações sintéticas e manteve cobrança/exportação operacional
+falsas. A revisão das mudanças não encontrou documentos reais, dados pessoais ou
+credenciais. As duas suítes completas acima são **Linux**, não Windows; a nova
+execução nativa permanece pendente.

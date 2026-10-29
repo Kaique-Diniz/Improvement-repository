@@ -12,6 +12,9 @@ from types import SimpleNamespace
 from conversor.adapters.billing_authority import AutoridadeHMAC
 from conversor.adapters.billing_evaluation_authority import VerificadorPlanosJSON
 from conversor.adapters.billing_json import RepositorioPlanosJSON
+from conversor.adapters.json_repository import _gravar
+from conversor.adapters.private_json import escrever_json
+from conversor.adapters.private_permissions import criar_diretorio_privado
 from conversor.application.billing_ports import CredencialOperador
 from conversor.application.billing_evaluation import SimularCobranca
 from conversor.application.ports import ErroAplicacao
@@ -58,13 +61,13 @@ def demonstrar():
             if id_!=cid:raise ErroAplicacao('CONDOMINIO_INEXISTENTE')
             return SimpleNamespace(id=cid)
     with tempfile.TemporaryDirectory(prefix='demo-sintetica-4.2-')as local:
-        root=Path(local);controle=root/'autoridade';controle.mkdir(mode=0o700)
-        key=controle/'chave.bin';key.write_bytes(secrets.token_bytes(32));key.chmod(0o600)
+        root=Path(local);controle=criar_diretorio_privado(root/'autoridade')
+        _gravar(controle/'chave.bin',secrets.token_bytes(32))
         credencial=CredencialOperador(secrets.token_hex(32))
         registro={'schema_version':'1.0','concessoes':[{'responsavel_id':'operador_demo_sintetico',
             'credencial_sha256':sha256(credencial.segredo.encode()).hexdigest(),
             'acoes':['criar','submeter','aprovar','ativar'],'condominio_ids':[cid],'ambientes':['sintetico']}]}
-        path=controle/'operadores.json';path.write_text(json.dumps(registro),encoding='utf-8');path.chmod(0o600)
+        escrever_json(controle/'operadores.json',registro)
         repo=RepositorioPlanosJSON(root/'planos',repositorio_id='demo4.2',ambiente='sintetico',
             autoridade=AutoridadeHMAC(controle),condominios=Condominios())
         for n,acao in enumerate(('criar','submeter','aprovar','ativar')):

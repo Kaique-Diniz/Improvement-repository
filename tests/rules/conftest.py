@@ -9,6 +9,9 @@ import pytest
 
 from conversor.adapters.billing_authority import AutoridadeHMAC
 from conversor.adapters.billing_json import RepositorioPlanosJSON
+from conversor.adapters.json_repository import _gravar
+from conversor.adapters.private_json import escrever_json
+from conversor.adapters.private_permissions import criar_diretorio_privado
 from conversor.application.billing_ports import CredencialOperador
 from conversor.application.ports import ErroAplicacao
 from conversor.domain.billing_rules import PlanoCobranca
@@ -33,8 +36,8 @@ def plano(dados_plano):
 
 @pytest.fixture
 def seguranca(tmp_path):
-    raiz = tmp_path / 'autoridade'; raiz.mkdir(mode=0o700)
-    chave = raiz / 'chave.bin'; chave.write_bytes(secrets.token_bytes(32)); chave.chmod(0o600)
+    raiz = criar_diretorio_privado(tmp_path / 'autoridade')
+    _gravar(raiz / 'chave.bin', secrets.token_bytes(32))
     credenciais = {nome: CredencialOperador(secrets.token_hex(32)) for nome in ('gestor', 'editor', 'aprovador', 'ativador')}
     acoes = {'gestor': ['criar', 'submeter', 'rejeitar', 'aprovar', 'ativar', 'revogar'],
              'editor': ['criar', 'submeter'], 'aprovador': ['aprovar', 'rejeitar'], 'ativador': ['ativar', 'revogar']}
@@ -42,7 +45,7 @@ def seguranca(tmp_path):
         'credencial_sha256': sha256(c.segredo.encode()).hexdigest(), 'acoes': acoes[n],
         'condominio_ids': ['cond_sintetico', 'cond_outro'], 'ambientes': ['sintetico', 'privado']}
         for n,c in credenciais.items()]}
-    path = raiz / 'operadores.json'; path.write_text(json.dumps(registro)); path.chmod(0o600)
+    escrever_json(raiz / 'operadores.json', registro)
     return AutoridadeHMAC(raiz), credenciais
 
 

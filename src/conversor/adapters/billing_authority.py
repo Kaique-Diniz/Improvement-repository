@@ -62,12 +62,15 @@ class AutoridadeHMAC:
         self._registro_path = self.raiz / 'operadores.json'
         try:
             sem_links(self.raiz)
-            conferir_windows(self.raiz)
             # O ambiente pode ter diretórios .git vazios de proteção. Só um
             # gitdir de worktree (arquivo) ou diretório com HEAD indica checkout.
             if any((p / '.git').is_file() or (p / '.git' / 'HEAD').is_file()
                    for p in (self.raiz, *self.raiz.parents)):
                 raise ErroAplicacao('AUTORIDADE_NAO_PODE_FICAR_NO_GIT')
+            if not self.raiz.is_dir():
+                raise ErroAplicacao('AUTORIDADE_INDISPONIVEL')
+            # Só consultar ACL após validar o destino; nenhum segredo foi lido/provisionado.
+            conferir_windows(self.raiz)
             if os.name == 'posix' and self.raiz.stat().st_mode & 0o077:
                 raise ErroAplicacao('PERMISSOES_DE_AUTORIDADE_INSEGURAS')
             self._chave = ler_protegido(self._chave_path)

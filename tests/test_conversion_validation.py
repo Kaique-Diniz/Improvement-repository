@@ -18,6 +18,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from conversor.domain.canonical import LoteCanonico
+from conversor.adapters.private_permissions import criar_diretorio_privado
 from conversor.web.app import criar_app
 from conversor.web.service import analisar, PedidoDiagnostico
 from tests.fs_support import symlink_ou_skip_1314 as _symlink_ou_skip_1314
@@ -407,7 +408,7 @@ def test_download_e_revogacao_concorrentes_usam_snapshot_coerente(tmp_path,monke
     from conversor.adapters.document_links_json import RepositorioVinculosJSON
     from tests.bbz.test_persistent_links import iniciar, decidir
     import conversor.web.app as api
-    root=tmp_path/'mvp';root.mkdir(mode=0o700);r=RepositorioVinculosJSON(root);iniciar(tmp_path,r);decidir(r)
+    root=criar_diretorio_privado(tmp_path/'mvp');r=RepositorioVinculosJSON(root);iniciar(tmp_path,r);decidir(r)
     with TestClient(criar_app(root,acesso=KEY))as c:
         c.post('/api/session',json={'chave':KEY})
         j=aguardar(c,c.post('/api/processamentos',data={'data_ref':REF.isoformat(),'modo':'A'},files={'inadimplencia':('f.xlsx',financeiro())}))

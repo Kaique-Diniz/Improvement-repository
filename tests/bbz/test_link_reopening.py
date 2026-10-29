@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 import pytest
 
 from conversor.adapters.document_links_json import RepositorioVinculosJSON
+from conversor.adapters.private_json import escrever_json
+from conversor.adapters.private_permissions import criar_diretorio_privado
 from conversor.application.document_links import comprovar_reabertura
 from conversor.domain.billing_rules import hash_modelo
 from conversor.export.identifiers import selecionar_perfil
@@ -203,11 +205,11 @@ def test_api_reabertura_autenticada_cas_conferencia_e_aprovacao_separada(tmp_pat
 
 
 def test_api_reabertura_rejeita_perfil_atual_modificado(tmp_path):
-    root=tmp_path/'mvp';root.mkdir(mode=0o700)
+    root=criar_diretorio_privado(tmp_path/'mvp')
     r=RepositorioVinculosJSON(root);iniciar(tmp_path,r);decidir(r);s=decidir(r,'revogar')
     v=next(iter(s.registros.values()));profiles=json.loads(PERFIS_SAIDA_PATH.read_bytes())
     next(p for p in profiles if p['condominio_id']=='cond_bbz_abrolhos')['versao']='999.0'
-    (root/'perfis_saida.json').write_text(json.dumps(profiles));before=r.path.read_bytes()
+    escrever_json(root/'perfis_saida.json',profiles);before=r.path.read_bytes()
     with TestClient(criar_app(root,acesso=KEY))as c:
         c.post('/api/session',json={'chave':KEY})
         res=c.post('/api/vinculos/'+v.id+'/decisao',json=dict(acao='reabrir',revisao_esperada=s.revisao,

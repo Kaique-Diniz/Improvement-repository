@@ -8,6 +8,8 @@ import pytest
 
 from conversor.adapters.billing_authority import AutoridadeHMAC
 from conversor.adapters.billing_json import RepositorioPlanosJSON
+from conversor.adapters.json_repository import _gravar
+from conversor.adapters.private_permissions import criar_diretorio_privado
 from conversor.application.billing_ports import CredencialOperador
 from conversor.application.ports import ErroAplicacao
 from conversor.domain.billing_rules import bytes_canonicos
@@ -177,7 +179,7 @@ def test_autoridade_ausente_ou_chave_curta_nao_inicializa(tmp_path):
     path=tmp_path/'nao_existe'
     with pytest.raises(ErroAplicacao,match='AUTORIDADE_INDISPONIVEL'):AutoridadeHMAC(path)
     assert not path.exists()
-    path.mkdir(mode=0o700);key=path/'chave.bin';key.write_bytes(b'curta');key.chmod(0o600)
+    criar_diretorio_privado(path);_gravar(path/'chave.bin',b'curta')
     with pytest.raises(ErroAplicacao,match='CHAVE_DE_AUTORIDADE_INVALIDA'):AutoridadeHMAC(path)
 
 
@@ -214,3 +216,75 @@ def test_autoridade_nao_pode_ser_provisionada_em_checkout_git(tmp_path):
     path=checkout/'nao_criar_segredos'
     with pytest.raises(ErroAplicacao,match='AUTORIDADE_NAO_PODE_FICAR_NO_GIT'):AutoridadeHMAC(path)
     assert not path.exists()
+
+
+def test_fixture_de_autoridade_provisiona_raiz_chave_e_registro_privados(seguranca):
+    from tests.fs_support import assert_privado
+    autoridade,_=seguranca
+    for path in (autoridade.raiz,autoridade.raiz/'chave.bin',autoridade.raiz/'operadores.json'):
+        assert_privado(path)
+    autoridade.conferir_protecao()
+    assert len((autoridade.raiz/'chave.bin').read_bytes())==32
+
+
+@pytest.mark.parametrize('caso,codigo',[
+    ('ausente','AUTORIDADE_INDISPONIVEL'),('arquivo','AUTORIDADE_INDISPONIVEL'),
+    ('git_ausente','AUTORIDADE_NAO_PODE_FICAR_NO_GIT'),('git_existente','AUTORIDADE_NAO_PODE_FICAR_NO_GIT'),
+])
+def test_destino_invalido_rejeitado_antes_de_consultar_acl(tmp_path,monkeypatch,caso,codigo):
+    import conversor.adapters.billing_authority as modulo
+    path=tmp_path/'autoridade'
+    if caso.startswith('git'):
+        checkout=tmp_path/'checkout';checkout.mkdir();(checkout/'.git').mkdir()
+        (checkout/'.git'/'HEAD').write_text('ref: refs/heads/main\n')
+        path=checkout/'autoridade'
+        if caso=='git_existente':path.mkdir()
+    elif caso=='arquivo':path.write_bytes(b'SENTINELA SINTETICA')
+    before=path.read_bytes()if path.is_file()else None
+    def nao_consultar(_):pytest.fail('Destino inválido não deve chegar ao backend ACL.')
+    monkeypatch.setattr(modulo,'conferir_windows',nao_consultar)
+    with pytest.raises(ErroAplicacao,match='^'+codigo+'$'):AutoridadeHMAC(path)
+    if caso in ('ausente','git_ausente'):assert not path.exists()
+    if before is not None:assert path.read_bytes()==before
+
+
+def test_destino_existente_continua_exigindo_acl_sem_ler_segredos(tmp_path,monkeypatch):
+    import conversor.adapters.billing_authority as modulo
+    path=criar_diretorio_privado(tmp_path/'autoridade');consultadas=[]
+    def rejeitar(alvo):
+        consultadas.append(alvo);raise ErroAplicacao('ACL_PRIVADA_INSEGURA')
+    monkeypatch.setattr(modulo,'conferir_windows',rejeitar)
+    with pytest.raises(ErroAplicacao,match='^ACL_PRIVADA_INSEGURA$'):AutoridadeHMAC(path)
+    assert consultadas==[path]and list(path.iterdir())==[]
+
+
+@pytest.mark.parametrize('alvo',['raiz','chave','registro'])
+def test_ampliar_permissoes_da_autoridade_bloqueia_construcao_e_uso(seguranca,alvo):
+    from tests.fs_support import ampliar_acesso_sintetico
+    autoridade,_=seguranca
+    key=autoridade.raiz/'chave.bin';register=autoridade.raiz/'operadores.json'
+    before={p:p.read_bytes()for p in (key,register)}
+    path={'raiz':autoridade.raiz,'chave':key,'registro':register}[alvo]
+    ampliar_acesso_sintetico(path)
+    # Sem skip/xfail: POSIX ou DACL real da plataforma atual, conforme disponível.
+    esperado='^(ACL_PRIVADA_INSEGURA|PERMISSOES_DE_AUTORIDADE_INSEGURAS)$'
+    with pytest.raises(ErroAplicacao,match=esperado):AutoridadeHMAC(autoridade.raiz)
+    with pytest.raises(ErroAplicacao,match=esperado):autoridade.conferir_protecao()
+    assert all(p.read_bytes()==raw for p,raw in before.items())
+
+
+def test_fixture_protege_arquivos_vazios_antes_de_gravar_segredos(tmp_path,monkeypatch):
+    from conversor.adapters import private_json, private_permissions
+    from tests.rules.conftest import seguranca as construir
+    original=private_permissions.proteger_novo_windows;observadas=[]
+    def conferir_e_proteger(path,**kwargs):
+        if path.is_file():assert path.stat().st_size==0
+        original(path,**kwargs)  # Executa a proteção real da plataforma, sem desativá-la.
+        observadas.append((path,kwargs.get('diretorio',False)))
+    monkeypatch.setattr(private_permissions,'proteger_novo_windows',conferir_e_proteger)
+    monkeypatch.setattr(private_json,'proteger_novo_windows',conferir_e_proteger)
+    autoridade,_=construir.__wrapped__(tmp_path)
+    assert (autoridade.raiz,True)in observadas
+    assert (autoridade.raiz/'chave.bin',False)in observadas
+    assert any(p.name.startswith('.json-')and not directory for p,directory in observadas)
+    autoridade.conferir_protecao()
