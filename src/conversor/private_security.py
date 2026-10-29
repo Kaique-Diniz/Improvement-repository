@@ -35,7 +35,13 @@ def auditar(raiz):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--private-dir',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--private-dir',type=Path,required=True)
+    p.add_argument('--comparar-leituras',action='store_true',help='Compara APIs nativas e GetAccessRules sem alterar ACLs ou exibir identidades reais.')
+    a=p.parse_args()
+    if a.comparar_leituras:
+        from conversor.acl_diagnostics import diagnosticar
+        r=diagnosticar(a.private_dir);print(json.dumps(r,ensure_ascii=True))
+        return 0 if r.get('estado')=='leituras_coerentes'and r.get('politica_local')=='confere'else 2
     r=auditar(a.private_dir);print(json.dumps(r,ensure_ascii=True));return 2 if r['falhas']else 0
 
 

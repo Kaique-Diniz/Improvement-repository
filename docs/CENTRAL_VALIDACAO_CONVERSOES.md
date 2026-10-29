@@ -373,3 +373,96 @@ nativo, a auditoria da pasta original e o fluxo completo sem referência devem s
 reexecutados no Windows do responsável, com a conta comum. As aprovações reais
 permanecem apenas naquele computador e não foram reproduzidas artificialmente.
 Não há homologação Windows completa desta correção ou liberação para produção.
+
+### Investigação da divergência nativa de ACL (Windows 11)
+
+O teste do responsável no commit `03b0d29` encontrou três ACEs nas duas
+leituras, mas uma identidade da leitura Python não aparecia em
+`GetAccessRules`. O SID do processo coincidia. Isso demonstra divergência entre
+as leituras, **não demonstra que a ACL seja segura nem comprova a causa**.
+A inspeção estática confirmou o deslocamento SID=8 de uma ACE allow básica,
+DWORD de 32 bits, cabeçalhos ACE/ACL de 4/8 bytes e as assinaturas por ponteiros.
+Não foi reproduzido aqui um defeito que explique a terceira identidade.
+
+O reforço do leitor elimina dependência de ponteiros do descritor depois de
+`LocalFree`: copia os bytes ainda vivos, valida offsets/tamanhos e decodifica o
+SID com limites explícitos. O SID do token também é copiado dentro de seu buffer
+`TOKEN_USER` e confrontado com a conversão nativa. A leitura normal exige
+concordância entre `GetNamedSecurityInfoW`, `GetFileSecurityW` e `GetAce` aplicado
+a um buffer copiado e validado. Duplicatas são preservadas; apenas mudança de
+ordem de ACEs não é confundida com mudança das identidades/regras.
+
+Esses controles são preventivos. Um problema anterior de duração/conversão de
+ponteiros continua hipótese, não causa comprovada. Diferença de descritor entre
+APIs, alteração concorrente da ACL ou projeção parcial pelo .NET também precisam
+ser distinguidas no ambiente afetado. Nenhuma terceira identidade é substituída
+pelo usuário por suposição. `GetFileSecurityW` é uma segunda leitura nativa; a
+comparação adicional com .NET é uma ferramenta diagnóstica, não uma dependência
+PowerShell para as operações normais do aplicativo.
+
+#### Repetir sem alterar a pasta privada
+
+Na mesma conta comum do Windows, atualizar **a branch de testes**, não a main:
+
+```powershell
+git switch feature/central-validacao-v2
+git pull --ff-only origin feature/central-validacao-v2
+python -X utf8 -m conversor.private_security --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado" --comparar-leituras
+python -X utf8 -m conversor.private_security --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado"
+python -X utf8 -m pytest -q tests/test_private_permissions.py tests/test_windows_acl_reader.py tests/test_acl_diagnostics.py
+```
+
+`--comparar-leituras` confere somente a raiz indicada, por quatro projeções:
+bytes de cada API, GetAce e PowerShell `Get-Acl/GetAccessRules` com
+`SecurityIdentifier`. Mostra owner/usuário/regras como HMACs com chave efêmera
+compartilhada apenas pelos processos dessa execução. Não imprime SIDs, contas,
+caminho privado, descritores ou stderr bruto; não grava a chave nem o relatório.
+IDs de duas execuções não podem ser correlacionados. O comando de auditoria
+normal, na linha seguinte, percorre a árvore e pode apontar restrições adicionais
+nos arquivos. Nenhum dos dois modifica permissões, vínculos ou arquivos privados.
+
+- `leituras_coerentes` + `politica_local=confere`: quatro projeções concordam e
+  a política local confere para aquele objeto/instante. Não atesta documentos ou
+  vínculos e não libera operação financeira.
+- `leituras_divergentes`: conferir a origem que diverge e os campos
+  `usuario_igual`, `proprietario_igual`, `regras_iguais`, `ordem_igual` e contagens.
+  Diferença somente de ordem é relatada, sem eliminar duplicatas. Não é sucesso.
+- `nao_comprovado`: o campo `etapa` identifica onde faltou uma leitura íntegra,
+  inclusive API indisponível, ACE inválida ou projeção .NET parcial. Não é sucesso.
+- Leituras coerentes com `ACL_PRIVADA_INSEGURA` ou
+  `ACL_PRIVADA_NAO_COMPROVADA`: a concordância não torna a ACL adequada.
+  Identidades adicionais, owner não permitido, DACL nula/ausente e tipos de ACE
+  não suportados continuam impedindo o acesso. Uma divergência nas leituras
+  normais vira `ACL_PRIVADA_NAO_VERIFICAVEL`.
+
+Se persistir ACL inadequada, guardar localmente a saída diagnóstica e revisar
+com o proprietário/administrador **qual** identidade, grant, owner ou regra de
+herança viola a política. Propor uma alteração específica daquela permissão para
+aprovação humana, preservando os descritores originais; não executar reset de
+ACL, concessão genérica de controle total, remoção de chaves/checkpoints ou
+substituição de SID desconhecido. Nenhuma remediação foi executada nesta entrega.
+
+Os testes novos usam um descritor binário sintético independente com três SIDs
+de tamanhos diferentes, ponteiros ctypes sobre buffers locais e comparação de
+projeções pseudonimizadas. Exercitam libertação envenenando o buffer original,
+limites do token/ACE, conversão divergente, diferença de identidade/máscara/
+flags, duplicatas, DACL nula/ausente, deny e ACE desconhecida. Esses testes
+**não executam as APIs Windows no Linux**. Dois testes de arquivo/diretório
+comparam realmente as APIs com PowerShell quando executados no Windows;
+somente eles são skipped em sistemas não Windows. As proteções POSIX e a
+política de permissões permanecem iguais. Não houve alteração de leitores,
+regras, XLSX, vínculos ou histórico.
+
+A resolução da ocorrência original e a homologação Windows permanecem pendentes
+da nova comparação nativa na pasta afetada e da auditoria completa. Não se
+conclui que o caso relatado foi corrigido apenas com testes Linux.
+
+Resultados desta investigação: suíte regular Linux/Python 3.12 com **2.051
+aprovados, zero falhas e dois skips** (comparação nativa Windows de arquivo e
+diretório); históricos explícitos com **60 aprovados, zero falhas/skips**.
+Total distinto: **2.111 aprovados e dois skips**. Os três módulos focados em
+Python 3.13.5/Linux tiveram **91 aprovados e dois skips**, sem falhas. Permanece
+um warning preexistente de depreciação AnyIO/Starlette. A revisão automatizada
+das alterações e comparação com padrões privados não encontraram documentos,
+dados pessoais reais ou credenciais. Não houve reprocessamento de documentos
+financeiros reais nesta investigação.
