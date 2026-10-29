@@ -52,7 +52,7 @@ def hashes_pacote(pacote):
         raise ErroLeitura("PACOTE_LIMITE_EXCEDIDO")
     if any(p.is_symlink() or not p.resolve().is_relative_to(pacote.resolve()) for p in arquivos):
         raise ErroLeitura("PACOTE_CONTEM_LINK")
-    return {str(p.relative_to(pacote)): sha256(p.read_bytes()).hexdigest() for p in arquivos}
+    return {p.relative_to(pacote).as_posix(): sha256(p.read_bytes()).hexdigest() for p in arquivos}
 
 
 class _CatalogoEmMemoria:
