@@ -37,7 +37,11 @@ def auditar(raiz):
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--private-dir',type=Path,required=True)
     p.add_argument('--comparar-leituras',action='store_true',help='Compara APIs nativas e GetAccessRules sem alterar ACLs ou exibir identidades reais.')
+    p.add_argument('--investigar-heranca',action='store_true',help='Investiga o mesmo objeto com Win32 e .NET no mesmo processo Windows, sem alterar permissões.')
     a=p.parse_args()
+    if a.investigar_heranca:
+        from conversor.diagnostics.windows_acl import investigar
+        r=investigar(a.private_dir);print(json.dumps(r,ensure_ascii=True));return 2
     if a.comparar_leituras:
         from conversor.acl_diagnostics import diagnosticar
         r=diagnosticar(a.private_dir);print(json.dumps(r,ensure_ascii=True))

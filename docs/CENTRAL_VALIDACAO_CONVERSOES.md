@@ -466,3 +466,130 @@ um warning preexistente de depreciação AnyIO/Starlette. A revisão automatizad
 das alterações e comparação com padrões privados não encontraram documentos,
 dados pessoais reais ou credenciais. Não houve reprocessamento de documentos
 financeiros reais nesta investigação.
+
+### Investigação em aberto: flags 3/19 e identidade diferente (base `fd0389c`)
+
+A nova execução do responsável mostrou três grants de controle total nas duas
+leituras. Nas APIs Win32, flags `3` (`OBJECT_INHERIT | CONTAINER_INHERIT`), com
+uma identidade adicional; em `GetAccessRules` e no binário exportado por
+`Get-Acl`, flags `19` (as mesmas flags mais `INHERITED_ACE=16`) e usuário atual.
+Isso comprova diferença entre as representações reportadas. **Não comprova que a
+identidade adicional seja CREATOR OWNER, OWNER RIGHTS, nem que qualquer uma das
+ACLs seja segura. A causa permanece desconhecida.**
+
+Foi identificado um parâmetro que faltava isolar: o leitor pede
+`OWNER_SECURITY_INFORMATION | DACL_SECURITY_INFORMATION = 0x5`; o caminho padrão
+.NET também inclui `GROUP_SECURITY_INFORMATION`, resultando em `0x7`. O wrapper
+.NET público usa GetNamedSecurityInfo por nome ou GetSecurityInfo por handle e
+constrói RawSecurityDescriptor sobre os bytes copiados. Isso fundamenta testar
+5/7 e a etapa de construção .NET; **não fundamenta trocar o parâmetro do leitor
+ou atribuir a ele a causa** sem execução nativa.
+
+Referências para esta investigação:
+
+- [SECURITY_INFORMATION](https://learn.microsoft.com/en-us/windows/win32/secauthz/security-information)
+- [GetNamedSecurityInfoW](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow)
+- [GetFileSecurityW](https://learn.microsoft.com/en-us/windows/win32/api/securitybaseapi/nf-securitybaseapi-getfilesecurityw)
+- [Propagação automática de herança](https://learn.microsoft.com/en-us/windows/win32/secauthz/automatic-propagation-of-inheritable-aces)
+- [Wrapper público .NET](https://github.com/dotnet/runtime/blob/main/src/libraries/System.Security.AccessControl/src/System/Security/AccessControl/Win32.cs)
+
+Essas referências descrevem APIs/semântica, não são evidência da causa no
+computador afetado. A implementação .NET instalada no Windows 11 ainda precisa
+ser confrontada no próprio ambiente.
+
+#### Coleta dirigida, sem remediação
+
+O novo `--investigar-heranca` mantém um handle Python de leitura aberto, sem
+share-delete, enquanto executa o probe PowerShell/C# local. No **mesmo processo
+PowerShell**, o probe compara:
+
+- GetNamedSecurityInfoW e GetFileSecurityW, com máscaras 5 e 7;
+- GetSecurityInfo com 5 e 7 no mesmo handle mantido aberto;
+- FileSystemSecurity com seções explícitas equivalentes a 5 e 7;
+- Get-Acl, seu RawSecurityDescriptor e a projeção GetAccessRules sobre o mesmo
+  objeto ACL, com uma nova serialização após GetAccessRules;
+- roundtrips RawSecurityDescriptor/CommonSecurityDescriptor **somente em
+  memória**, para isolar possíveis transformações .NET;
+- os bytes das duas leituras Python originais, transmitidos por stdin, usando
+  RawSecurityDescriptor e GetAce para verificar os parsers independentemente.
+
+São confrontados identificadores de volume/arquivo derivados por HMAC, antes e
+depois, caminho final do handle versus solicitado, identidade efetiva versus
+identidade do processo, tipo de objeto e estabilidade do descritor. O probe
+mantém seu próprio handle aberto sem share-delete. Caminhos redirecionados não
+são aceitos. Mudança de objeto, leitura parcial, impersonação ou descritor
+instável invalida a comprovação. Não se confunde coincidência do nome com
+identidade do objeto.
+
+As máscaras das chamadas Win32 e seções dos construtores .NET são controladas
+explicitamente. Para Get-Acl/GetAccessRules, `security_information=null` indica
+que os parâmetros internos do provider instalado não foram interceptados; não
+se registra 7 como parâmetro observado por suposição. A comparação com os
+construtores .NET explícitos permite investigar esse caminho separadamente.
+
+O relatório distingue igualdade binária integral, igualdade da DACL, diferenças
+de controle/grupo, igualdade das regras e alteração **somente** do bit 16.
+Esta última é uma observação, não equivalência automática de segurança: se SID,
+máscara, tipo ou outro bit também mudar, o diagnóstico não a classifica como
+mera diferença de marcador herdado. As regras e duplicatas são conservadas.
+
+`creator_owner`, `creator_group`, `owner_rights`, `everyone` e
+`authenticated_users` são classificações de SIDs especiais públicos, identificados
+por igualdade exata. Não são novas identidades permitidas. CREATOR OWNER é um
+placeholder relevante à herança; OWNER RIGHTS é outro principal, relacionado aos
+direitos do proprietário. Um não pode ser substituído pelo outro ou pelo usuário
+sem evidência. Nenhuma transformação é aplicada à ACL ou à política.
+
+SIDs/contas/caminhos/descritores não são impressos: o relatório usa HMACs com
+chave efêmera por execução, inclusive para bytes dos descritores e DACLs. A chave
+e os descritores transitam apenas em memória/stdin. Não há campos arbitrários
+vindos do subprocesso na resposta, nem stderr ou mensagens brutas de exceção.
+Nenhuma política de execução do PowerShell é alterada e nenhuma elevação é
+solicitada. Add-Type pode usar temporários/caches de compilação do .NET; não
+escreve na área privada nem embute descritores na fonte compilada.
+
+#### Comandos para o responsável (Windows)
+
+```powershell
+git switch feature/central-validacao-v2
+git pull --ff-only origin feature/central-validacao-v2
+python -X utf8 -m conversor.private_security --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado" --investigar-heranca
+python -X utf8 -m conversor.private_security --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado" --comparar-leituras
+python -X utf8 -m conversor.private_security --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado"
+python -X utf8 -m pytest -q tests/test_windows_acl_investigation.py tests/test_windows_acl_reader.py tests/test_acl_diagnostics.py tests/test_private_permissions.py
+```
+
+`--investigar-heranca` sempre termina com código **2**, investigação pendente e
+`autoriza_acesso=false`, mesmo quando as leituras coincidirem. É uma coleta de
+evidências, não a auditoria nem uma liberação. Compartilhar apenas o JSON desse
+diagnóstico e o resumo dos testes; não compartilhar SDDL, chaves, saída de
+icacls, descritores, nomes de contas ou conteúdo da área privada. Se falhar,
+`etapa` identifica caminho/objeto/leitura/compilação, sem revelar a exceção.
+
+#### Critério para prosseguir
+
+Os seis novos casos nativos usam **somente diretórios temporários sintéticos**:
+ACL explícita, ACL herdada, CREATOR OWNER, OWNER RIGHTS, grant a Everyone e
+propagação do CREATOR OWNER para um filho. Apenas as ACLs dessas fixtures novas
+são configuradas; a investigação deve preservá-las byte a byte. Everyone e
+principais especiais continuam bloqueados pela política conservadora. São
+verificados o mesmo objeto, parsers independentes, estabilidade e ausência de
+autorização. Os casos são skipped fora do Windows, sem emular sucesso nativo.
+
+**Não há correção causal publicada nesta etapa.** O leitor/política de
+`fd0389c` permanecem intactos, inclusive o bloqueio original. Só após o resultado
+nativo será possível distinguir uma transformação legítima de herança,
+representações distintas por parâmetros, falha do parser, diferença de processo
+ou inconsistência real. Qualquer ajuste de autorização dependerá dessa evidência,
+com regressão contra acesso efetivamente amplo. Não há merge na main, mudança
+financeira, processamento de documentos, alteração de vínculos/chaves/históricos
+ou homologação Windows concluída. Esta investigação não está encerrada.
+
+Verificações desta coleta: suíte regular Linux/Python 3.12, **2.081 aprovados,
+zero falhas, oito skips nativos**; históricos explícitos, **60 aprovados**, sem
+falhas/skips. Total distinto: **2.141 aprovados**. Focados em Python 3.13/Linux:
+**121 aprovados, zero falhas, oito skips**. Um warning AnyIO/Starlette já existente.
+O wheel foi construído e contém os três recursos Python/PowerShell/C# necessários.
+O código C#/PInvoke e a execução PowerShell deste probe **não foram compilados ou
+executados neste ambiente Linux**; fazem parte da validação nativa pendente.
+A revisão de privacidade não identificou dados reais ou credenciais nas mudanças.

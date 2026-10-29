@@ -25,6 +25,8 @@ where = ["src"]
 [tool.setuptools.package-data]
 "conversor.web" = ["static/*", "perfis.json", "perfis_saida.json", "identidades_integracao.json"]
 
+"conversor.diagnostics" = ["*.ps1", "*.cs"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
