@@ -145,6 +145,9 @@ def test_referencias_e_isolamento_ambiental(repo,plano,gestor,campo,valor,codigo
 
 
 def test_concorrencia_um_vencedor_e_uma_revisao_obsoleta(repo,plano,gestor):
+    # Aguardar o commit concorrente (incluindo I/O e ACL no Windows) antes de
+    # conferir a revisão; o teste de lock ocupado mantém o timeout curto da fixture.
+    repo.timeout = 10
     executar(repo,plano,gestor,'criar')
     def submeter(_):
         try:executar(repo,plano,gestor,'submeter',revisao=1);return 'ok'
