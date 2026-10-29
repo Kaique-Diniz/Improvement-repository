@@ -1,6 +1,7 @@
 // Executado apenas pelo diagnóstico Windows. Nenhuma API de escrita de ACL.
 using System;
 using System.IO;
+using System.Globalization;
 using System.Text;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -29,6 +30,12 @@ public static class ConversorAclProbe {
     static extern bool OpenProcessToken(IntPtr process,uint access,out IntPtr token);
     [DllImport("advapi32.dll", CharSet=CharSet.Unicode)]
     static extern uint GetNamedSecurityInfoW(string path,uint kind,uint info,out IntPtr owner,out IntPtr group,out IntPtr dacl,out IntPtr sacl,out IntPtr sd);
+    [DllImport("advapi32.dll", CharSet=CharSet.Unicode, EntryPoint="GetNamedSecurityInfoW", ExactSpelling=true)]
+    static extern uint GetNamedSelected5(string path,uint kind,uint info,out IntPtr owner,IntPtr group,out IntPtr dacl,IntPtr sacl,out IntPtr sd);
+    [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]
+    static extern int GetCurrentPackageFullName(ref uint length,IntPtr buffer);
+    [DllImport("advapi32.dll",SetLastError=true)]
+    static extern bool GetTokenInformation(IntPtr token,uint kind,out uint value,uint capacity,out uint length);
     [DllImport("advapi32.dll")]
     static extern uint GetSecurityInfo(SafeFileHandle handle,uint kind,uint info,out IntPtr owner,out IntPtr group,out IntPtr dacl,out IntPtr sacl,out IntPtr sd);
     [DllImport("advapi32.dll")] static extern uint GetSecurityDescriptorLength(IntPtr sd);
@@ -57,6 +64,12 @@ public static class ConversorAclProbe {
         try {uint code=GetNamedSecurityInfoW(path,1,info,out owner,out group,out dacl,out sacl,out sd);
             if(code!=0) throw new InvalidOperationException();return CopyDescriptor(sd);
         } finally {if(sd!=IntPtr.Zero) LocalFree(sd);}
+    }
+    static byte[] NamedSelected(string path) {
+        IntPtr owner,dacl,sd=IntPtr.Zero;
+        try {uint code=GetNamedSelected5(path,1,5,out owner,IntPtr.Zero,out dacl,IntPtr.Zero,out sd);
+            if(code!=0)throw new InvalidOperationException();return CopyDescriptor(sd);
+        }finally{if(sd!=IntPtr.Zero)LocalFree(sd);}
     }
     static byte[] Handle(SafeFileHandle handle,uint info) {
         IntPtr owner,group,dacl,sacl,sd=IntPtr.Zero;
@@ -141,18 +154,70 @@ public static class ConversorAclProbe {
     static void Capture(Dictionary<string,object> sources,string name,Func<byte[]> read,byte[] key,string user,uint? info,string origin) {
         Dictionary<string,object> r;
         try {r=Project(read(),key,user);}catch {r=D();r["estado"]="nao_comprovado";}
-        r["security_information"]=info;r["origem"]=origin;sources[name]=r;
+        r["security_information"]=info;r["origem"]=origin;
+        Dictionary<string,object> outputs=null;
+        if(name.Contains("Named") || name.StartsWith("Roundtrip_",StringComparison.Ordinal)) {
+            bool selected=name=="Named_5_selected" || name=="Python_Named_5";
+            outputs=D();outputs["owner"]=true;outputs["group"]=!selected;outputs["dacl"]=true;outputs["sacl"]=!selected;
+        }
+        r["saidas_opcionais"]=outputs;sources[name]=r;
     }
     static string NormalPath(string path) {
         if(path.StartsWith(@"\\?\UNC\",StringComparison.OrdinalIgnoreCase))return @"\\"+path.Substring(8);
         if(path.StartsWith(@"\\?\",StringComparison.OrdinalIgnoreCase))return path.Substring(4);
         return path;
     }
-    static string ObjectId(SafeFileHandle handle,byte[] key,out bool directory) {
+    static FileInfoNative Info(SafeFileHandle handle) {
         FileInfoNative info;
-        if(!GetFileInformationByHandle(handle,out info) || (info.Attributes&0x400)!=0) throw new InvalidOperationException();
-        directory=(info.Attributes&0x10)!=0;
-        return Id(key,"objeto",String.Format("{0:x8}:{1:x8}:{2:x8}",info.Volume,info.IndexHigh,info.IndexLow));
+        if(!GetFileInformationByHandle(handle,out info) || (info.Attributes&0x400)!=0)throw new InvalidOperationException();
+        return info;
+    }
+    static string FormatId(FileInfoNative info) {
+        return String.Format(CultureInfo.InvariantCulture,"{0:x8}:{1:x8}:{2:x8}",info.Volume,info.IndexHigh,info.IndexLow);
+    }
+    static string ObjectId(SafeFileHandle handle,byte[] key,out bool directory) {
+        FileInfoNative info=Info(handle);directory=(info.Attributes&0x10)!=0;
+        return Id(key,"objeto",FormatId(info));
+    }
+    static bool EqualPath(string a,string b) {
+        return String.Equals(NormalPath(a).TrimEnd('\\','/'),NormalPath(b).TrimEnd('\\','/'),StringComparison.OrdinalIgnoreCase);
+    }
+    static void IdentityDetails(Dictionary<string,object> checks,SafeFileHandle handle,byte[] key,string user,string full,string final,Dictionary<string,string> meta) {
+        FileInfoNative info=Info(handle);string formatted=FormatId(info);
+        checks["hmac_vetor_igual"]=meta["hmac_vetor"]==Digest(key,"instrumentacao",new byte[]{0,1,127,128,255});
+        checks["layout_tamanho_igual"]=meta["layout_tamanho"]==Marshal.SizeOf(typeof(FileInfoNative)).ToString(CultureInfo.InvariantCulture);
+        string[] fields={"Attributes","CreationLow","CreationHigh","AccessLow","AccessHigh","WriteLow","WriteHigh","Volume","SizeHigh","SizeLow","Links","IndexHigh","IndexLow"};
+        List<string> offsets=new List<string>();
+        foreach(string field in fields)offsets.Add(Marshal.OffsetOf(typeof(FileInfoNative),field).ToInt32().ToString(CultureInfo.InvariantCulture));
+        checks["layout_offsets_iguais"]=meta["layout_offsets"]==Id(key,"layout_offsets",String.Join(",",offsets.ToArray()));
+        checks["volume_igual"]=meta["volume"]==Id(key,"objeto_volume",info.Volume.ToString("x8",CultureInfo.InvariantCulture));
+        checks["indice_alto_igual"]=meta["indice_alto"]==Id(key,"objeto_indice_alto",info.IndexHigh.ToString("x8",CultureInfo.InvariantCulture));
+        checks["indice_baixo_igual"]=meta["indice_baixo"]==Id(key,"objeto_indice_baixo",info.IndexLow.ToString("x8",CultureInfo.InvariantCulture));
+        checks["serializacao_igual"]=meta["serializacao"]==Id(key,"objeto_formatacao",formatted);
+        checks["identidade_total_igual"]=meta["identidade"]==Id(key,"objeto",formatted);
+        checks["arquitetura_igual"]=meta["ponteiro_bits"]==(IntPtr.Size*8).ToString(CultureInfo.InvariantCulture);
+        checks["usuario_processo_igual"]=meta["usuario"]==Id(key,"sid",user);
+        checks["caminho_final_python_igual_csharp"]=EqualPath(meta["caminho_final"],final);
+        checks["caminho_python_igual_solicitado"]=EqualPath(meta["caminho_final"],full);
+        checks["caminho_csharp_igual_solicitado_normalizado"]=EqualPath(final,full);
+        uint needed=0;int code;
+        try {code=GetCurrentPackageFullName(ref needed,IntPtr.Zero);}catch{code=-1;}
+        bool known=code==122 || code==15700,present=code==122 && needed>0;
+        checks["pacote_python_verificavel"]=meta["pacote_verificavel"]=="1";
+        checks["pacote_csharp_verificavel"]=known;
+        checks["pacote_python_presente"]=meta["pacote_presente"]=="1";
+        checks["pacote_csharp_presente"]=present;
+        checks["pacote_presenca_igual"]=known && meta["pacote_verificavel"]=="1" && (meta["pacote_presente"]=="1")==present;
+    }
+    static void TokenDetails(Dictionary<string,object> checks,IntPtr token,Dictionary<string,string> meta) {
+        string[] names={"appcontainer","elevacao","virtualizacao"};uint[] types={29,20,24};
+        for(int i=0;i<names.Length;i++) {
+            uint value,length;bool known=GetTokenInformation(token,types[i],out value,4,out length) && length==4 && value<=1;
+            string prefix="token_"+names[i];string mk=prefix+"_verificavel";
+            bool both=known && meta.ContainsKey(mk) && meta[mk]=="1";
+            checks[prefix+"_verificavel"]=both;
+            checks[prefix+"_igual"]=both && (meta[prefix]=="1")== (value==1);
+        }
     }
     static SafeFileHandle Open(string path) {
         SafeFileHandle h=CreateFileW(path,ReadControlAttributes,ShareReadWrite,IntPtr.Zero,3,BackupAndOpenReparsePoint,IntPtr.Zero);
@@ -161,11 +226,11 @@ public static class ConversorAclProbe {
     static FileSystemSecurity DotNet(string path,bool directory,AccessControlSections sections) {
         return directory?(FileSystemSecurity)new DirectorySecurity(path,sections):new System.Security.AccessControl.FileSecurity(path,sections);
     }
-    public static Dictionary<string,object> Run(string path,byte[] key,byte[] pythonNamed,byte[] pythonFile,Func<FileSystemSecurity> readGetAcl) {
-        Dictionary<string,object> result=D(),sources=D();IntPtr token;
+    public static Dictionary<string,object> Run(string path,byte[] key,byte[] pythonNamed,byte[] pythonFile,byte[] pythonAll,Dictionary<string,string> meta,Func<FileSystemSecurity> readGetAcl) {
+        Dictionary<string,object> result=D(),sources=D(),checks=D();IntPtr token;
         if(!OpenProcessToken(GetCurrentProcess(),8,out token))throw new InvalidOperationException();
         string user;
-        try {using(WindowsIdentity w=new WindowsIdentity(token))user=w.User.Value;}finally{CloseHandle(token);}
+        try {using(WindowsIdentity w=new WindowsIdentity(token))user=w.User.Value;TokenDetails(checks,token,meta);}finally{CloseHandle(token);}
         using(WindowsIdentity effective=WindowsIdentity.GetCurrent())
             result["identidade_efetiva_igual_processo"]=effective.User.Value==user;
         result["ponteiro_bits"]=IntPtr.Size*8;
@@ -182,6 +247,8 @@ public static class ConversorAclProbe {
             result["caminho_final_igual_solicitado"]=String.Equals(full,NormalPath(finalPath.ToString()),StringComparison.OrdinalIgnoreCase);
             result["caminho_final_hmac"]=Id(key,"path",NormalPath(finalPath.ToString()).ToUpperInvariant());
             result["handle_sem_share_delete"]=true;result["objeto_tipo"]=1;
+            IdentityDetails(checks,handle,key,user,full,finalPath.ToString(),meta);
+            Capture(sources,"Named_5_selected",delegate{return NamedSelected(full);},key,user,5,"GetNamedSecurityInfoW_NULL_group_sacl");
             foreach(uint info in new uint[]{5,7}) {
                 uint flags=info;string suffix=info.ToString();
                 Capture(sources,"Named_"+suffix,delegate{return Named(full,flags);},key,user,flags,"GetNamedSecurityInfoW");
@@ -209,6 +276,24 @@ public static class ConversorAclProbe {
             Capture(sources,"GetAcl_depois",delegate{return psAcl.GetSecurityDescriptorBinaryForm();},key,user,null,"Get-Acl_apos_GetAccessRules");
             Capture(sources,"Python_Named_5",delegate{return pythonNamed;},key,user,5,"ctypes_GetNamedSecurityInfoW");
             Capture(sources,"Python_File_5",delegate{return pythonFile;},key,user,5,"ctypes_GetFileSecurityW");
+            Capture(sources,"Python_Named_5_all",delegate{return pythonAll;},key,user,5,"ctypes_GetNamedSecurityInfoW_all_outputs");
+            checks["reabertura_final_python_disponivel"]=false;checks["reabertura_final_python_mesmo_objeto"]=false;
+            Func<byte[]> missing=delegate{throw new InvalidOperationException();};
+            Capture(sources,"Python_final_Named_5",missing,key,user,5,"GetNamedSecurityInfoW_python_final");
+            Capture(sources,"Python_final_File_5",missing,key,user,5,"GetFileSecurityW_python_final");
+            Capture(sources,"Python_final_Handle_5",missing,key,user,5,"GetSecurityInfo_python_final");
+            try {
+                using(SafeFileHandle pyFinal=Open(meta["caminho_final"])) {
+                    bool ignored;string pyId=ObjectId(pyFinal,key,out ignored);
+                    checks["reabertura_final_python_disponivel"]=true;
+                    checks["reabertura_final_python_mesmo_objeto"]=pyId==meta["identidade"];
+                    if(pyId==meta["identidade"]) {
+                        Capture(sources,"Python_final_Named_5",delegate{return Named(meta["caminho_final"],5);},key,user,5,"GetNamedSecurityInfoW_python_final");
+                        Capture(sources,"Python_final_File_5",delegate{return FileSecurity(meta["caminho_final"],5);},key,user,5,"GetFileSecurityW_python_final");
+                        Capture(sources,"Python_final_Handle_5",delegate{return Handle(pyFinal,5);},key,user,5,"GetSecurityInfo_python_final");
+                    }
+                }
+            }catch {}
             Capture(sources,"Roundtrip_Raw_5",delegate{
                 RawSecurityDescriptor sd=new RawSecurityDescriptor(Named(full,5),0);byte[] raw=new byte[sd.BinaryLength];sd.GetBinaryForm(raw,0);return raw;
             },key,user,5,"RawSecurityDescriptor_memoria");
@@ -222,6 +307,6 @@ public static class ConversorAclProbe {
             }
             bool ignored2;result["handle_estavel"]=objectId==ObjectId(handle,key,out ignored2);
         }
-        result["fontes"]=sources;return result;
+        result["comparacao_identidade"]=checks;result["fontes"]=sources;return result;
     }
 }

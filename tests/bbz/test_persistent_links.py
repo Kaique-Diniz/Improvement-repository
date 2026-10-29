@@ -11,6 +11,7 @@ import pytest
 from tests.fs_support import symlink_ou_skip_1314
 
 from conversor.adapters.document_links_json import RepositorioVinculosJSON
+from conversor.adapters.private_permissions import criar_diretorio_privado
 from conversor.application.document_links import candidatos_documentais
 from conversor.domain.billing_rules import hash_modelo
 from conversor.domain.document_links import IdentidadeOrigem
@@ -28,7 +29,7 @@ SESSION='a'*64
 
 
 def repo(tmp):
-    root=tmp/'privado';root.mkdir(mode=0o700,exist_ok=True);return RepositorioVinculosJSON(root)
+    root=criar_diretorio_privado(tmp/'privado');return RepositorioVinculosJSON(root)
 
 
 def executar(tmp,r,raw=None,ref=None,cad=None,modo='A',**kw):

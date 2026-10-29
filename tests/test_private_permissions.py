@@ -78,7 +78,8 @@ def test_permissoes_reais_da_plataforma_e_rejeicao_de_excesso(tmp_path,arquivo):
 def test_chave_de_vinculos_permissiva_nao_pode_ser_usada(tmp_path):
     from tests.bbz.test_persistent_links import repo,iniciar
     from conversor.readers.text_support import ErroLeitura
-    r=repo(tmp_path);iniciar(tmp_path,r);key=r.key.read_bytes();antes=r.path.read_bytes()
+    r=repo(tmp_path);assert_privado(r.privado);iniciar(tmp_path,r)
+    assert_privado(r.key);key=r.key.read_bytes();antes=r.path.read_bytes()
     ampliar_acesso_sintetico(r.key)
     with pytest.raises(ErroLeitura):r.consultar()
     assert r.key.read_bytes()==key and r.path.read_bytes()==antes
@@ -152,3 +153,13 @@ def test_corrida_de_criacao_nao_reescreve_dacl_de_diretorio_existente(tmp_path,m
         return mkdir(path,*args,**kwargs)
     monkeypatch.setattr(cls,'mkdir',concorrente);monkeypatch.setattr(p,'windows',lambda:True);monkeypatch.setattr(p,'_WindowsACL',Backend)
     assert p.criar_diretorio_privado(alvo)==alvo and alvo.is_dir()
+
+
+def test_fixture_de_vinculos_cria_raiz_segura_e_nao_repara_raiz_existente(tmp_path):
+    from tests.bbz.test_persistent_links import repo
+    from conversor.readers.text_support import ErroLeitura
+    r=repo(tmp_path);assert_privado(r.privado)
+    sentinel=r.privado/'sentinela_sintetica';sentinel.write_bytes(b'SINTETICO ORIGINAL')
+    ampliar_acesso_sintetico(r.privado)
+    with pytest.raises((ErroAplicacao,ErroLeitura)):repo(tmp_path)
+    assert sentinel.read_bytes()==b'SINTETICO ORIGINAL'

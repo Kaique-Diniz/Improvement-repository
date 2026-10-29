@@ -593,3 +593,143 @@ O wheel foi construído e contém os três recursos Python/PowerShell/C# necess�
 O código C#/PInvoke e a execução PowerShell deste probe **não foram compilados ou
 executados neste ambiente Linux**; fazem parte da validação nativa pendente.
 A revisão de privacidade não identificou dados reais ou credenciais nas mudanças.
+
+### Evidências nativas de `9b129c4` e coleta dirigida v3
+
+O responsável executou o probe no Windows 11: leituras completas e estáveis,
+mas `objeto_e_identidade_comprovados=false`. Python Named/File retornaram 120
+bytes, OWNER RIGHTS e flags 3; C# Named/Handle/Get-Acl retornaram 164 bytes,
+usuário e flags 19; C# File retornou 136 bytes, usuário e flags 3. Esses resultados
+são evidência recebida, não execução Windows neste ambiente Linux.
+
+**O booleano agregado anterior não identifica a comparação que falhou.** Ele
+combinava identidade por HMAC, estabilidade, comparação literal de caminho,
+share-delete e identidade efetiva. Portanto, sua falsidade não comprova, sozinha,
+que o handle Python aponte para outro arquivo. Os layouts revisados de
+BY_HANDLE_FILE_INFORMATION têm 13 DWORDs, tamanho 52, volume no offset 28 e
+índices alto/baixo nos offsets 44/48. Não foi encontrado defeito de layout ou
+formatação na inspeção; a nova execução conferirá isso independentemente.
+
+O responsável confirmou instalação do Python pela **Microsoft Store**. A
+[documentação oficial do Python](https://docs.python.org/3.13/using/windows.html#redirection-of-local-data-registry-and-temporary-paths)
+descreve redirecionamento de AppData para cópias privadas em instalações da Store.
+Isso é uma hipótese concreta de resolução por processo, **ainda não comprovação
+sobre a pasta afetada**. Não se recomenda mover, copiar, recriar ou mesclar
+pastas, chaves ou vínculos com base nessa hipótese.
+
+#### Correção comprovada da preparação do teste
+
+`tests/bbz/test_persistent_links.py::repo` criava sua raiz com
+`mkdir(mode=0o700)` e só depois construía o repositório. O
+[código CPython 3.13](https://github.com/python/cpython/blob/3.13/Modules/posixmodule.c)
+(`os_mkdir_impl`, ramo MS_WINDOWS) aplica nesse modo uma DACL protegida com
+SYSTEM, Administradores e OWNER RIGHTS. Não é correto afirmar genericamente que
+o modo é ignorado no Windows 3.13. A política atual do conversor rejeita o
+principal especial; a raiz já existente não é corrigida automaticamente. Assim,
+a fixture podia falhar antes de chegar à alteração intencional da chave.
+
+O auxiliar agora usa `criar_diretorio_privado` na criação da **nova raiz
+sintética**, incluindo o mecanismo de proteção Windows existente. A mesma
+fixture não repara silenciosamente uma raiz preexistente insegura. O teste da
+chave confere primeiro a privacidade da raiz/chave, torna somente a chave
+sintética permissiva, exige a rejeição e confirma a preservação dos bytes da
+chave e do registro. A política e o repositório de produção não mudaram.
+Um teste nativo adicional confere a DACL criada pelo mkdir no CPython 3.13+;
+sua execução local permanece pendente.
+
+#### O que a v3 distingue
+
+`evidencias.comparacao_objeto` e `probe.comparacao_identidade` acrescentam apenas
+booleanos de comparação, nunca valores de volume, índices, caminhos, nomes de
+pacotes ou tokens:
+
+- Igualdade de volume, índices alto/baixo, identidade completa e sua serialização
+  hexadecimal unsigned com largura mínima 8 e cultura invariável.
+- Compatibilidade do HMAC com vetor binário fixo, tamanho e offsets dos layouts
+  ctypes/PInvoke, arquitetura e identidade do usuário do processo.
+- Estabilidade do handle Python, do handle C# e das reaberturas C#, separadas da
+  igualdade entre processos; cada parcela do agregado é visível.
+- Correspondência dos caminhos finais obtidos dos handles e do caminho
+  solicitado. Diferenças meramente literais de prefixo Win32, capitalização ou
+  separador final não são tratadas, sozinhas, como troca de objeto.
+- Presença/verificabilidade de identidade de pacote e comparação dos flags de
+  token AppContainer, elevação e virtualização. Os flags de virtualização UAC
+  não comprovam nem descartam, sozinhos, redirecionamento da Store.
+
+Os valores necessários transitam apenas em memória/stdin. C# tenta reabrir o
+caminho final obtido do handle Python e **só consulta a ACL nessa leitura cruzada
+se o identificador conferir com o handle Python**. A disponibilidade dessa
+reabertura e sua identidade são booleanos separados. Os três resultados
+`Python_final_*` distinguem essa leitura da leitura do caminho solicitado. Falha
+na abertura ou identidade inconclusiva não libera nada. `leituras_completas`
+cobre a matriz principal; `leituras_caminho_fisico_completas` cobre a leitura
+cruzada adicional. Ambas precisam ser examinadas.
+
+`Named_5_selected` repete em C# a máscara 5 com ponteiros group/sacl NULL;
+`Python_Named_5_all` repete em ctypes os quatro ponteiros `out`. O campo
+`saidas_opcionais` registra owner/group/dacl/sacl por booleanos em cada fonte,
+além da máscara e API já registradas. Isso isola os argumentos dentro de cada
+processo. A hipótese dos ponteiros opcionais, sozinha, não explica a divergência
+Python/C# de **GetFileSecurityW**, que não tem esses ponteiros de saída.
+Também são repetidas as leituras Python após o probe: alteração de descritor
+passa a invalidar `descritores_estaveis`, mesmo com identidade de arquivo estável.
+
+| Evidência | Significado que pode ser afirmado |
+|---|---|
+| Flags 3 / 19 | OI+CI / OI+CI+INHERITED_ACE; diferença de marcador, não aprovação |
+| Controle 0x9004 / 0x8004 | SELF_RELATIVE+DACL_PRESENT, com/sem DACL_PROTECTED |
+| OWNER RIGHTS | Principal especial relativo ao proprietário, não SID literal do usuário nem CREATOR OWNER |
+| Grupo/controle/SID diferentes | Diferenças adicionais; não podem ser ignoradas por haver apenas bit 16 em outras ACEs |
+
+`controle_decodificado` explicita DACL_PROTECTED (0x1000),
+DACL_AUTO_INHERITED (0x400), AUTO_INHERIT_REQ (0x100) e SELF_RELATIVE (0x8000).
+Nenhum desses bits é confundido com INHERITED_ACE (0x10) do cabeçalho da ACE.
+OWNER RIGHTS, CREATOR OWNER, Everyone e demais identidades não foram incluídos
+na lista permitida. A auditoria original pode continuar rejeitando a raiz.
+
+#### Interpretação antes de propor qualquer correção adicional
+
+1. HMAC/layout incompatíveis: investigar instrumentação; não concluir troca de
+   arquivo. Componentes iguais com serialização diferente também exigem revisão
+   da instrumentação.
+2. Somente comparação literal de caminho falha: avaliar os caminhos normalizados
+   e a identidade; isso não demonstra troca de objeto.
+3. Layout/HMAC compatíveis, componentes e caminhos finais distintos e reabertura
+   do caminho Python comprovada: evidência forte de resolução diferente por
+   processo; confrontar as ACLs da leitura cruzada e os indicadores de pacote.
+4. Mesmo objeto comprovado, resultados diferentes: confrontar a matriz NULL/out,
+   APIs e construtores .NET, contexto e estabilidade; não normalizar por aproximação.
+
+A causa da divergência da **pasta real** continua pendente até essa conferência.
+Não foi alterado o leitor de permissões ou sua política. Não houve acesso a
+PDFs/XLSX reais, alteração de ACLs reais, vínculos, chaves ou históricos.
+
+Para repetir no Windows, com a mesma conta e sem elevação:
+
+```powershell
+git switch feature/central-validacao-v2
+git pull --ff-only origin feature/central-validacao-v2
+$conversorPrivado = "$env:LOCALAPPDATA\ConversorInadimplencia\privado"
+python -X utf8 -m conversor.private_security --private-dir "$conversorPrivado" --investigar-heranca
+python -X utf8 -m conversor.private_security --private-dir "$conversorPrivado"
+python -X utf8 -m pytest -q tests/test_private_permissions.py tests/test_windows_acl_investigation.py tests/test_windows_acl_reader.py tests/test_acl_diagnostics.py tests/bbz/test_persistent_links.py
+python -X utf8 -m pytest -q
+python -X utf8 -m pytest -q tests/homologacao/pacote_suite.py tests/homologacao/revisao_suite.py tests/homologacao/leitores_fase3_suite.py
+```
+
+O comando investigativo continua retornando 2 com `autoriza_acesso=false` e
+`causa_confirmada=false`. Enviar somente seu JSON sanitizado e os resumos dos
+testes; não enviar SDDL, caminhos resolvidos, nomes de pacote, chaves ou arquivos
+privados. Não há executor Windows disponível neste ambiente: compilação/execução
+da v3 e a suíte **completa Windows** ainda dependem dessa execução local.
+
+Resultados locais da v3 (Linux): **2.106 aprovados, zero falhas, nove skips** na
+suíte regular; **60 aprovados**, sem falhas/skips, nos históricos explícitos.
+Total distinto: **2.166 aprovados**. Focados com Python 3.13.5, incluindo os testes
+de vínculos persistentes: **202 aprovados, zero falhas, nove skips**. Todos os
+skips desta execução são casos Windows nativos; permanece um warning preexistente
+AnyIO/Starlette. O teste da chave permissiva passou aqui com a fixture corrigida,
+mas seu resultado Windows precisa ser confirmado. O probe anterior compilou e
+executou no Windows do responsável; a **v3 modificada** não foi compilada ou
+executada nativamente neste ambiente. A revisão de privacidade não encontrou
+dados reais ou credenciais nas mudanças. A main permanece fora desta publicação.

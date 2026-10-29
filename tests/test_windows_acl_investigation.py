@@ -29,7 +29,8 @@ def probe():
     return dict(caminho_solicitado_hmac='a'*64,caminho_final_hmac='a'*64,objeto_antes_hmac=OBJ,objeto_depois_hmac=OBJ,
         identidade_efetiva_igual_processo=True,diretorio=True,caminho_final_igual_solicitado=True,handle_sem_share_delete=True,
         handle_estavel=True,ponteiro_bits=64,objeto_tipo=1,
-        fontes={name:model()|dict(security_information=mask,origem=origin)for name,(mask,origin)in d.FONTES.items()},
+        fontes={name:model()|dict(security_information=mask,origem=origin,saidas_opcionais=d.saidas_opcionais(name))for name,(mask,origin)in d.FONTES.items()},
+        comparacao_identidade={k:True for k in d.IDENTITY_CHECKS},
         GetAccessRules=model()['regras'])
 
 
@@ -104,7 +105,7 @@ def test_mesmo_nome_nao_basta_para_comprovar_objeto_ou_leitura(kind):
     r=probe()
     if kind=='objeto':r['objeto_depois_hmac']='f'*64
     if kind=='impersonacao':r['identidade_efetiva_igual_processo']=False
-    if kind=='path':r['caminho_final_igual_solicitado']=False
+    if kind=='path':r['caminho_final_igual_solicitado']=False;r['comparacao_identidade']['caminho_csharp_igual_solicitado_normalizado']=False
     if kind=='alteracao_acl':r['fontes']['Handle_5_depois']['binario_hmac']='f'*64
     if kind=='projecao_parcial':r['fontes']['File_5']['estado']='nao_comprovado'
     if kind=='parser':r['fontes']['Named_5']['GetAce']=[]
@@ -115,11 +116,12 @@ def test_mesmo_nome_nao_basta_para_comprovar_objeto_ou_leitura(kind):
 
 def preparar(monkeypatch):
     @contextmanager
-    def obj(path,key):yield lambda:OBJ
+    def obj(path,key):yield lambda:dict(identidade=OBJ)
     monkeypatch.setattr(d,'windows',lambda:True);monkeypatch.setattr(d,'objeto_preservado',obj)
     monkeypatch.setattr(d.secrets,'token_bytes',lambda n:KEY)
     monkeypatch.setattr(d,'_WindowsACL',lambda:backend(MemoriaWindows()))
-    monkeypatch.setattr(d,'executar_probe',lambda *a:probe())
+    monkeypatch.setattr(d,'contexto_processo',lambda api:{})
+    monkeypatch.setattr(d,'executar_probe',lambda *a,**kw:probe())
 
 
 def test_investigacao_nao_declara_causa_resolvida_nem_muda_arquivos(tmp_path,monkeypatch):
@@ -159,7 +161,7 @@ def test_payload_binario_so_transita_em_stdin_e_nao_ha_bypass_da_politica_powers
         assert 'SENTINELA'not in ' '.join(args)and '-ExecutionPolicy'not in args
         assert kw['env']['CONVERSOR_ACL_DIAG_PATH']=='SENTINELA'
         assert args[-1]==Path(d.__file__).with_name('acl_probe.ps1').read_text()
-        payload=json.loads(kw['input']);assert set(payload)=={'named','file','chave'}
+        payload=json.loads(kw['input']);assert set(payload)=={'named','file','chave','named_all','meta'}
         return SimpleNamespace(returncode=0,stdout=json.dumps(probe()).encode(),stderr=b'')
     monkeypatch.setattr(d.subprocess,'run',run)
     assert d.executar_probe('SENTINELA',KEY,SD,SD)['objeto_tipo']==1
@@ -184,11 +186,16 @@ def test_handle_de_leitura_fecha_e_identidade_nao_expoe_fileid(monkeypatch):
     def info(handle,out):
         f=c.cast(out,c.POINTER(d.FileInfo))[0];f.volume=1;f.index_high=2;f.index_low=3;f.attributes=16
         return 1
-    dll=SimpleNamespace(CreateFileW=Fn(abrir),GetFileInformationByHandle=Fn(info),CloseHandle=Fn(lambda h:closed.append(h)))
+    def final(handle,buffer,size,flags):
+        assert flags==0;buffer.value=r'\\?\C:\SINTETICO';return len(buffer.value)
+    dll=SimpleNamespace(CreateFileW=Fn(abrir),GetFileInformationByHandle=Fn(info),GetFinalPathNameByHandleW=Fn(final),CloseHandle=Fn(lambda h:closed.append(h)))
     monkeypatch.setattr(c,'WinDLL',lambda *a,**kw:dll,raising=False)
     with pytest.raises(RuntimeError):
         with d.objeto_preservado('sintetico',KEY)as identity:
-            assert identity()==d.digest(KEY,'objeto','00000001:00000002:00000003')
+            snap=identity()
+            assert snap['identidade']==d.digest(KEY,'objeto','00000001:00000002:00000003')
+            assert snap['serializacao']==d.digest(KEY,'objeto_formatacao','00000001:00000002:00000003')
+            assert snap['caminho_final']==r'\\?\C:\SINTETICO'
             raise RuntimeError('sintetico')
     assert closed==[123]and c.sizeof(d.FileInfo)==52
 
@@ -238,3 +245,137 @@ def test_native_substituicao_creator_owner_na_heranca_e_observada_sem_whitelist(
     rules=r['probe']['fontes']['Handle_7']['regras']
     assert any(x['classe']=='usuario'and not x['flags']&8 for x in rules),r
     assert any(x['flags']&16 for x in rules),r
+
+
+@pytest.mark.parametrize('failed',['hmac_vetor_igual','layout_tamanho_igual','layout_offsets_iguais','volume_igual',
+    'indice_alto_igual','indice_baixo_igual','serializacao_igual','identidade_total_igual','usuario_processo_igual','caminho_final_python_igual_csharp'])
+def test_identidade_detalhada_isola_cada_falha_sem_concluir_troca_de_objeto(failed):
+    raw=probe();raw['comparacao_identidade'][failed]=False
+    r=d.avaliar_probe(d.validar_resposta(raw),OBJ,{'Python_Named_5':d.projetar(EXPECTED,KEY)})
+    assert not r['objeto_e_identidade_comprovados']and r['comparacao_objeto'][failed]is False
+    assert all(type(v)is bool for v in r['comparacao_objeto'].values())
+    assert 'causa_confirmada'not in r
+
+
+def test_caminho_com_diferenca_literal_nao_e_troca_de_identidade_por_si_so():
+    raw=probe();raw['caminho_final_igual_solicitado']=False
+    r=d.avaliar_probe(d.validar_resposta(raw),OBJ,{})
+    assert r['objeto_e_identidade_comprovados']
+    assert not r['comparacao_objeto']['csharp_caminho_final_literal_igual']
+    assert r['comparacao_objeto']['caminho_csharp_igual_solicitado_normalizado']
+
+
+def test_ausencia_de_leitura_cruzada_nao_e_leitura_principal_positiva_nem_troca_comprovada():
+    raw=probe()
+    for name in d.CROSS_SOURCES:raw['fontes'][name]['estado']='nao_comprovado'
+    raw['comparacao_identidade']['reabertura_final_python_disponivel']=False
+    raw['comparacao_identidade']['reabertura_final_python_mesmo_objeto']=False
+    r=d.avaliar_probe(d.validar_resposta(raw),OBJ,{})
+    assert r['leituras_completas']and not r['leituras_caminho_fisico_completas']
+
+
+@pytest.mark.parametrize('outputs',[None,{'owner':True,'group':True,'dacl':True,'sacl':True}])
+def test_proveniencia_dos_ponteiros_null_nao_pode_ser_reescrita(outputs):
+    raw=probe();raw['fontes']['Python_Named_5']['saidas_opcionais']=outputs
+    with pytest.raises(ValueError,match='PONTEIROS_DIVERGENTES'):d.validar_resposta(raw)
+
+
+def test_matriz_compara_saida_null_e_todos_out_no_mesmo_processo():
+    raw=probe()
+    r=d.avaliar_probe(d.validar_resposta(raw),OBJ,{})
+    assert r['comparacoes']['Named_5__Named_5_selected']['regras_iguais']
+    assert r['comparacoes']['Named_5__Python_Named_5_all']['regras_iguais']
+    assert r['comparacoes']['Python_Named_5__Python_Named_5_all']['regras_iguais']
+    assert raw['fontes']['Named_5_selected']['saidas_opcionais']==dict(owner=True,group=False,dacl=True,sacl=False)
+    assert raw['fontes']['Named_5']['saidas_opcionais']==dict(owner=True,group=True,dacl=True,sacl=True)
+
+
+def test_control_9004_e_8004_sao_exibidos_sem_tratar_como_equivalentes():
+    raw=probe();raw['fontes']['Python_Named_5']['control_flags']=0x9004
+    safe=d.validar_resposta(raw)
+    protected=safe['fontes']['Python_Named_5'];unprotected=safe['fontes']['Named_5']
+    assert protected['controle_decodificado']['dacl_protegida']
+    assert not unprotected['controle_decodificado']['dacl_protegida']
+    assert not d.comparar(protected,unprotected)['controle_igual']
+    assert not protected['controle_decodificado']['dacl_auto_herdada']
+
+
+def test_layout_by_handle_tem_dword_unsigned_e_offsets_documentados():
+    from struct import pack
+    fields=(0x10,1,2,3,4,5,6,0xFEDCBA98,8,9,10,0xFFFFFFFF,0x89ABCDEF)
+    info=d.FileInfo.from_buffer_copy(pack('<13I',*fields))
+    assert c.sizeof(d.FileInfo)==52 and d.FileInfo.volume.offset==28
+    assert d.FileInfo.index_high.offset==44 and d.FileInfo.index_low.offset==48
+    assert (info.volume,info.index_high,info.index_low)==(0xFEDCBA98,0xFFFFFFFF,0x89ABCDEF)
+    assert f'{info.volume:08x}:{info.index_high:08x}:{info.index_low:08x}'=='fedcba98:ffffffff:89abcdef'
+
+
+def test_named_todas_saidas_preserva_os_bytes_e_libera_o_descritor():
+    fake=MemoriaWindows();original=fake.GetNamedSecurityInfoW
+    def call(path,kind,mask,owner,group,dacl,sacl,sd):
+        assert kind==1 and mask==5 and all(x is not None for x in (owner,group,dacl,sacl,sd))
+        return original(path,kind,mask,owner,group,dacl,sacl,sd)
+    fake.GetNamedSecurityInfoW=call
+    raw=d.named_todas_saidas(backend(fake),'sintetico')
+    assert raw==SD and fake.liberados
+    assert all(c.string_at(addr,1)==b'\xee'for addr in fake.liberados)
+
+
+def test_retorno_da_identidade_tem_apenas_booleanos_permitidos():
+    raw=probe();raw['comparacao_identidade']['conta']=USER
+    with pytest.raises(ValueError):d.validar_resposta(raw)
+
+
+@NATIVE
+def test_native_cpython313_mkdir700_cria_owner_rights_sem_equivaler_a_usuario(tmp_path):
+    import sys
+    if sys.version_info<(3,13):pytest.skip('Comportamento específico do mkdir Windows no CPython 3.13+.')
+    target=tmp_path/'mkdir700';target.mkdir(mode=0o700)
+    api=p._WindowsACL();before=api._snapshot_nome(target)
+    acl=d.decodificar_descritor(before,api.usuario())
+    assert any(e.sid=='S-1-3-4'and e.flags==3 for e in acl.entradas)
+    assert int.from_bytes(before[2:4],'little')&0x1000
+    with pytest.raises(ErroAplicacao):p.conferir_windows(target)
+    assert api._snapshot_nome(target)==before
+
+
+@pytest.mark.parametrize('package_code,present,known',[(122,'1','1'),(15700,'0','1'),(5,'0','0')])
+def test_contexto_processo_consulta_apenas_metadados_e_fecha_token(package_code,present,known):
+    class Fn:
+        def __init__(self,fn):self.fn=fn
+        def __call__(self,*a):return self.fn(*a)
+    fake=MemoriaWindows()
+    def package(size,buffer):
+        assert buffer is None;c.cast(size,c.POINTER(c.c_uint32))[0]=50 if package_code==122 else 0
+        return package_code
+    def token(handle,kind,out,capacity,size):
+        assert capacity==4 and kind in (20,24,29)
+        c.cast(out,c.POINTER(c.c_uint32))[0]=1 if kind==20 else 0
+        c.cast(size,c.POINTER(c.c_uint32))[0]=4
+        return 1
+    fake.GetCurrentPackageFullName=Fn(package);fake.GetTokenInformation=token
+    result=d.contexto_processo(backend(fake))
+    assert result['pacote_verificavel']==known and result['pacote_presente']==present
+    assert result['token_elevacao']=='1'and result['token_elevacao_verificavel']=='1'
+    assert result['token_appcontainer']==result['token_virtualizacao']=='0'
+    assert fake.closed==1 and 'S-1-'not in json.dumps(result)
+
+
+def test_comparacoes_identidade_incompletas_ou_com_valores_brutos_sao_rejeitadas():
+    raw=probe();raw['comparacao_identidade']['volume_igual']='SENTINELA_PRIVADA'
+    with pytest.raises(ValueError,match='IDENTIDADE_PARCIAL'):d.validar_resposta(raw)
+
+
+def test_identidade_igual_com_evidencia_de_acl_alterada_permanece_sem_comprovacao_de_estabilidade(tmp_path,monkeypatch):
+    preparar(monkeypatch)
+    fake=MemoriaWindows();api=backend(fake);calls=0;original=api._snapshot_nome
+    def mudar(path):
+        nonlocal calls
+        calls+=1
+        raw=original(path)
+        return raw if calls==1 else raw+b'\0\0\0\0'
+    monkeypatch.setattr(d,'_WindowsACL',lambda:api);monkeypatch.setattr(api,'_snapshot_nome',mudar)
+    r=d.investigar(tmp_path)
+    assert r['evidencias']['objeto_e_identidade_comprovados']
+    assert not r['evidencias']['python_named_estavel']and not r['evidencias']['descritores_estaveis']
+    assert not r['autoriza_acesso']and not r['causa_confirmada']
