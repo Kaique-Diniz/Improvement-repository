@@ -213,3 +213,163 @@ com Python 3.12 e 3.13.5. Injeção explícita do erro 1314: **72 aprovados, 0 f
 3.12/Linux: **1.953 regulares + 60 históricos = 2.013 testes distintos aprovados**,
 sem falhas ou skips. O warning de depreciação existente permanece. Esses resultados
 não equivalem a uma nova execução nativa Windows.
+
+## Correção final — Windows, proteção real e motivos de retenção
+
+Continuação de `0cea106`, na mesma branch; sem merge automático. O responsável
+confirmou no Windows 11/Python 3.13 o fluxo ABROLHOS **sem template**, com vínculos
+reais previamente aprovados: A 103 dívidas, B 103 + 24 cadastros, R$ 94.970,42,
+25 unidades comprovadas, 65 sem pertencimento, nove linhas com dados pessoais
+retidos, quatro descrições neutras e a unidade E/A00223 presente. Os XLSX eram
+byte a byte idênticos aos baselines naquele Windows. Essa homologação funcional
+informada é preservada; não comprova a execução nativa das novas verificações ACL.
+
+### Diagnóstico dos 14 casos relatados
+
+O mapeamento abaixo foi conferido no código; a execução Windows original foi
+informada pelo responsável, não reproduzida em uma máquina Windows neste ambiente.
+
+| Grupo | Casos existentes | Causa e tratamento |
+|---|---|---|
+| Symlinks: 9 | 5 caminhos de vínculos (registro, chave, lock, evidências, checkpoints), 1 ancestral, 1 fonte preservada, 1 fonte Fase 3 e 1 simulação privada | Criação indisponível por WinError 1314. Helper compartilhado omite somente o cenário de link real; outros erros são propagados |
+| Permissões: 3 | Canônico privado, auditoria de revisão Fase 3 e auditoria documental | Igualdade com `0600` não comprova ACL NTFS. Asserções continuam POSIX no Linux e conferem DACL nativa no Windows |
+| Permissões: 2 | Fonte e raiz de armazenamento de simulações tornadas permissivas | `chmod` não injeta uma concessão NTFS equivalente. No Windows a fixture concede leitura a Everyone e exige rejeição real; não é skip |
+
+A recusa de armazenamento em Git foi separada do teste de ancestral simbólico,
+para continuar sendo executada mesmo sem privilégio de criar symlink. Testes
+independentes sinalizam symlink/reparse sem criá-lo e exigem recusa antes de
+leitura ou criação. Os testes de links reais e de permissões POSIX permanecem.
+
+### Falhas reais de proteção identificadas e correção separada
+
+As leituras de autoridade, simulações e vínculos anteriormente verificavam modo
+apenas em POSIX. `chmod` no Windows não provava privacidade. Foi acrescentado
+`adapters/private_permissions.py`, com APIs nativas `GetNamedSecurityInfoW`,
+`GetAce` e consulta ao token do usuário; sem pywin32, PowerShell no backend,
+serviços externos ou privilégios administrativos exigidos pelo programa.
+
+A política local é conservadora: usuário atual, SYSTEM e Administradores são a
+fronteira de confiança. Grants a outras identidades, inclusive herdados e de
+somente leitura, são rejeitados. DACL nula é insegura. ACE condicional/objeto,
+deny ou ausência de controle necessário do usuário não é aprovada por aproximação:
+a privacidade fica **não comprovada** e a operação é retida. Não é um calculador
+universal de Effective Access nem certificação de configuração corporativa.
+
+- **Linux:** verificações existentes de `0600`/`0700`, recusa de permissividade,
+  links, Git e hashes/HMAC preservadas e executadas com objetos reais.
+- **Windows:** conferência nativa da DACL em raiz, chaves e arquivos privados;
+  objetos novos recebem DACL restrita antes de gravar bytes sensíveis. Diretórios
+  novos privados também recebem proteção explícita, inclusive em Python 3.12.
+  Pastas e arquivos existentes são conferidos; não têm ACL reescrita silenciosamente.
+- As leituras de fontes não resolvem mais uma raiz simbólica antes de conferir o
+  redirecionamento. Symlinks/reparse em raiz ou ancestrais são recusados; o teste
+  alternativo comprova recusa antes de ler o alvo ou criar artefatos.
+- Escrita atômica, conteúdo, versões, assinaturas, chaves e checkpoints históricos
+  não mudam. As alterações de proteção não alteram o escritor XLSX nem o motor.
+
+As APIs Windows foram implementadas e a política foi exercitada por injeção de
+ACLs conhecidas no Linux. Asserções de plataforma e testes de concessão/rejeição
+invocarão o backend nativo quando executados no Windows. **Não se declara que
+essas chamadas nativas tenham sido executadas neste ambiente Linux.**
+
+### Auditoria somente de leitura no Windows, sem administrador
+
+Antes de iniciar o servidor atualizado, executar com a conta que usa o MVP:
+
+```powershell
+python -X utf8 -m conversor.private_security --private-dir "$env:LOCALAPPDATA\ConversorInadimplencia\privado"
+```
+
+O comando não lê conteúdo de PDFs, chaves ou cadastros, não altera ACLs e não
+aprova vínculos. O resumo não publica nomes de arquivos, SIDs ou dados pessoais.
+`politica_local_confere` significa que a política local conferiu nos objetos
+percorridos; não é homologação de fontes/produção. Falha, caminho redirecionado,
+ACL indisponível ou subdiretório que não possa ser percorrido retorna código 2,
+com classificação, sem presumir privacidade de objetos não conferidos.
+
+Se houver falha, preservar backup privado da árvore **e** de suas ACLs e revisar
+localmente com `Get-Acl -LiteralPath`/`icacls`. Conferir owner, grants, herança e
+as identidades autorizadas. Não publicar essa saída. Não usar `chmod`, reset de
+cadastro ou remoção de chaves/checkpoints como solução. A conta proprietária
+pode administrar suas ACLs; esta entrega não força elevação nem aplica uma
+correção genérica às pastas existentes. Se disponível uma segunda conta de teste
+já existente, a tentativa de leitura deve ser negada; essa verificação adicional
+não foi executada aqui.
+
+### Indicadores aditivos em `validacao_conversao@2`
+
+`application/contact_retention.py` classifica motivos explícitos da auditoria
+cadastral, do escopo e das pendências persistentes. Não deduz conflitos por
+diferença de totais. Uma unidade pode pertencer a vários conjuntos; os contadores
+não devem ser somados como categorias mutuamente exclusivas.
+
+| Campo | Significado | ABROLHOS |
+|---|---|---:|
+| `unidades_escopo_comprovado` | Unidades com evidência de pertencimento | 25 |
+| `unidades_escopo_pendente` | Unidades explicitamente sem comprovação | 65 |
+| `unidades_vinculo_persistente` | Comprovação por vínculo persistente aprovado | 25 no Windows homologado sem referência |
+| `unidades_conflito_documental` | Conflito indicado nas evidências documentais | 2 |
+| `linhas_financeiras_contatos_retidos` | Dívidas efetivamente escritas com dados protegidos | 9 |
+| `unidades_outros_dados_protegidos` | Outros motivos explícitos ou ainda não classificados | 0 |
+| `boletos_em_revisao` | Boletos, não unidades, retidos na análise | 71 |
+| `descricoes_neutras` | Rótulos neutros observados no XLSX | 4 |
+
+Compatibilidade: `unidades_contato_retido` permanece como **total de unidades
+protegidas** (67 neste caso), com descrição neutra; não significa 67 conflitos.
+`linhas_com_contato_retido` mantém o valor anterior (9). O novo array
+`retencoes_classificadas` contém apenas IDs internos e motivos, sem CPF/CNPJ,
+nomes, telefones ou e-mails. Motivo desconhecido permanece não classificado;
+proteção é conservada, sem inventar conflito. O painel separa os grupos de
+pertencimento e proteção documental e explicita a distinção boletos/unidades.
+
+### Critérios de revisão desta correção
+
+- Reexecutar os seis módulos de testes indicados na tarefa e os novos
+  `tests/test_private_permissions.py` e `tests/test_contact_retention.py`.
+- Não remover outras falhas por skip. A simulação de erro 1314 valida somente a
+  indisponibilidade de criar links, não simula ACL NTFS ou uma execução Windows.
+- Os fixtures de permissões usam somente diretórios temporários novos; nenhum
+  teste deve apontar para a pasta privada real do responsável.
+- No Windows real: conferir a auditoria ACL, rodar as suítes com a conta comum,
+  reiniciar com o mesmo `--private-dir` e repetir A/B sem referência e sem novas
+  aprovações. Comparar os hashes naquele ambiente e os novos indicadores.
+- Não confundir os resultados Linux/sintéticos com homologação completa Windows.
+
+### Evidências finais desta implementação
+
+| Execução neste ambiente | Aprovados | Falhas | Skips |
+|---|---:|---:|---:|
+| Suíte regular, Linux/Python 3.12 | 1.985 | 0 | 0 |
+| Históricos explícitos, Linux/Python 3.12 | 60 | 0 | 0 |
+| Módulos focados e novos testes, Linux/Python 3.13.5 | 256 | 0 | 0 |
+| Mesmos módulos com injeção de WinError 1314, Linux | 245 | 0 | 11 |
+
+Total distinto: **2.045** (as reexecuções e subconjuntos não são somados).
+O único warning de depreciação já existente permanece. Os onze skips da simulação
+são os dois cenários da Central mais os nove cenários relatados; não há skip de
+permissões nessa simulação. As duas verificações POSIX específicas de autoridade
+que já existiam continuam específicas dessa plataforma; há cobertura adicional
+portável de permissões de raiz, fontes, chave e auditoria.
+
+As oito verificações históricas de schemas e a de vínculos passaram. Chromium
+conferiu os grupos de indicadores, filtros, laudo/download, bloqueio por
+adulteração, seleção alterada e viewport móvel, sem erros JavaScript, com dados
+sintéticos. Os testes de ACL incluem grants explícitos/herdados amplos, DACL nula,
+owner diferente, ACE não interpretável, backend indisponível, proteção antes da
+escrita e recusa de reescrever ACL existente, inclusive corrida de criação.
+
+As 20 regressões privadas de TREE, PLAZA, NOVA YORK, INNOVA, NOVA REBOUÇAS e WIN
+preservam canônicos e XLSX byte a byte. ABROLHOS A/B foram reprocessados aqui
+**com referência**, sem criar aprovações reais, e coincidem nas 30 colunas,
+tipos e ordem com os baselines recebidos. Os novos indicadores foram conferidos:
+25/65 unidades, 2 conflitos conhecidos, 9 dívidas com contatos retidos, 71 boletos
+em revisão, 4 descrições neutras e 0 outras restrições. A: 103 dívidas; B: mesmas
+103 + 24 cadastros; R$ 94.970,42. Diferenças de hash entre os anexos Windows e
+Linux decorrem dos metadados ZIP de plataforma; não se afirma identidade global
+byte a byte entre esses ambientes.
+
+**Pendência de execução, não substituída por simulação:** o novo backend ACL
+nativo, a auditoria da pasta original e o fluxo completo sem referência devem ser
+reexecutados no Windows do responsável, com a conta comum. As aprovações reais
+permanecem apenas naquele computador e não foram reproduzidas artificialmente.
+Não há homologação Windows completa desta correção ou liberação para produção.
