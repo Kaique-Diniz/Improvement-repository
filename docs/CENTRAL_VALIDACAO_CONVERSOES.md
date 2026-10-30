@@ -861,3 +861,103 @@ as mesmas quatro situações sintéticas e manteve cobrança/exportação operac
 falsas. A revisão das mudanças não encontrou documentos reais, dados pessoais ou
 credenciais. As duas suítes completas acima são **Linux**, não Windows; a nova
 execução nativa permanece pendente.
+
+### Investigação restrita de INHERITED_ACE — 30/10/2026
+
+**Situação: diagnóstico e proposta; exceção não implementada no leitor.** A nova
+evidência informada pelo responsável usa Python 3.13.17 convencional: mesmo
+objeto, descritores estáveis e políticas individuais válidas. Named/Handle e
+Named/Python Named concordam; File diverge de Named apenas no bit 0x10 das ACEs,
+com proprietário e controle iguais. Isso é diferente das evidências anteriores
+de redirecionamento entre processos e de OWNER RIGHTS. Não atribuir o caso novo
+à Store ou a um principal especial sem evidência.
+
+O ponto de rejeição é comprovável no código: `_WindowsACL.ler()` compara
+`AclPrivada` por `mesmas_regras()`, que inclui todas as flags na contagem das ACEs.
+Uma diferença 3/19 causa `LEITURAS_ACL_DIVERGENTES`, convertida em
+`ACL_PRIVADA_NAO_VERIFICAVEL` por `conferir_windows()`, antes da auditoria interna.
+Validar cada projeção isoladamente não prova concordância entre leitores.
+
+**Causa provável da representação:** tratamento diferente de metadados de
+herança entre a API de arquivo e as APIs de segurança por nome/handle. A origem
+exata dessa transformação na instalação Windows **não foi demonstrada aqui**.
+A documentação pública define INHERITED_ACE como indicação de origem herdada;
+INHERIT_ONLY (0x08) determina se a ACE é efetiva sobre o objeto. Ela também
+descreve propagação automática e precedência de ACEs, mas não garante que essas
+duas consultas devam divergir apenas no bit 0x10 nessa instalação. Não concluir
+que uma consulta regravou a ACL, nem atribuir um defeito ao Python ou ao PDF.
+
+Fontes públicas consultadas:
+
+- [ACE_HEADER](https://learn.microsoft.com/en-us/windows/win32/api/winnt/ns-winnt-ace_header).
+- [Automatic Propagation of Inheritable ACEs](https://learn.microsoft.com/en-us/windows/win32/secauthz/automatic-propagation-of-inheritable-aces).
+- [ACE Inheritance Rules](https://learn.microsoft.com/en-us/windows/win32/secauthz/ace-inheritance-rules).
+- [GetNamedSecurityInfoW](https://learn.microsoft.com/en-us/windows/win32/api/aclapi/nf-aclapi-getnamedsecurityinfow).
+
+O diagnóstico v3 ganha `proposta_comparacao_heranca`, somente com situação e
+booleanos. Também decodifica File via GetAce e aplica **a mesma** `validar_acl()`
+às quatro projeções Python (Named, File e os dois GetAce), registrando seus
+códigos de resultado. Não lê conteúdo do objeto ou arquivos internos, não aplica
+DACL, não escreve checkpoints e não altera o comparador ou a lista permitida.
+
+Condições necessárias da proposta, todas cumulativas:
+
+1. Mesmo objeto e identidade comprovados, leituras principais/físicas completas,
+   estabilidade dos snapshots e cópias Python preservadas.
+2. Named/Handle e Named/Python Named binariamente iguais; File/Python File
+   binariamente iguais. Decodificadores e GetAce concordantes em cada fonte.
+3. Usuário, proprietário, grupo, presença de DACL e **todos** os control flags
+   iguais. Diferença em DACL_PROTECTED, AUTO_INHERITED ou AUTO_INHERIT_REQ não é
+   tratada como diferença de INHERITED_ACE.
+4. Somente ACEs allow padrão das identidades já confiáveis; todas as políticas
+   individuais aprovadas. Nenhuma identidade especial é convertida em usuário.
+5. Mesma sequência, multiplicidade, SID, máscara, tipo e demais flags de ACEs.
+   O único delta permitido para **classificar a proposta** é XOR no bit 0x10.
+   Nenhum INHERIT_ONLY, OI, CI, NO_PROPAGATE ou bit desconhecido é descartado.
+6. Binários diferentes precisam ser compatíveis com a diferença projetada;
+   projeção diferente com HMAC binário igual não é prova válida.
+
+Para allow padrão e os mesmos direitos efetivos, ignorar somente a proveniência
+0x10 na comparação não adicionaria direitos presentes sobre o objeto. Isso não
+prova equivalência para futura edição/propagação da herança, ACEs deny/objeto,
+grupos desconhecidos ou uma hierarquia inteira. Por esse limite, o resultado é
+`candidato_a_excecao_nao_implementada`, **nunca aprovação**: `autoriza_acesso` e
+`aplicada_ao_leitor` permanecem falsos. Se qualquer condição falhar, retorna
+`condicoes_nao_comprovadas`. A investigação continua com `causa_confirmada=false`
+e a auditoria principal permanece fail-closed.
+
+Não se alterou globalmente `mesmas_regras()`: seus dois usos em `.ler()` continuam
+estritos; nenhum outro chamador recebeu tolerância. O modelo `AclPrivada` não
+transporta control flags; uma futura exceção de produção precisaria verificar
+esse controle nos snapshots, além de identidade, estabilidade e direitos. Não
+basta trocar Counter por uma contagem sem o bit 0x10.
+
+Os testes cobrem delta isolado, tipos/máscaras/SIDs/proprietários divergentes,
+INHERIT_ONLY, outros bits, permissões adicionais, ordem/multiplicidade, políticas
+individuais rejeitadas, descritores incompletos e evidências inconsistentes. Um
+teste confirma que a auditoria de produção continua rejeitando o delta isolado.
+Dois testes nativos novos usam somente diretórios/arquivos **temporários
+sintéticos** com ACL herdada e comparam snapshots antes/depois da investigação.
+Não exigem a pasta privada original. Nenhum caso Linux emulado equivale à
+homologação nativa dessas APIs.
+
+Com o ambiente virtual convencional ativado, executar no Windows:
+
+```powershell
+python -X utf8 -m pytest -q tests/test_windows_acl_inherited_flag.py tests/test_windows_acl_investigation.py tests/test_windows_acl_reader.py tests/test_private_permissions.py
+python -X utf8 -m pytest -q
+```
+
+Não executar correção, cópia ou migração de ACLs como parte dessa conferência.
+Antes de propor ativação de uma exceção, ainda faltam reprodução nativa dos
+casos sintéticos e revisão de como garantir as mesmas condições no leitor real.
+O diagnóstico não remove retenções nem autoriza produção.
+
+Validação desta investigação no Linux: suíte completa Python 3.13 com **2.175
+aprovados, 11 skips nativos e 1 warning preexistente**; módulos focados com **172
+aprovados e 11 skips**, tanto em Python 3.12 quanto 3.13; históricos sintéticos
+com **60 aprovados**. Foram adicionados 52 casos executáveis no Linux e dois
+cenários nativos, ainda não executados neste ambiente. Nenhum teste foi omitido
+para ocultar divergência: os novos skips correspondem exclusivamente aos dois
+casos Win32/.NET/PowerShell. A origem exata da diferença entre APIs e a eventual
+exceção de produção continuam pendentes.

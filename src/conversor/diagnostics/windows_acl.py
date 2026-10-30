@@ -263,6 +263,49 @@ def avaliar_probe(probe,objeto,python_models):
         getaccessrules_igual_raw=dotnet_projection)
 
 
+def propor_comparacao_heranca(probe,evidencias):
+    """Proposta diagnóstica, não usada por ler/conferir_windows para autorizar acesso.
+
+    Exige a matriz já sanitizada. Nenhuma diferença de controle, SID, direitos,
+    multiplicidade, ordem ou outro bit é normalizada. Mesmo resultado candidato
+    continua dependendo de reprodução nativa e revisão antes de mudar o leitor.
+    """
+    fontes=probe['fontes'];nome=fontes['Named_5'];arquivo=fontes['File_5']
+    principais=('Named_5','File_5','Handle_5','Python_Named_5','Python_File_5')
+    completas=all(fontes[n]['estado']=='ok'for n in principais)
+    checks=dict(
+        objeto_comprovado=evidencias.get('objeto_e_identidade_comprovados')is True,
+        leituras_completas=evidencias.get('leituras_completas')is True,
+        caminho_fisico_completo=evidencias.get('leituras_caminho_fisico_completas')is True,
+        estaveis=evidencias.get('descritores_estaveis')is True,
+        binarios_python_preservados=evidencias.get('binarios_python_preservados')is True,
+        getace_named_exato=evidencias.get('GetAce_python_igual_binario')is True,
+        getace_file_exato=evidencias.get('GetAce_file_python_igual_binario')is True,
+        politicas_individuais_validas=evidencias.get('politicas_python')==dict.fromkeys(
+            ('Named','File','GetAce_Named','GetAce_File'),'confere'),
+        principais_completas=completas)
+    comparacoes=evidencias['comparacoes']
+    for outra in ('Handle_5','Python_Named_5'):
+        checks['named_exato_'+outra]=comparacoes['Named_5__'+outra].get('binario_igual')is True
+    checks['file_python_exato']=(fontes['Python_File_5'].get('binario_hmac')==arquivo.get('binario_hmac')and completas)
+    checks['parsers_csharp_exatos']=all(evidencias['parsers_csharp_concordam'].get(n)is True for n in principais)
+    checks['parsers_python_exatos']=all(evidencias['parsers_python_concordam'].get(n)is True
+        for n in ('Python_Named_5','Python_File_5','Python_Named_5_all'))
+    checks['dotnet_exato']=evidencias.get('getaccessrules_igual_raw')is True
+    checks['metadados_exatos']=completas and all(all(fontes[n][k]==nome[k]
+        for k in ('usuario','proprietario','grupo','control_flags','dacl_presente'))for n in principais)
+    checks['somente_allow_confiavel']=completas and all(r['tipo']==0 and
+        r['classe']in ('usuario','system','administradores')and not r['flags']&~0x1f
+        for n in principais for r in fontes[n]['regras'])
+    delta=comparacoes['Named_5__File_5']
+    checks['delta_exclusivo_0x10']=(delta.get('diferenca_apenas_bit_herdada')is True and
+        delta.get('binario_igual')is False and completas and
+        [chave_regra(r,sem_herdada=True)for r in nome['regras']]==
+        [chave_regra(r,sem_herdada=True)for r in arquivo['regras']])
+    return dict(situacao='candidato_a_excecao_nao_implementada'if all(checks.values())else'condicoes_nao_comprovadas',
+        condicoes=checks,autoriza_acesso=False,aplicada_ao_leitor=False)
+
+
 def investigar(path):
     base=dict(versao='investigacao_acl@3',alteracoes_realizadas=0,autoriza_acesso=False,causa_confirmada=False,
         situacao='investigacao_pendente',limite='Somente evidências de leitura; padrões de herança não aprovam ACLs ou vínculos.')
@@ -275,6 +318,7 @@ def investigar(path):
             snapshot=identity();before=snapshot['identidade'];etapa='leituras_python';api=_WindowsACL();user=api.usuario()
             named=api._snapshot_nome(path);file=api._snapshot_arquivo(path)
             n=decodificar_descritor(named,user);f=decodificar_descritor(file,user);g=api._projetar_getace(named,user)
+            gf=api._projetar_getace(file,user)
             all_outputs=named_todas_saidas(api,path);a=decodificar_descritor(all_outputs,user)
             models={'Python_Named_5':projetar(n,key),'Python_File_5':projetar(f,key),'Python_Named_5_all':projetar(a,key)}
             meta=snapshot|contexto_processo(api)|dict(usuario=digest(key,'sid',user),hmac_vetor=digest(key,'instrumentacao',bytes((0,1,127,128,255))))
@@ -283,6 +327,7 @@ def investigar(path):
             checks['comparacao_objeto']['python_handle_estavel']=identity()['identidade']==before
             checks['objeto_e_identidade_comprovados'] &= checks['comparacao_objeto']['python_handle_estavel']
             checks['GetAce_python_igual_binario']=projetar(n,key)==projetar(g,key)
+            checks['GetAce_file_python_igual_binario']=projetar(f,key)==projetar(gf,key)
             checks['binarios_python_preservados']=(digest(key,'sd',named)==probe['fontes']['Python_Named_5'].get('binario_hmac')and
                 digest(key,'sd',file)==probe['fontes']['Python_File_5'].get('binario_hmac')and
                 digest(key,'sd',all_outputs)==probe['fontes']['Python_Named_5_all'].get('binario_hmac'))
@@ -290,9 +335,13 @@ def investigar(path):
             checks['python_file_estavel']=api._snapshot_arquivo(path)==file
             checks['descritores_estaveis'] &= checks['python_named_estavel']and checks['python_file_estavel']
             _sem_redirecionamento(path)
-        policy='confere'
-        try:validar_acl(n)
-        except ErroAplicacao as e:policy=str(e)
-        return base|dict(politica_python=policy,evidencias=checks,probe=probe)
+        politicas={}
+        for nome,acl in (('Named',n),('File',f),('GetAce_Named',g),('GetAce_File',gf)):
+            try:validar_acl(acl);politicas[nome]='confere'
+            except ErroAplicacao as e:politicas[nome]=str(e)
+        checks['politicas_python']=politicas
+        proposta=propor_comparacao_heranca(probe,checks)
+        return base|dict(politica_python=politicas['Named'],evidencias=checks,probe=probe,
+            proposta_comparacao_heranca=proposta)
     except FalhaProbe as e:return base|dict(codigo='PROBE_WINDOWS_NAO_COMPROVADO',etapa=e.etapa)
     except Exception:return base|dict(codigo='INVESTIGACAO_NAO_COMPROVADA',etapa=etapa)
