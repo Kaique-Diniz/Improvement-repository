@@ -906,9 +906,12 @@ Condições necessárias da proposta, todas cumulativas:
    estabilidade dos snapshots e cópias Python preservadas.
 2. Named/Handle e Named/Python Named binariamente iguais; File/Python File
    binariamente iguais. Decodificadores e GetAce concordantes em cada fonte.
-3. Usuário, proprietário, grupo, presença de DACL e **todos** os control flags
-   iguais. Diferença em DACL_PROTECTED, AUTO_INHERITED ou AUTO_INHERIT_REQ não é
-   tratada como diferença de INHERITED_ACE.
+3. Usuário, proprietário, presença de DACL e **todos** os control flags iguais
+   nas leituras com máscaras 5 e 7. O grupo precisa ser comprovado e concordar
+   nas quatro leituras que solicitam explicitamente GROUP (máscara 7); o grupo
+   incidental da máscara 5 não é usado nessa decisão. Diferença em
+   DACL_PROTECTED, AUTO_INHERITED ou AUTO_INHERIT_REQ não é tratada como diferença
+   de INHERITED_ACE.
 4. Somente ACEs allow padrão das identidades já confiáveis; todas as políticas
    individuais aprovadas. Nenhuma identidade especial é convertida em usuário.
 5. Mesma sequência, multiplicidade, SID, máscara, tipo e demais flags de ACEs.
@@ -961,3 +964,45 @@ cenários nativos, ainda não executados neste ambiente. Nenhum teste foi omitid
 para ocultar divergência: os novos skips correspondem exclusivamente aos dois
 casos Win32/.NET/PowerShell. A origem exata da diferença entre APIs e a eventual
 exceção de produção continuam pendentes.
+
+#### Correção da comprovação de grupo conforme SECURITY_INFORMATION
+
+A evidência Windows posterior mostrou somente `metadados_exatos=false`: o grupo
+divergia nas leituras File/Python File com máscara 5, enquanto as quatro fontes
+com máscara 7 concordavam. O probe já usa OWNER+DACL para 5 e OWNER+GROUP+DACL
+para 7, inclusive `AccessControlSections.Group` na consulta .NET. Portanto a
+comparação anterior exigia concordância de um campo não solicitado em parte das
+leituras. A correção fica restrita à proposta diagnóstica, não ao leitor.
+
+`metadados_exatos` preserva usuário, proprietário, controle e presença de DACL,
+e passa a depender de `grupo_mask7_comprovado`: Named_7, File_7, Handle_7 e
+DotNet_7 precisam estar disponíveis, declarar máscara 7, comprovar o mesmo grupo
+não nulo e não contradizer a DACL lida. Os parsers dessas fontes devem concordar
+com GetAce; sequência, multiplicidade, SIDs, tipos, máscaras e demais flags não
+podem mudar. Somente o delta 0x10 já previsto é tolerado para classificar essa
+comparação **diagnóstica**. Não se transferem direitos da identidade do grupo
+nem se adiciona qualquer SID à política permitida.
+
+O C# representa um grupo ausente pelo HMAC do SID vazio. Para não tomar quatro
+ausências iguais como prova de grupo, `investigar()` fornece à proposta apenas
+esse marcador HMAC efêmero, calculado com a chave já usada no probe. A proposta
+rejeita esse marcador, fonte/campo ausente, erro, máscara errada ou divergência.
+O marcador não é publicado no novo resumo e não é uma chave HMAC persistente.
+Se a evidência necessária não for fornecida, o resultado continua bloqueado.
+
+Todas as demais condições cumulativas permanecem. Nem `_WindowsACL.ler()`, nem
+`conferir_windows()`, nem `mesmas_regras()` foram alterados. Mesmo quando a nova
+comparação resulta em `candidato_a_excecao_nao_implementada`, `autoriza_acesso` e
+`aplicada_ao_leitor` continuam falsos e a auditoria principal continua estrita.
+Sem executor Windows neste ambiente, a nova execução nativa permanece pendente;
+os comandos focados e completos acima continuam aplicáveis, com objetos
+sintéticos temporários. Nenhuma ACL ou fonte privada real foi consultada.
+
+Resultados da correção de máscaras: **2.242 aprovados, 11 skips nativos e 1
+warning preexistente** na suíte completa Linux/Python 3.13; **239 aprovados e 11
+skips** nos módulos focados em Python 3.12; **60 históricos sintéticos
+aprovados**. Os testes negativos anteriores continuam presentes, exceto a
+exigência incorreta de igualdade de grupo na máscara 5, substituída pela
+regressão positiva e pela comprovação negativa de grupo nas quatro fontes 7.
+Não há executor Windows disponível aqui; esses resultados não são homologação
+nativa nem liberação de acesso.

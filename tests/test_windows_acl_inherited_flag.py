@@ -11,7 +11,7 @@ from conversor.adapters.acl_binary import decodificar_descritor, mesmas_regras
 from conversor.application.ports import ErroAplicacao
 from conversor.diagnostics import windows_acl as d
 from tests.test_windows_acl_reader import SD, USER, EXPECTED, MemoriaWindows, backend, mod
-from tests.test_windows_acl_investigation import OBJ, preparar, probe
+from tests.test_windows_acl_investigation import KEY, OBJ, preparar, probe
 
 
 def arquivo_sem_bit_herdado():
@@ -39,7 +39,7 @@ def propor(raw, alterar_evidencias=None):
         binarios_python_preservados=True,politicas_python=dict.fromkeys(
             ('Named','File','GetAce_Named','GetAce_File'),'confere'))
     if alterar_evidencias:alterar_evidencias(evidencias)
-    return d.propor_comparacao_heranca(safe,evidencias)
+    return d.propor_comparacao_heranca(safe,evidencias,grupo_ausente_hmac=d.digest(KEY,'sid',''))
 
 
 def test_delta_0x10_isolado_e_somente_candidato_sem_autorizacao():
@@ -56,7 +56,7 @@ def test_ausencia_de_delta_nao_propoe_excecao():
 
 
 @pytest.mark.parametrize('campo,valor',[
-    ('proprietario','f'*64),('usuario','f'*64),('grupo','f'*64),
+    ('proprietario','f'*64),('usuario','f'*64),
     ('control_flags',0x9004),('dacl_presente',False),
 ])
 def test_metadado_distinto_impede_proposta(campo,valor):
@@ -64,6 +64,88 @@ def test_metadado_distinto_impede_proposta(campo,valor):
     r=propor(raw)
     assert r['situacao']=='condicoes_nao_comprovadas'
     assert not r['condicoes']['metadados_exatos']
+
+
+def test_grupo_nao_solicitado_na_mask5_nao_substitui_comprovacao_mask7():
+    raw=cenario()
+    for fonte in ('File_5','Python_File_5'):
+        raw['fontes'][fonte]['grupo']='f'*64
+    r=propor(raw)
+    assert r['situacao']=='candidato_a_excecao_nao_implementada'
+    assert r['condicoes']['grupo_mask7_comprovado']and r['condicoes']['metadados_exatos']
+    assert not r['autoriza_acesso']and not r['aplicada_ao_leitor']
+
+
+def test_grupo_mask7_comprovado_independe_do_valor_incidental_mask5():
+    raw=cenario()
+    for fonte in ('Named_7','File_7','Handle_7','DotNet_7'):
+        raw['fontes'][fonte]['grupo']='f'*64
+    assert propor(raw)['situacao']=='candidato_a_excecao_nao_implementada'
+
+
+@pytest.mark.parametrize('fonte',['Named_7','File_7','Handle_7','DotNet_7'])
+@pytest.mark.parametrize('mudanca',['grupo_divergente','indisponivel','grupo_nulo'])
+def test_cada_leitura_mask7_e_obrigatoria_e_grupo_deve_concordar(fonte,mudanca):
+    raw=cenario()
+    if mudanca=='indisponivel':raw['fontes'][fonte]['estado']='nao_comprovado'
+    else:raw['fontes'][fonte]['grupo']='f'*64 if mudanca=='grupo_divergente'else d.digest(KEY,'sid','')
+    r=propor(raw)
+    assert r['situacao']=='condicoes_nao_comprovadas'
+    assert not r['condicoes']['grupo_mask7_comprovado']and not r['condicoes']['metadados_exatos']
+    assert not r['autoriza_acesso']and not r['aplicada_ao_leitor']
+
+
+def test_quatro_grupos_nulos_iguais_nao_sao_comprovacao():
+    raw=cenario()
+    for fonte in ('Named_7','File_7','Handle_7','DotNet_7'):
+        raw['fontes'][fonte]['grupo']=d.digest(KEY,'sid','')
+    assert propor(raw)['situacao']=='condicoes_nao_comprovadas'
+
+
+def test_sem_marcador_de_grupo_nulo_a_proposta_continua_bloqueada(monkeypatch):
+    original=d.propor_comparacao_heranca
+    monkeypatch.setattr(d,'propor_comparacao_heranca',lambda safe,evidencias,**kw:original(safe,evidencias))
+    assert propor(cenario())['situacao']=='condicoes_nao_comprovadas'
+
+
+@pytest.mark.parametrize('fonte',['Named_7','File_7','Handle_7','DotNet_7'])
+@pytest.mark.parametrize('campo,valor',[
+    ('usuario','f'*64),('proprietario','f'*64),('control_flags',0x9004),('dacl_presente',False),
+])
+def test_outros_metadados_mask7_tambem_devem_concordar(fonte,campo,valor):
+    raw=cenario();raw['fontes'][fonte][campo]=valor
+    r=propor(raw)
+    assert r['situacao']=='condicoes_nao_comprovadas'
+    assert not r['condicoes']['metadados_exatos']
+
+
+@pytest.mark.parametrize('fonte',['Named_7','File_7','Handle_7','DotNet_7'])
+@pytest.mark.parametrize('mudanca',['permissao_adicional','mascara','tipo','sid','inherit_only','getace'])
+def test_grupo_mask7_nao_e_aceito_com_dacl_contraditoria(fonte,mudanca):
+    raw=cenario();leitura=raw['fontes'][fonte];regras=leitura['regras']
+    if mudanca=='permissao_adicional':regras.append(regras[0]|dict(identidade='f'*64,classe='outra'))
+    elif mudanca=='mascara':regras[0]['mascara']='0x120089'
+    elif mudanca=='tipo':regras[0]['tipo']=1
+    elif mudanca=='sid':regras[0]['identidade']='f'*64
+    elif mudanca=='inherit_only':regras[0]['flags']|=8
+    else:leitura['GetAce']=[]
+    assert propor(raw)['situacao']=='condicoes_nao_comprovadas'
+
+
+@pytest.mark.parametrize('fonte',['Named_7','File_7','Handle_7','DotNet_7'])
+@pytest.mark.parametrize('mudanca',['fonte_ausente','grupo_ausente','mascara_incorreta'])
+def test_proposta_nao_supoe_completude_de_metadados_mask7(monkeypatch,fonte,mudanca):
+    original=d.propor_comparacao_heranca
+
+    def alterar(safe,evidencias,**kwargs):
+        # Isola o contrato defensivo da proposta após a sanitização da resposta.
+        if mudanca=='fonte_ausente':safe['fontes'].pop(fonte)
+        elif mudanca=='grupo_ausente':safe['fontes'][fonte].pop('grupo')
+        else:safe['fontes'][fonte]['security_information']=5
+        return original(safe,evidencias,**kwargs)
+
+    monkeypatch.setattr(d,'propor_comparacao_heranca',alterar)
+    assert propor(cenario())['situacao']=='condicoes_nao_comprovadas'
 
 
 @pytest.mark.parametrize('campo,valor',[

@@ -263,7 +263,7 @@ def avaliar_probe(probe,objeto,python_models):
         getaccessrules_igual_raw=dotnet_projection)
 
 
-def propor_comparacao_heranca(probe,evidencias):
+def propor_comparacao_heranca(probe,evidencias,*,grupo_ausente_hmac=None):
     """Proposta diagnóstica, não usada por ler/conferir_windows para autorizar acesso.
 
     Exige a matriz já sanitizada. Nenhuma diferença de controle, SID, direitos,
@@ -272,6 +272,7 @@ def propor_comparacao_heranca(probe,evidencias):
     """
     fontes=probe['fontes'];nome=fontes['Named_5'];arquivo=fontes['File_5']
     principais=('Named_5','File_5','Handle_5','Python_Named_5','Python_File_5')
+    com_grupo=('Named_7','File_7','Handle_7','DotNet_7')
     completas=all(fontes[n]['estado']=='ok'for n in principais)
     checks=dict(
         objeto_comprovado=evidencias.get('objeto_e_identidade_comprovados')is True,
@@ -292,8 +293,17 @@ def propor_comparacao_heranca(probe,evidencias):
     checks['parsers_python_exatos']=all(evidencias['parsers_python_concordam'].get(n)is True
         for n in ('Python_Named_5','Python_File_5','Python_Named_5_all'))
     checks['dotnet_exato']=evidencias.get('getaccessrules_igual_raw')is True
-    checks['metadados_exatos']=completas and all(all(fontes[n][k]==nome[k]
-        for k in ('usuario','proprietario','grupo','control_flags','dacl_presente'))for n in principais)
+    # OWNER+DACL (5) não comprova GROUP. Conferir grupo somente em OWNER+GROUP+DACL (7).
+    # O probe representa Group nulo pelo HMAC do SID vazio; igualdade desse marcador não basta.
+    grupo=fontes.get('Named_7',{}).get('grupo')
+    checks['grupo_mask7_comprovado']=bool(_id(grupo_ausente_hmac)and _id(grupo)and grupo!=grupo_ausente_hmac and
+        all(fontes.get(n,{}).get('estado')=='ok'and fontes[n].get('security_information')==7 and
+            fontes[n].get('grupo')==grupo and evidencias['parsers_csharp_concordam'].get(n)is True and
+            [chave_regra(r,sem_herdada=True)for r in fontes[n]['regras']]==
+            [chave_regra(r,sem_herdada=True)for r in nome['regras']]for n in com_grupo))
+    checks['metadados_exatos']=completas and checks['grupo_mask7_comprovado']and all(
+        fontes.get(n,{}).get('estado')=='ok'and all(fontes[n].get(k)==nome[k]
+            for k in ('usuario','proprietario','control_flags','dacl_presente'))for n in principais+com_grupo)
     checks['somente_allow_confiavel']=completas and all(r['tipo']==0 and
         r['classe']in ('usuario','system','administradores')and not r['flags']&~0x1f
         for n in principais for r in fontes[n]['regras'])
@@ -340,7 +350,7 @@ def investigar(path):
             try:validar_acl(acl);politicas[nome]='confere'
             except ErroAplicacao as e:politicas[nome]=str(e)
         checks['politicas_python']=politicas
-        proposta=propor_comparacao_heranca(probe,checks)
+        proposta=propor_comparacao_heranca(probe,checks,grupo_ausente_hmac=digest(key,'sid',''))
         return base|dict(politica_python=politicas['Named'],evidencias=checks,probe=probe,
             proposta_comparacao_heranca=proposta)
     except FalhaProbe as e:return base|dict(codigo='PROBE_WINDOWS_NAO_COMPROVADO',etapa=e.etapa)
