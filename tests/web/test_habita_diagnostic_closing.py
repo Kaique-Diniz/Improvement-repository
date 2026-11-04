@@ -51,7 +51,7 @@ def test_fechamento_reconciliado_disponibiliza_so_diagnostico_preservando_eviden
     assert len(crit)==1 and crit[0]['gravidade']=='critico'and crit[0]['escopo']=='arquivo'
     assert all('SUBTOTAL_BLOCO_DIVERGENTE'in d['impedimentos_exportacao_operacional']for d in r['decisoes'])
     assert all(not d['bloqueios']and d['anomalia_global_reconciliada']for d in r['decisoes'])
-    manifesto=json.loads((tmp_path/'manifesto_diagnostico.json').read_text())
+    manifesto=json.loads((tmp_path/'manifesto_diagnostico.json').read_text(encoding='utf-8'))
     assert manifesto==r['manifesto_diagnostico']
     assert manifesto['arquivo']['sha256']==sha256((tmp_path/'TESTE_LOCAL_NAO_IMPORTAR.xlsx').read_bytes()).hexdigest()
     assert manifesto['ocorrencias_criticas_preservadas']==crit

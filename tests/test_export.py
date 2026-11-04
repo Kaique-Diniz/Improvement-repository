@@ -16,7 +16,7 @@ def linha(pessoa, **campos):
 
 
 def test_30_colunas_conferidas_contra_documento_normativo():
-    texto = (Path(__file__).resolve().parents[1] / "04_DICIONARIO_TEMPLATE.md").read_text()
+    texto = (Path(__file__).resolve().parents[1] / "04_DICIONARIO_TEMPLATE.md").read_text(encoding='utf-8')
     documentadas = re.findall(r"^\|\s*\d+\s*\|\s*`([^`]+)`", texto, re.MULTILINE)
     assert tuple(documentadas) == COLUNAS
     assert len(COLUNAS) == 30

@@ -278,7 +278,7 @@ def test_rollback_de_json_assinado_e_exclusao_nao_apagam_revogacao(tmp_path):
 
 def test_mudanca_de_perfil_evidencia_nova_guardada_para_revisao(tmp_path):
     r=repo(tmp_path);iniciar(tmp_path,r);decidir(r)
-    data=json.loads(PERFIS_SAIDA_PATH.read_text());next(p for p in data if p['condominio_id']=='cond_bbz_abrolhos')['versao']='2.0'
+    data=json.loads(PERFIS_SAIDA_PATH.read_text(encoding='utf-8'));next(p for p in data if p['condominio_id']=='cond_bbz_abrolhos')['versao']='2.0'
     path=r.privado/'perfil_sintetico.json';path.write_text(json.dumps(data))
     out=executar(tmp_path/'perfil',r,perfis_saida=path)
     assert out['resumo']['dividas_efetivamente_geradas']==0
@@ -306,14 +306,14 @@ def test_adulteracao_referencia_preservada_bloqueia_mesmo_sem_reenvio(tmp_path):
 def test_referencia_atual_invalida_nao_libera_registro(tmp_path):
     from conversor.application.document_links import resolver_vinculos
     r=repo(tmp_path);iniciar(tmp_path,r);decidir(r);raw=financeiro();p,c,f=reconhecer(raw);l,_=ler(raw,p,c,f,'inadimplencia')
-    ps=selecionar_perfil(json.loads(PERFIS_SAIDA_PATH.read_text()),administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
+    ps=selecionar_perfil(json.loads(PERFIS_SAIDA_PATH.read_text(encoding='utf-8')),administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
     scope,_=resolver_vinculos(r,l,financeiro=raw,referencia=b'PK incompleto',perfil=p,perfil_saida=ps,codigo=c,data_ref=REF)
     assert not scope.permitidas
 
 
 def test_historico_10_ainda_tem_restricao_original(tmp_path):
     from conversor.adapters.scope_reference import delimitar_escopo_destino
-    raw=financeiro();p,c,f=reconhecer(raw);l,_=ler(raw,p,c,f,'inadimplencia');ps=selecionar_perfil(json.loads(PERFIS_SAIDA_PATH.read_text()),administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
+    raw=financeiro();p,c,f=reconhecer(raw);l,_=ler(raw,p,c,f,'inadimplencia');ps=selecionar_perfil(json.loads(PERFIS_SAIDA_PATH.read_text(encoding='utf-8')),administradora_id=p['administradora_id'],condominio_id=p['condominio_id'])
     old=delimitar_escopo_destino(l,referencia=referencia(raw),perfil_saida=ps,perfil=p,codigo_origem=c)
     data=old.model_dump();data['referencia_sha256']='f'*64
     with pytest.raises(ValueError,match='EVIDENCIA_DE_OUTRA_FONTE'):EscopoDestinoDiagnostico.model_validate(data)
@@ -321,7 +321,7 @@ def test_historico_10_ainda_tem_restricao_original(tmp_path):
 
 def test_schemas_novos_correspondem_aos_contratos():
     from conversor.document_link_schemas import documentos
-    for nome,texto in documentos():assert(Path(__file__).resolve().parents[2]/'schemas'/nome).read_text()==texto
+    for nome,texto in documentos():assert(Path(__file__).resolve().parents[2]/'schemas'/nome).read_text(encoding='utf-8')==texto
 
 
 def test_falha_atomica_preserva_json_anterior_e_retem_revisao_parcial(tmp_path,monkeypatch):

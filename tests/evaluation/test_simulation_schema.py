@@ -35,8 +35,8 @@ def test_colecoes_de_evidencia_obrigatorias_e_sem_duplicados(preparar):
 def test_schema_reproduzivel_e_protecao_somente_simulacao(tmp_path):
     assert main(['--check'])==0
     assert main(['--saida',str(tmp_path)])==0
-    for nome,conteudo in documentos():assert (tmp_path/nome).read_text()==conteudo
-    schema=json.loads((tmp_path/'relatorio.schema.json').read_text())
+    for nome,conteudo in documentos():assert (tmp_path/nome).read_text(encoding='utf-8')==conteudo
+    schema=json.loads((tmp_path/'relatorio.schema.json').read_text(encoding='utf-8'))
     assert schema['properties']['autoriza_cobranca']['const']is False
     assert schema['properties']['permite_exportacao_operacional']['const']is False
     assert schema['additionalProperties']is False

@@ -200,7 +200,7 @@ def test_schemas_aditivos_publicados_e_reproduziveis(tmp_path):
     assert main(['--check']) == 0
     assert main(['--saida', str(tmp_path)]) == 0
     for nome, conteudo in documentos():
-        assert (tmp_path / nome).read_text() == conteudo
+        assert (tmp_path / nome).read_text(encoding='utf-8') == conteudo
         s = json.loads(conteudo)
         assert s['additionalProperties'] is False and s['$schema'].endswith('2020-12/schema')
     (tmp_path / 'pedido.schema.json').write_text('{}')
