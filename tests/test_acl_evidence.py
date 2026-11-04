@@ -6,6 +6,7 @@ PDF, credencial ou caminho da pasta privada original aparece aqui.
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -96,8 +97,7 @@ def test_normalizacao_8_3_expande_nome_curto(monkeypatch, tmp_path):
     longo.mkdir()
     arquivo = _arquivo_sintetico(longo)
     curto = tmp_path / "PASTA_~1" / arquivo.name
-    if os.name == "nt":  # pragma: no cover
-        curto = Path(wae._normalizar_caminho_8_3_win(str(curto)))
+    # Alias fictício: sua expansão pertence ao mock, não ao filesystem real.
     monkeypatch.setattr(
         wae, "_normalizar_caminho_8_3",
         lambda p: str(p).replace("PASTA_~1", longo.name),
@@ -110,6 +110,104 @@ def test_comparacao_de_caminho_e_case_insensitive_ordinal(monkeypatch):
     assert wae._compare_string_ordinal_ignore_case(
         "C:\\Privado\\Arquivo.TXT", "c:\\privado\\arquivo.txt") == 0
     assert wae._compare_string_ordinal_ignore_case("a", "b") == -1
+
+
+@pytest.fixture
+def api_ordinal_sintetica(monkeypatch):
+    class Comparar:
+        resultado = 2
+        chamadas = []
+
+        def __call__(self, a, tamanho_a, b, tamanho_b, ignorar_case):
+            assert self.argtypes == [wae.ctypes.c_wchar_p, wae.ctypes.c_int,
+                                     wae.ctypes.c_wchar_p, wae.ctypes.c_int,
+                                     wae.ctypes.c_int]
+            assert self.restype is wae.ctypes.c_int
+            self.chamadas.append((a, tamanho_a, b, tamanho_b, ignorar_case))
+            return self.resultado
+
+    comparar = Comparar()
+
+    def carregar(nome, *, use_last_error):
+        assert nome == "kernel32" and use_last_error is True
+        return SimpleNamespace(CompareStringOrdinal=comparar)
+
+    # Trocar apenas a referência do módulo; não simular Windows no pytest todo.
+    monkeypatch.setattr(wae, "sys", SimpleNamespace(platform="win32"))
+    monkeypatch.setattr(wae.ctypes, "WinDLL", carregar, raising=False)
+    monkeypatch.setattr(wae.ctypes, "get_last_error", lambda: 87, raising=False)
+    monkeypatch.setattr(wae, "_normalizar_caminho_8_3", lambda p: str(p))
+    return comparar
+
+
+@pytest.mark.parametrize("nativo,esperado", [(1, -1), (2, 0), (3, 1)])
+def test_assinatura_nativa_e_retorno_ordinal(api_ordinal_sintetica, nativo, esperado):
+    api_ordinal_sintetica.resultado = nativo
+    assert wae._compare_string_ordinal_ignore_case("a", "b") == esperado
+    assert api_ordinal_sintetica.chamadas == [("a", 1, "b", 1, 1)]
+
+
+@pytest.mark.parametrize("texto,unidades", [
+    ("", 0), ("ação", 4), ("漢字", 2), ("a\U0001f600x", 4),
+    ("\ud83d\ude00", 2), ("\ud800", 1),
+])
+def test_comprimento_nativo_em_unidades_utf16(api_ordinal_sintetica, texto, unidades):
+    assert wae._compare_string_ordinal_ignore_case(texto, "z") == 0
+    assert api_ordinal_sintetica.chamadas == [(texto, unidades, "z", 1, 1)]
+
+
+@pytest.mark.parametrize("a,b,iguais", [
+    ("ação.txt", "AÇÃO.TXT", True),
+    ("a\U0001f600x", "a\U0001f600y", False),
+    ("a\U0001f600x", "a\U0001f600x", True),
+    ("", "", True),
+])
+def test_comparacao_unicode_sem_truncar_sufixo(a, b, iguais):
+    # No Windows exercita a API real, além do teste sintético de assinatura.
+    assert (wae._compare_string_ordinal_ignore_case(a, b) == 0) is iguais
+
+
+@pytest.mark.parametrize("a,b", [("a\0x", "a"), ("a", "a\0x"), ("a\0x", "a\0x")])
+def test_nul_nao_pode_ser_truncado_ou_considerado_igual(monkeypatch, a, b):
+    def nao_normalizar(_):
+        pytest.fail("NUL deve ser rejeitado antes da API de normalização")
+
+    monkeypatch.setattr(wae, "_normalizar_caminho_8_3", nao_normalizar)
+    assert wae._mesmo_path_normalizado(a, b) is False
+    with pytest.raises(OSError, match="NUL"):
+        wae._compare_string_ordinal_ignore_case(a, b)
+
+
+@pytest.mark.parametrize("resultado", [0, -1, 4])
+def test_erro_nativo_nunca_indica_igualdade(api_ordinal_sintetica, resultado, tmp_path):
+    api_ordinal_sintetica.resultado = resultado
+    with pytest.raises(OSError, match="CompareStringOrdinal falhou"):
+        wae._compare_string_ordinal_ignore_case("a", "a")
+    assert wae._mesmo_path_normalizado("a", "a") is False
+    alvo = _arquivo_sintetico(tmp_path)
+    ev = wae.coletar_evidencia_acl(str(alvo), str(alvo), owner_sid="S-OWN",
+                                  group_sid=None, aces=[ACE_SINTETICO_A])
+    assert ev["caminho_coincide"] is False
+    assert ev["autoriza_acesso"] is False
+    assert ev["aplicada_ao_leitor"] is False
+
+
+@pytest.mark.parametrize("falha", ["dll", "simbolo", "chamada"])
+def test_api_indisponivel_nao_usa_casefold(api_ordinal_sintetica, monkeypatch, falha):
+    def indisponivel(*args, **kwargs):
+        if falha == "dll":
+            raise OSError("DLL indisponível")
+        if falha == "simbolo":
+            return SimpleNamespace()
+        return SimpleNamespace(CompareStringOrdinal=chamada_indisponivel)
+
+    def chamada_indisponivel(*args):
+        raise OSError("Chamada indisponível")
+
+    monkeypatch.setattr(wae.ctypes, "WinDLL", indisponivel)
+    with pytest.raises(OSError):
+        wae._compare_string_ordinal_ignore_case("a", "A")
+    assert wae._mesmo_path_normalizado("a", "A") is False
 
 
 def test_hardlink_e_rejeitado_na_comparacao_de_caminho(tmp_path):
