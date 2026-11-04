@@ -55,7 +55,7 @@ from conversor.rules.engine import avaliar_regras, resolver_candidatos
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
 PERFIS_SAIDA_PATH = Path(__file__).with_name('perfis_saida.json')
 IDENTIDADES_PATH = Path(__file__).with_name('identidades_integracao.json')
-PERFIS = {p['id']: p for p in json.loads(PERFIS_PATH.read_text())}
+PERFIS = {p['id']: p for p in json.loads(PERFIS_PATH.read_text(encoding='utf-8'))}
 LIMIT = 20 * 1024 * 1024
 
 
