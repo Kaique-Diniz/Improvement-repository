@@ -1,12 +1,14 @@
 'use strict';
 const $ = id => document.getElementById(id);
 let current = null;
+function clearReview() { $('review-items').replaceChildren(); $('review-panel').hidden=true; }
 const status = (text, error=false) => { $('status').textContent=text; $('status').classList.toggle('error', error); };
 async function api(path, options={}) {
   const response=await fetch(path, {credentials:'same-origin', cache:'no-store', ...options});
   if (!response.ok) {
     let code='FALHA_LOCAL_SEGURA';
     try { code=(await response.json()).detail || code; } catch (_) {}
+    if (code==='PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL') code='Layout Passaredo reconhecido. Selecione o condomínio Passaredo para esta conversão diagnóstica; as colunas e o nome do arquivo não comprovam a identidade.';
     throw new Error(code);
   }
   return response;
@@ -37,13 +39,22 @@ async function convert(demo=false) {
   status('Reconhecendo os documentos, aplicando as regras existentes e preparando o Excel…');
   try {
     if (current) { await api(`/api/conversoes/${current.id}`,{method:'DELETE'}); current=null; }
-    $('result').hidden=true;
+    $('result').hidden=true; clearReview();
     current=await (await api(demo?'/api/exemplo':'/api/conversoes',{method:'POST',body:data})).json();
     $('result-title').textContent=`${current.administradora} · ${current.condominio}`;
     const r=current.resumo;
     $('result-summary').textContent=`Referência ${current.data_ref.split('-').reverse().join('/')} · modo ${current.modo} · ${r.unidades} unidades · ${r.boletos} boletos · ${r.linhas_teste} linhas diagnósticas.`;
     $('download').disabled=!current.arquivo_teste_disponivel;
     $('result-warning').textContent=current.arquivo_teste_disponivel ? 'Excel de 30 colunas para conferência. Não importar no CRM. O resultado expira em até 15 minutos e é descartado após servir o download.' : 'Não há linhas aptas para download. A ausência de evidência documental não foi substituída por uma associação presumida.';
+    if (current.cadastro_passaredo?.associacoes_retidas) $('result-warning').textContent+=` Há ${current.cadastro_passaredo.associacoes_retidas} associações cadastrais retidas para revisão; documentos e contatos não foram transferidos por mera coincidência de unidade.`;
+    if (current.identificacao_condominio==='condominio_informado_pelo_usuario') $('result-warning').textContent+=' Condomínio informado pelo usuário para este diagnóstico; isso não autoriza operação.';
+    const reviews=current.revisao_cadastral_passaredo || [];
+    $('review-panel').hidden=!reviews.length;
+    for (const review of reviews) {
+      const item=document.createElement('p');
+      item.textContent=`Unidade ${review.unidade} · inadimplência: ${review.responsavel_inadimplencia} · cadastro: ${review.responsavel_cadastro} · ${review.lancamentos} lançamento(s) analisado(s). Documento e contatos retidos para revisão.`;
+      $('review-items').append(item);
+    }
     $('result').hidden=false;
     for (const input of form.querySelectorAll('input[type=file]')) input.value='';
     status('Conversão concluída. Os arquivos temporários do processamento já foram removidos.');
@@ -60,20 +71,20 @@ $('download').addEventListener('click',async()=>{
     const blob=await response.blob(); const url=URL.createObjectURL(blob);
     const link=document.createElement('a');link.href=url;link.download='DIAGNOSTICO_NAO_IMPORTAR.xlsx';link.click();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
-    status('Resposta de download recebida. O resultado foi descartado no servidor; confira a cópia salva pelo navegador.'); current=null;
+    status('Resposta de download recebida. O resultado foi descartado no servidor; confira a cópia salva pelo navegador.'); current=null; clearReview();
   } catch (error) { status(error.message,true); }
 });
 $('discard').addEventListener('click',async()=>{
   try {
     let pending=false;
     if (current) pending=(await (await api(`/api/conversoes/${current.id}`,{method:'DELETE'})).json()).descarte_pendente_de_resposta;
-    current=null;$('result').hidden=true;
+    current=null;$('result').hidden=true; clearReview();
     status(pending?'Descarte solicitado. A resposta ativa precisa terminar ou falhar antes da liberação dos dados que utiliza.':'Resultado descartado.');
   }
   catch(error) { status(error.message,true); }
 });
 $('logout').addEventListener('click',async()=>{
-  try { await api('/api/sessao',{method:'DELETE'});current=null;$('result').hidden=true;$('conversion-panel').hidden=true;$('login-panel').hidden=false;status('Sessão encerrada. Respostas ativas terminam antes da liberação dos dados que utilizam.'); }
+  try { await api('/api/sessao',{method:'DELETE'});current=null;clearReview();$('result').hidden=true;$('conversion-panel').hidden=true;$('login-panel').hidden=false;status('Sessão encerrada. Respostas ativas terminam antes da liberação dos dados que utilizam.'); }
   catch(error) { status(error.message,true); }
 });
 function setDate(){const d=new Date();$('reference-date').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}

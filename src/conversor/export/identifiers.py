@@ -94,6 +94,10 @@ class PerfilIdentificadores(Modelo):
             if self.torres or self.sufixo_cedente is not None:
                 raise ValueError('CODIFICACAO_TEXTUAL_NAO_PRESUME_EQUIVALENCIA_DE_BLOCOS')
             return self
+        if self.codificador == 'unidade_sufixo' and not self.torres:
+            if self.sufixo_cedente is None:
+                raise ValueError('SUFIXO_INCOMPATIVEL_COM_CODIFICADOR')
+            return self
         codigo = r'[0-9]{1,6}' if self.codificador == 'torre_unidade' else r'[A-Z0-9]{1,6}'
         if not self.torres or any(not k or k != k.strip().upper() or
                                  not re.fullmatch(codigo, v) for k, v in self.torres.items()):
@@ -137,7 +141,8 @@ class PerfilIdentificadores(Modelo):
             # Não usa a chave normalizada nem converte códigos originais para int.
             identificador=f'Bloc{bloco}-Uni{numero}'
             return identificador,identificador
-        if unidade.bloco_original not in self.torres:
+        sem_bloco = self.codificador == 'unidade_sufixo' and not self.torres and unidade.bloco_original == ''
+        if not sem_bloco and unidade.bloco_original not in self.torres:
             raise ErroLeitura('TORRE_SEM_MAPEAMENTO_DOCUMENTAL')
         numero = unidade.unidade_original
         if not numero.isascii() or not numero.isdigit():
@@ -145,10 +150,10 @@ class PerfilIdentificadores(Modelo):
         numero = (numero.lstrip('0') or '0').zfill(self.largura_unidade)
         if len(numero) > self.largura_unidade:
             raise ErroLeitura('UNIDADE_FORA_DA_LARGURA_DOCUMENTADA')
-        torre = self.torres[unidade.bloco_original]
         if self.codificador == 'unidade_sufixo':
             complemento=f'BL-UNI{numero}'
             return f'{complemento}-{self.sufixo_cedente}',complemento
+        torre = self.torres[unidade.bloco_original]
         if self.codificador == 'bloco_unidade_sufixo':
             complemento = f'BL{torre}-UNI{numero}'
             return f'{complemento}-{self.sufixo_cedente}', complemento

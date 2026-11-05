@@ -1,13 +1,19 @@
 """Parser de cadastro auxiliar Passaredo (XLSX, aba Sheet1)."""
 from dataclasses import dataclass
+import json
 import re
 import unicodedata
+from openpyxl.utils import get_column_letter
 
-from conversor.adapters.xlsx_reader import ler_planilha
 from conversor.domain.canonical import Contato, Documento, Endereco, Telefone
 from conversor.readers.text_support import ErroLeitura
+from .passaredo_table import tabela
 
 CAMPOS_OBRIGATORIOS = ("UNIDADE", "RESPONSAVEL", "EMAIL", "CPF_CNPJ", "FONE", "CELULAR", "ENDERECO")
+CAMPOS_PERMITIDOS = CAMPOS_OBRIGATORIOS + (
+    'FRACAO', 'HABILITADO', 'ALUGADO', 'PETS', 'CONDOMINOS', 'RG', 'CPF',
+    'PROFISSAO', 'VEICULOS', 'DESDE',
+)
 EMAIL_VALIDO = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
 TELEFONE_BR = re.compile(r"\(?\s*(\d{2})\s*\)?[\s.-]*(\d{4,5})[\s.-]*(\d{4})")
 
@@ -38,8 +44,6 @@ def extrair_telefones(valor):
         if telefone not in telefones:
             telefones.append(telefone)
     
-    if len(telefones) > 5:
-        raise ErroLeitura("PASSAREDO_EXCESSO_TELEFONES")
     return tuple(telefones)
 
 def extrair_emails(valor):
@@ -50,8 +54,6 @@ def extrair_emails(valor):
             raise ErroLeitura("PASSAREDO_EMAIL_INVALIDO")
         if email not in validos:
             validos.append(email)
-    if len(validos) > 3:
-        raise ErroLeitura("PASSAREDO_EXCESSO_EMAILS")
     return tuple(validos)
 
 def parsear_endereco(valor):
@@ -131,13 +133,20 @@ class CadastroPassaredo:
     contato: Contato
     endereco_parcial: bool = False
     desde: str = ""
+    documentos: tuple[Documento, ...] = ()
+    documentos_colunas: tuple[str, ...] = ()
+    telefones_excedentes: tuple[Telefone, ...] = ()
+    emails_excedentes: tuple[str, ...] = ()
+    valores_originais: str = ""
 
 class LeitorPassaredoCadastro:
     formato_id = "passaredo_cadastro_xlsx_v1"
     versao = "1"
 
     def identificar(self, conteudo: bytes):
-        plan = ler_planilha(conteudo, arquivo_id="identificacao_passaredo_cadastro", aba="Sheet1")
+        plan = tabela(conteudo, arquivo_id="identificacao_passaredo_cadastro",
+                      obrigatorias=tuple(c for c in CAMPOS_OBRIGATORIOS if c != 'CPF_CNPJ'),
+                      permitidas=CAMPOS_PERMITIDOS)
         chaves = {c for c, _ in plan.colunas}
         if "CPF_CNPJ" not in chaves and "CPF" in chaves:
             chaves.add("CPF_CNPJ")
@@ -148,11 +157,11 @@ class LeitorPassaredoCadastro:
         return plan
 
     def ler(self, conteudo: bytes, *, arquivo_id: str = "passaredo_cadastro") -> tuple[CadastroPassaredo, ...]:
-        plan = self.identificar(conteudo) if arquivo_id == "passaredo_cadastro" else \
-            ler_planilha(conteudo, arquivo_id=arquivo_id, aba="Sheet1")
+        plan = self.identificar(conteudo)
             
         registros = []
         vistos = set()
+        colunas = {nome: get_column_letter(i) for i, (nome, _) in enumerate(plan.colunas, 1)}
         
         for registro in plan.linhas:
             linha = registro["__linha__"]
@@ -169,13 +178,20 @@ class LeitorPassaredoCadastro:
             for t in extrair_telefones(celular_val):
                 if t not in telefones:
                     telefones.append(t)
-            telefones = tuple(telefones[:5])
+            telefones = tuple(telefones)
             
             emails = extrair_emails(registro.get("EMAIL", ""))
             endereco, parcial = parsear_endereco(registro.get("ENDERECO", ""))
-            contato = Contato(telefones=telefones, emails=emails, endereco=endereco)
+            contato = Contato(telefones=telefones[:5], emails=emails[:3], endereco=endereco)
             
             doc_raw = registro.get("CPF_CNPJ", registro.get("CPF/CNPJ", registro.get("CPF", "")))
+            documentos, documentos_colunas = [], []
+            for campo in ('CPF_CNPJ', 'CPF'):
+                valor = registro.get(campo)
+                documento = normalizar_documento(valor)
+                if documento is not None:
+                    documentos.append(documento)
+                    documentos_colunas.append(colunas[campo])
             
             registros.append(CadastroPassaredo(
                 linha=linha, 
@@ -185,5 +201,10 @@ class LeitorPassaredoCadastro:
                 contato=contato, 
                 endereco_parcial=parcial,
                 desde=_texto(registro.get("DESDE")),
+                documentos=tuple(documentos),
+                documentos_colunas=tuple(documentos_colunas),
+                telefones_excedentes=telefones[5:],
+                emails_excedentes=emails[3:],
+                valores_originais=json.dumps(registro, ensure_ascii=False, default=str),
             ))
         return tuple(registros)

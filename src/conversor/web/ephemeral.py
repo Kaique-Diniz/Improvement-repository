@@ -22,6 +22,7 @@ from starlette.datastructures import Headers, UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
 
 from conversor.adapters.document_probe import SondadorLocal
+from conversor.readers.text_support import ErroLeitura
 from .service import LIMIT, PERFIS, PedidoDiagnostico, analisar
 
 
@@ -159,8 +160,16 @@ class CicloEfemero:
                 'arquivo_teste_disponivel', 'autoriza_cobranca', 'permite_exportacao_operacional')}
             summary['avisos'] = ['DIAGNOSTICO_NAO_IMPORTAR', 'HISTORICO_ANTERIOR_NAO_DISPONIVEL',
                 'VINCULOS_PERSISTENTES_INDISPONIVEIS_EVIDENCIA_SOMENTE_DESTA_CONVERSAO']
+            if 'cadastro_passaredo' in result:
+                summary['cadastro_passaredo'] = result['cadastro_passaredo']
+                summary['revisao_cadastral_passaredo'] = result['revisao_cadastral_passaredo']
+                summary['identificacao_condominio'] = result['identificacao_condominio']
         except HTTPException:
             raise
+        except ErroLeitura as error:
+            if error.codigo == 'PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL':
+                raise HTTPException(422, error.codigo) from None
+            raise HTTPException(422, 'DOCUMENTO_NAO_CONVERTIDO_COM_SEGURANCA') from None
         except Exception:
             raise HTTPException(422, 'DOCUMENTO_NAO_CONVERTIDO_COM_SEGURANCA') from None
         finally:
@@ -386,7 +395,7 @@ def criar_app_efemero(*, acesso, area_temporaria=None, relogio=time.monotonic):
                     if upload is None and role != 'inadimplencia': continue
                     if not isinstance(upload, UploadFile): raise HTTPException(422, 'ARQUIVO_NECESSARIO')
                     content = await upload.read(LIMIT+1)
-                    types = (b'PK',) if role == 'referencia' else (b'%PDF-',) if role == 'cadastro' else (b'PK', b'%PDF-')
+                    types = (b'PK',) if role == 'referencia' else (b'PK', b'%PDF-')
                     if not content or len(content)>LIMIT: raise HTTPException(413, 'ARQUIVO_VAZIO_OU_LIMITE_EXCEDIDO')
                     if not content.startswith(types): raise HTTPException(422, 'FORMATO_INVALIDO')
                     files[role] = content

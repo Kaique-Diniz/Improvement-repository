@@ -236,5 +236,30 @@
         "escopo": "Somente vínculos individuais com nome e recibo/data/original únicos; mapa privado versionado por execução."
       }
     }
+  },
+{
+  "id": "passaredo_unidade_documentada",
+  "versao": "1.0.0",
+  "uso": "diagnostico_nao_operacional",
+  "administradora_id": "auto_gestao",
+  "condominio_id": "condominio_passaredo",
+  "nome_cedente": "AUTO GESTAO",
+  "produto": "CONDOMINIO PASSAREDO",
+  "largura_unidade": 4,
+  "torres": {},
+  "codificador": "unidade_sufixo",
+  "sufixo_cedente": "1030",
+  "evidencia": {
+    "arquivo": "referencia_documental_passaredo_template",
+    "sha256": "0f4e850d0cdc1620bf57a4ea79268a3c8c9d64b11afe64521619b28af73ed8a0",
+    "aba": "Dados",
+    "celulas": {
+      "cedente": "A2:A2155",
+      "unidade_e_destino": "B2:B2155",
+      "complemento": "G2:G2155",
+      "contrato": "Y2:Y2155",
+      "produto": "Z2:Z2155"
+    }
   }
+}
 ]

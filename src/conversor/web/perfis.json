@@ -233,5 +233,45 @@
       "Sem prova de pertencimento, preservar leitura e elegibilidade financeira, reter cadastro e ambas as modalidades de linhas. Referência opcional para leitura, necessária ao escopo enquanto não houver outra evidência aprovada.",
       "A/AJ/J/AE e centavo não herdam vetos TREE. Original zero é preservado em auditoria, sem dívida; Cadastro não cria boletos nem inclui todas as suas unidades. Nenhum plano real aprovado ou ativado."
     ]
-  }
+  },
+{
+  "id": "passaredo",
+  "condominio_id": "condominio_passaredo",
+  "administradora_id": "auto_gestao",
+  "nome": "CONDOMÍNIO PASSAREDO",
+  "administradora": "AUTO GESTÃO",
+  "familia": "passaredo",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "CONDOMINIO PASSAREDO",
+    "PASSAREDO"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "passaredo_prazo_60",
+  "dias": 60,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "codigo_easycollector": "1030",
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "a4e5718ba758f8aeb0a0299d8a041c5469d682e43028b6a0b54542c881abc1c6",
+    "cadastro": "9f4a8be5fced3b6131fd2089699a55d74fbdb59a37afd2649628be47a1b94d00"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_E193_extrajudicial",
+    "linha": 193
+  },
+  "ressalvas": [
+    "Somente diagnóstico: dias corridos estritamente superiores a 60, calculados pela data de referência menos o vencimento. O campo DIAS da fonte não decide a seleção.",
+    "Judicial, acordos, honorários e correção permanecem evidências; não criam filtros ou cálculos e não alteram o original exportado.",
+    "Responsável preservado por lançamento. Documento e contato cadastrais exigem unidade textual e nome concordantes; divergências ficam em revisão sem associação presumida.",
+    "O destino 1030 e a apresentação de quatro dígitos estão documentados no template de homologação. O nome do arquivo 1028 não comprova esse código.",
+    "XLSX sem identidade interna exige seleção explícita do Passaredo, inclusive quando seus bytes são conhecidos. A seleção não dispensa a validação estrutural nem comprova autorização operacional; os hashes reais continuam preservados como evidência."
+  ]
+}
 ]
