@@ -46,10 +46,11 @@ async function convert(demo=false) {
     $('result-summary').textContent=`Referência ${current.data_ref.split('-').reverse().join('/')} · modo ${current.modo} · ${r.unidades} unidades · ${r.boletos} boletos · ${r.linhas_teste} linhas diagnósticas.`;
     $('download').disabled=!current.arquivo_teste_disponivel;
     $('result-warning').textContent=current.arquivo_teste_disponivel ? 'Excel de 30 colunas para conferência. Não importar no CRM. O resultado expira em até 15 minutos e é descartado após servir o download.' : 'Não há linhas aptas para download. A ausência de evidência documental não foi substituída por uma associação presumida.';
-    if (current.cadastro_passaredo?.associacoes_retidas) $('result-warning').textContent+=` Há ${current.cadastro_passaredo.associacoes_retidas} associações cadastrais retidas para revisão; documentos e contatos não foram transferidos por mera coincidência de unidade.`;
-    if (current.cadastro_passaredo?.documentos_rejeitados_no_cadastro) $('result-warning').textContent+=` Há ${current.cadastro_passaredo.documentos_rejeitados_no_cadastro} documento(s) inválido(s) ou malformado(s) no cadastro recebido. Foram preservados na evidência temporária e não atribuídos a responsáveis.`;
+    const cadastroTabular=current.cadastro_passaredo || current.cadastro_forest_hill;
+    if (cadastroTabular?.associacoes_retidas) $('result-warning').textContent+=` Há ${cadastroTabular.associacoes_retidas} associações cadastrais retidas para revisão; documentos e contatos não foram transferidos por mera coincidência de unidade.`;
+    if (cadastroTabular?.documentos_rejeitados_no_cadastro) $('result-warning').textContent+=` Há ${cadastroTabular.documentos_rejeitados_no_cadastro} documento(s) inválido(s) ou malformado(s) no cadastro recebido. Foram preservados na evidência temporária e não atribuídos a responsáveis.`;
     if (current.identificacao_condominio==='condominio_informado_pelo_usuario') $('result-warning').textContent+=' Condomínio informado pelo usuário para este diagnóstico; isso não autoriza operação.';
-    const reviews=current.revisao_cadastral_passaredo || [];
+    const reviews=current.revisao_cadastral_passaredo || current.revisao_cadastral_forest_hill || [];
     $('review-panel').hidden=!reviews.length;
     for (const review of reviews) {
       const item=document.createElement('p');

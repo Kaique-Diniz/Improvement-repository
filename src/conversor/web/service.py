@@ -55,6 +55,8 @@ from conversor.readers.text_support import ContextoLeitura, ErroLeitura
 from conversor.readers.passaredo_inadimplencia import identificar as identificar_passaredo, COLUNAS_OBRIGATORIAS as COLUNAS_PASSAREDO
 from conversor.readers.passaredo_cadastro import LeitorPassaredoCadastro, CAMPOS_OBRIGATORIOS as CAMPOS_PASSAREDO
 from conversor.readers.passaredo_canonical import ler_financeiro as ler_passaredo, ler_cadastro as ler_cadastro_passaredo, lancamentos_originais
+from conversor.readers.forest_hill import identificar as identificar_forest_hill, ler_financeiro as ler_forest_hill, ler_cadastro as ler_cadastro_forest_hill
+from conversor.domain.forest_hill import rotulo_descricao as rotulo_forest_hill
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
@@ -67,7 +69,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill'] = 'auto'
 
 
 def normalizar(s):
@@ -116,18 +118,17 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
                 LeitorPassaredoCadastro().identificar(conteudo)
             else:
                 identificar_passaredo(conteudo)
-            perfil = PERFIS['passaredo']
+            if perfil_informado not in ('passaredo', 'forest_hill'):
+                raise ErroLeitura('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL')
+            perfil = PERFIS[perfil_informado]
+            if perfil_informado == 'forest_hill':
+                identificar_forest_hill(conteudo, cadastro=cadastro)
             papel = 'cadastro' if cadastro else 'inadimplencia'
             homologado = sha256(conteudo).hexdigest() == perfil['fontes_homologacao_sha256'][papel]
-            if perfil_informado != 'passaredo':
-                raise ErroLeitura('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL')
-            # As colunas reconhecem o layout; não provam sozinhas o condomínio.
-            # Sem cabeçalho de identidade, a seleção explícita é obrigatória,
-            # inclusive para bytes homologados. Hash não dispensa essa seleção.
-            # Nunca usar nome de arquivo ou código nele contido.
+            # Layout, nome de arquivo e hash não dispensam a seleção explícita.
             perfil = dict(perfil, identificacao_diagnostica=(
                 'fonte_homologada_por_hash' if homologado else 'condominio_informado_pelo_usuario'))
-            return perfil, '', ('passaredo_cadastro_xlsx_v1' if cadastro else 'passaredo_inadimplencia_xlsx_v1')
+            return perfil, '', f"{perfil_informado}_{papel}_xlsx_v1"
     if sonda.tipo == 'xlsx' and not cadastro:
         codigo,nome = identificar_bbz(conteudo)
         perfil=_perfil_bbz(codigo,nome,repositorio_identidades)
@@ -178,6 +179,9 @@ def ler(conteudo, perfil, codigo, leitor, papel):
     fonte = FonteProtegida(arquivo_id=papel, sha256=sha256(conteudo).hexdigest())
     ctx = ContextoLeitura(perfil['condominio_id'], perfil['administradora_id'], leitor,
                          papel, codigo, leitor_versao=leitor + '@1')
+    if leitor in ('forest_hill_inadimplencia_xlsx_v1', 'forest_hill_cadastro_xlsx_v1'):
+        funcao = ler_cadastro_forest_hill if papel == 'cadastro' else ler_forest_hill
+        return funcao(conteudo, contexto=ctx), ctx
     if leitor in ('passaredo_inadimplencia_xlsx_v1', 'passaredo_cadastro_xlsx_v1'):
         funcao = ler_cadastro_passaredo if leitor == 'passaredo_cadastro_xlsx_v1' else ler_passaredo
         return funcao(conteudo, contexto=ctx), ctx
@@ -413,7 +417,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True,
-            perfil_informado='passaredo' if perfil['familia'] == 'passaredo' else None)
+            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill') else None)
         mesmo_codigo = (codigo_origem_bbz(cc) == codigo_origem_bbz(codigo)) if perfil['familia']=='bbz' else cc == codigo
         if pc['id'] != perfil['id'] or not mesmo_codigo:
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
@@ -448,11 +452,11 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if escopo_destino and snapshot_vinculos:
                 lote,cadastro_bbz=reter_associacoes_persistentes(lote,cadastro_bbz,
                     retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo))
-        elif perfil['familia'] != 'passaredo':
+        elif perfil['familia'] not in ('passaredo', 'forest_hill'):
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     pessoas_passaredo, resumo_passaredo, originais_passaredo, revisao_passaredo = {}, None, {}, []
-    if perfil['familia'] == 'passaredo':
+    if perfil['familia'] in ('passaredo', 'forest_hill'):
         lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_passaredo(lote, cad)
         originais_passaredo = lancamentos_originais(lote)
         divergencias_dias = tuple(RessalvaLeitura(codigo='PASSAREDO_DIAS_FONTE_DIVERGEM_DO_CALCULO',
@@ -496,7 +500,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
-    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
         if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
@@ -591,7 +595,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
             'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
-        if perfil['familia'] == 'passaredo':
+        if perfil['familia'] in ('passaredo', 'forest_hill'):
             decisoes[-1]['alertas_cadastrais'] = sorted(set(decisoes[-1]['alertas_cadastrais'] + [
                 r.codigo for r in lote.ressalvas if r.registro_id in (b.id, u.id)
                 and r.codigo.startswith('PASSAREDO_') and r.gravidade != 'informativo']))
@@ -655,6 +659,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if boleto.id in originais_passaredo:
                 base_rotulo = 'descricao_original_passaredo'
                 nome_divida = originais_passaredo[boleto.id]['descricao']
+                if perfil['id'] == 'forest_hill':
+                    nome_divida, com_mes = rotulo_forest_hill(nome_divida, boleto.vencimento, parcela_final)
+                    base_rotulo = 'descricao_original_forest_hill' + ('_vencimento_apresentacao' if com_mes else '')
             elif boleto.id in descricoes_recibos:
                 base_rotulo = 'natureza_documental_bbz'
                 nome_divida = descricoes_recibos[boleto.id].descricao
@@ -676,7 +683,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if d['situacao'] == 'elegivel':
                 linhas.append(LinhaExportacao(**base_divida, tipo='divida', divida=divida))
                 linhas_info.append({'tipo': 'divida', 'unidade_id': u.id, 'boleto_id': boleto.id})
-        cadastral_inequivoca = (perfil['familia'] != 'passaredo' or len({
+        cadastral_inequivoca = (perfil['familia'] not in ('passaredo', 'forest_hill') or len({
             originais_passaredo[b.id]['responsavel'] for b in boletos_por_id.values()}) == 1)
         if pedido.modo == 'B' and any(d['situacao_financeira'] == 'excluido' for d in ds):
             pendencias = [m for d in ds if d['situacao'] == 'revisao' for m in d['bloqueios']]
@@ -790,8 +797,9 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'validacao_conversao': validacao, 'comparacao': None}
     if resumo_passaredo is not None:
         resultado['politica_cadastral'] = POLITICA_PASSAREDO
-        resultado['cadastro_passaredo'] = manifesto['cadastro_passaredo'] = resumo_passaredo
-        resultado['revisao_cadastral_passaredo'] = revisao_passaredo
+        chave_cadastro = 'cadastro_' + perfil['id']
+        resultado[chave_cadastro] = manifesto[chave_cadastro] = resumo_passaredo
+        resultado['revisao_cadastral_' + perfil['id']] = revisao_passaredo
         resultado['identificacao_condominio'] = perfil['identificacao_diagnostica']
     if escopo_destino:
         dados_escopo = escopo_destino.model_dump(mode='json')

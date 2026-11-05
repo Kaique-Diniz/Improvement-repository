@@ -160,10 +160,13 @@ class CicloEfemero:
                 'arquivo_teste_disponivel', 'autoriza_cobranca', 'permite_exportacao_operacional')}
             summary['avisos'] = ['DIAGNOSTICO_NAO_IMPORTAR', 'HISTORICO_ANTERIOR_NAO_DISPONIVEL',
                 'VINCULOS_PERSISTENTES_INDISPONIVEIS_EVIDENCIA_SOMENTE_DESTA_CONVERSAO']
-            if 'cadastro_passaredo' in result:
-                summary['cadastro_passaredo'] = result['cadastro_passaredo']
-                summary['revisao_cadastral_passaredo'] = result['revisao_cadastral_passaredo']
-                summary['identificacao_condominio'] = result['identificacao_condominio']
+            for perfil_tabular in ('passaredo', 'forest_hill'):
+                chave_cadastro = 'cadastro_' + perfil_tabular
+                if chave_cadastro in result:
+                    summary[chave_cadastro] = result[chave_cadastro]
+                    chave_revisao = 'revisao_cadastral_' + perfil_tabular
+                    summary[chave_revisao] = result[chave_revisao]
+                    summary['identificacao_condominio'] = result['identificacao_condominio']
         except HTTPException:
             raise
         except ErroLeitura as error:

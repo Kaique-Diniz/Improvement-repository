@@ -261,5 +261,31 @@
       "produto": "Z2:Z2155"
     }
   }
+},
+{
+  "id": "forest_hill_unidade_documentada",
+  "versao": "1.0.0",
+  "uso": "diagnostico_nao_operacional",
+  "administradora_id": "auto_gestao",
+  "condominio_id": "condominio_forest_hill",
+  "nome_cedente": "AUTO GESTAO",
+  "produto": "CONDOMINIO RESIDENCIAL FOREST HILL",
+  "largura_unidade": 4,
+  "torres": {},
+  "codificador": "forest_hill_documental",
+  "sufixo_cedente": "CONDOMINIO RESIDENCIAL FOREST HILL",
+  "evidencia": {
+    "arquivo": "referencia_documental_forest_hill_template",
+    "sha256": "5fc5872efcb3c470a2c955f852dd6ef75d3c62526ceca0c80125f7a30ed82d0a",
+    "aba": "Dados",
+    "celulas": {
+      "cedente": "A2:A1626",
+      "unidade_e_sufixo": "B2:B1626",
+      "complemento": "G2:G1626",
+      "contrato": "Y2:Y1626",
+      "produto": "Z2:Z1626",
+      "rotulos": "AA2:AB1626; descrição e parcela; mês/ano do vencimento nos padrões documentados."
+    }
+  }
 }
 ]

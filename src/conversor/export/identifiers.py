@@ -6,6 +6,7 @@ from pydantic import AwareDatetime, Field, model_validator
 
 from conversor.domain.base import Hash, Id, Modelo, Texto
 from conversor.domain.canonical import Endereco, Unidade
+from conversor.domain.forest_hill import complemento_unidade
 from conversor.readers.text_support import ErroLeitura
 
 POLITICA_ENDERECO_CONDOMINIO = 'endereco_condominio_prioritario@2'
@@ -74,7 +75,7 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
-    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade'] = 'torre_unidade'
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental'] = 'torre_unidade'
     formatos_unidade: tuple[FormatoTipoUnidade, ...] = ()
     sufixo_cedente: Texto | None = None
     rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
@@ -83,6 +84,11 @@ class PerfilIdentificadores(Modelo):
 
     @model_validator(mode='after')
     def mapa_explicito(self):
+        if self.codificador == 'forest_hill_documental':
+            if (self.torres or self.formatos_unidade or self.sufixo_cedente != 'CONDOMINIO RESIDENCIAL FOREST HILL'
+                    or self.condominio_id != 'condominio_forest_hill' or self.administradora_id != 'auto_gestao'):
+                raise ValueError('FOREST_HILL_PERFIL_DOCUMENTAL_INCOMPATIVEL')
+            return self
         if self.codificador == 'bloco_tipo_unidade':
             if (self.torres or not self.sufixo_cedente or not self.formatos_unidade or
                 len({f.bloco_original for f in self.formatos_unidade}) != len(self.formatos_unidade)):
@@ -112,6 +118,14 @@ class PerfilIdentificadores(Modelo):
         if (administradora_id, unidade.administradora_id, unidade.condominio_id) != (
                 self.administradora_id, self.administradora_id, self.condominio_id):
             raise ErroLeitura('PERFIL_IDENTIFICADORES_DE_OUTRO_CONDOMINIO')
+        if self.codificador == 'forest_hill_documental':
+            if unidade.bloco_original != '':
+                raise ErroLeitura('FOREST_HILL_BLOCO_NAO_DOCUMENTADO')
+            try:
+                complemento = complemento_unidade(unidade.unidade_original)
+            except ValueError:
+                raise ErroLeitura('UNIDADE_SEM_CODIFICACAO_DOCUMENTAL') from None
+            return f'{complemento}-{self.sufixo_cedente}', complemento
         if self.codificador == 'bloco_tipo_unidade':
             formato = next((f for f in self.formatos_unidade if f.bloco_original == unidade.bloco_original), None)
             if formato is None:

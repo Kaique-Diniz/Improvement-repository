@@ -273,5 +273,44 @@
     "O destino 1030 e a apresentação de quatro dígitos estão documentados no template de homologação. O nome do arquivo 1028 não comprova esse código.",
     "XLSX sem identidade interna exige seleção explícita do Passaredo, inclusive quando seus bytes são conhecidos. A seleção não dispensa a validação estrutural nem comprova autorização operacional; os hashes reais continuam preservados como evidência."
   ]
+},
+{
+  "id": "forest_hill",
+  "condominio_id": "condominio_forest_hill",
+  "administradora_id": "auto_gestao",
+  "nome": "CONDOMÍNIO RESIDENCIAL FOREST HILL",
+  "administradora": "AUTO GESTÃO",
+  "familia": "forest_hill",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "CONDOMINIO RESIDENCIAL FOREST HILL",
+    "FOREST HILL"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "forest_hill_prazo_30_provisorio",
+  "dias": 30,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "755d816df57cc7d8bdc198289f0a91ad7d0574b95b09a83d9b09ff6633beace6",
+    "cadastro": "5287a0873c454ba3d40a979ba3044e513c48106879e63395009b57ed258790cf"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_E144_extrajudicial",
+    "linha": 144
+  },
+  "ressalvas": [
+    "Somente diagnóstico: atraso > 30 dias corridos é hipótese provisória autorizada. Inclusividade do limite exato de 30 dias e vigência operacional pendentes. DIAS da fonte não decide a seleção.",
+    "Prazo judicial de 60 dias não é filtro adicional. Acordos, juros, multa, correção, honorários e atualizado são evidência; não recalcular original.",
+    "Layout compartilhado exige seleção explícita do Forest Hill e gramática documental de unidade. Nome de arquivo não comprova condomínio.",
+    "Cadastro opcional: documentos e contatos exigem nome e unidade concordantes, com validações A1. Divergência e multiplicidade retêm a associação, sem excluir dívidas elegíveis.",
+    "Mês/ano em rótulos comprovados é apresentação do vencimento, sem atribuição de competência. Sem exportação operacional ou vínculos permanentes."
+  ]
 }
 ]
