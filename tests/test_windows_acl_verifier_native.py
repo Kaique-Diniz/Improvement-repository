@@ -5,6 +5,7 @@ Falha de preparação em Windows é falha/pendência, nunca skip de segurança.
 """
 import ctypes as ct
 from dataclasses import dataclass, field
+import json
 import struct
 import sys
 from types import SimpleNamespace
@@ -22,10 +23,10 @@ class _SECURITY_ATTRIBUTES(ct.Structure):
     _fields_ = [("length", av.DWORD), ("descriptor", av.PTR), ("inherit", av.BOOL)]
 
 
-def _check(condition):
+def _check(condition, code="FIXTURE_NATIVA_NAO_COMPROVADA"):
     if not condition:
         # Sem introspecção do pytest sobre SIDs, caminhos ou descritores reais.
-        raise RuntimeError("FIXTURE_NATIVA_NAO_COMPROVADA")
+        raise RuntimeError(code)
 
 
 def _bind(library, name, result, arguments):
@@ -47,6 +48,8 @@ def _apis_fixture():
         ConvertStringSecurityDescriptorToSecurityDescriptorW=_bind(advapi,
             "ConvertStringSecurityDescriptorToSecurityDescriptorW", av.BOOL,
             [ct.c_wchar_p, av.DWORD, ct.POINTER(av.PTR), ct.POINTER(av.DWORD)]),
+        SetSecurityInfo=_bind(advapi, "SetSecurityInfo", av.DWORD,
+            [av.PTR, ct.c_int32, av.DWORD, av.PTR, av.PTR, av.PTR, av.PTR]),
         CreateFileW=_bind(kernel, "CreateFileW", av.PTR,
             [ct.c_wchar_p, av.DWORD, av.DWORD, ct.POINTER(_SECURITY_ATTRIBUTES),
              av.DWORD, av.DWORD, av.PTR]),
@@ -98,7 +101,22 @@ def _observacao_independente(handle, fixture_api, api):
         _check(descriptor.value and api.IsValidSecurityDescriptor(descriptor))
         control, revision = av.WORD(), av.DWORD()
         _check(api.GetSecurityDescriptorControl(descriptor, ct.byref(control), ct.byref(revision)))
-        _check(revision.value == 1 and dacl.value and api.IsValidAcl(dacl))
+        _check(revision.value == 1, "FIXTURE_REVISAO_INVALIDA")
+        present, defaulted, queried_dacl = av.BOOL(), av.BOOL(), av.PTR()
+        _check(api.GetSecurityDescriptorDacl(descriptor, ct.byref(present),
+            ct.byref(queried_dacl), ct.byref(defaulted)), "FIXTURE_CONSULTA_DACL_FALHOU")
+        _check(present.value and control.value & av.SE_DACL_PRESENT and dacl.value
+            and queried_dacl.value == dacl.value, "FIXTURE_DACL_AUSENTE_OU_NULA")
+        _check(api.IsValidAcl(dacl), "FIXTURE_DACL_INVALIDA")
+        observed_flags = {
+            "se_dacl_protected": bool(control.value & av.SE_DACL_PROTECTED),
+            "se_dacl_auto_inherited": bool(control.value & 0x0400),
+            "se_dacl_auto_inherit_req": bool(control.value & 0x0100),
+            "se_dacl_defaulted": bool(control.value & 0x0008),
+            "dacl_defaulted_consulta": bool(defaulted.value),
+        }
+        _check(observed_flags["se_dacl_defaulted"] == observed_flags["dacl_defaulted_consulta"],
+               "FIXTURE_DEFAULTED_INCOERENTE")
         info = av._ACL_SIZE_INFORMATION()
         _check(api.GetAclInformation(dacl, ct.byref(info), ct.sizeof(info), 2))
         _check(0 < info.count <= 8)
@@ -106,13 +124,43 @@ def _observacao_independente(handle, fixture_api, api):
         for index in range(info.count):
             ace = av.PTR()
             _check(api.GetAce(dacl, index, ct.byref(ace)))
-            kind, flags, length, mask = struct.unpack("<BBHI", ct.string_at(ace.value, 8))
-            _check(length >= 16)
-            aces.append((kind, flags, mask, _texto_sid(fixture_api, api, ace.value+8)))
-        return _texto_sid(fixture_api, api, owner), bool(control.value & av.SE_DACL_PROTECTED), aces
+            kind, ace_flags, length, mask = struct.unpack("<BBHI", ct.string_at(ace.value, 8))
+            _check(kind in (0, 1), "FIXTURE_TIPO_ACE_NAO_SUPORTADO")
+            _check(length >= 16 and length % 4 == 0, "FIXTURE_TAMANHO_ACE_INVALIDO")
+            _check(api.IsValidSid(ace.value+8), "FIXTURE_SID_INVALIDO")
+            _check(length == 8+api.GetLengthSid(ace.value+8), "FIXTURE_TAMANHO_SID_INVALIDO")
+            aces.append((kind, ace_flags, mask, _texto_sid(fixture_api, api, ace.value+8)))
+        return _texto_sid(fixture_api, api, owner), aces, observed_flags
     finally:
         if descriptor.value:
             _check(api.LocalFree(descriptor) is None)
+
+
+def _registrar_booleanos(request, etapa, results):
+    _check(all(type(value) is bool for value in results.values()), "FIXTURE_DIAGNOSTICO_NAO_BOOLEANO")
+    request.node.user_properties.extend((etapa+"_"+key, value) for key, value in results.items())
+    print(json.dumps({"etapa": etapa, **results}, sort_keys=True))
+
+
+def _registrar_observacao(request, etapa, observed, owner, expected):
+    actual_owner, actual_aces, flags = observed
+    # Somente booleanos e código de etapa; nunca owner, ACEs ou SD brutos.
+    diagnostic = {"owner_confere": actual_owner == owner,
+        "estrutura_acl_valida": True, "aces_esperadas_conferem": actual_aces == expected,
+        "ace_explicita_esperada_presente": expected[0] in actual_aces, **flags}
+    _registrar_booleanos(request, etapa, diagnostic)
+
+
+def _desproteger_fixture_propria(handle, descriptor, fixture_api, api):
+    """Só o handle do arquivo vazio recém-criado pelo caso negativo."""
+    present, defaulted, dacl = av.BOOL(), av.BOOL(), av.PTR()
+    _check(api.GetSecurityDescriptorDacl(descriptor, ct.byref(present),
+        ct.byref(dacl), ct.byref(defaulted)), "FIXTURE_DACL_ORIGEM_INDISPONIVEL")
+    _check(present.value and dacl.value and api.IsValidAcl(dacl), "FIXTURE_DACL_ORIGEM_INVALIDA")
+    # SE_FILE_OBJECT; DACL_SECURITY_INFORMATION | UNPROTECTED_DACL_SECURITY_INFORMATION.
+    # Nem owner/group/SACL são alterados. Status DWORD: apenas zero é sucesso.
+    _check(fixture_api.SetSecurityInfo(handle, 1, 0x20000004, None, None, dacl, None) == 0,
+           "FIXTURE_DESPROTECAO_FALHOU")
 
 
 @dataclass(repr=False)
@@ -136,31 +184,57 @@ def caso_nativo(tmp_path, request):
     aces = f"(A;;0x{mask:08X};;;{owner})"
     if variante == "ace_extra": aces += f"(A;;0x00020080;;;{owner})"
     if variante == "herdada": aces = f"(A;ID;0x{mask:08X};;;{owner})"
-    protected = "" if variante == "nao_protegida" else "P"
+    # Base explícita comprovável; o caso negativo é desprotegido depois, por handle.
+    protected = "P"
     descriptor, size = av.PTR(), av.DWORD()
     handle, created = None, False
     path = tmp_path / "objeto_sintetico"
     try:
         _check(fa.ConvertStringSecurityDescriptorToSecurityDescriptorW(
             f"O:{owner}D:{protected}{aces}", 1, ct.byref(descriptor), ct.byref(size)))
+        input_control, input_revision = av.WORD(), av.DWORD()
+        _check(api.GetSecurityDescriptorControl(descriptor, ct.byref(input_control),
+            ct.byref(input_revision)), "FIXTURE_FLAGS_ENTRADA_INDISPONIVEIS")
+        _check(input_revision.value == 1, "FIXTURE_REVISAO_ENTRADA_INVALIDA")
+        _registrar_booleanos(request, "DESCRITOR_ENTRADA", {
+            "se_dacl_protected": bool(input_control.value & av.SE_DACL_PROTECTED),
+            "se_dacl_auto_inherited": bool(input_control.value & 0x0400),
+            "se_dacl_auto_inherit_req": bool(input_control.value & 0x0100),
+            "se_dacl_defaulted": bool(input_control.value & 0x0008),
+        })
         attributes = _SECURITY_ATTRIBUTES(ct.sizeof(_SECURITY_ATTRIBUTES), descriptor, False)
         if directory:
             _check(fa.CreateDirectoryW(str(path), ct.byref(attributes)))
             created = True
-        handle = fa.CreateFileW(str(path), av.METADATA_ACCESS, 7,
+        # WRITE_DAC é pedido somente para desproteger o objeto próprio do teste negativo.
+        access = av.METADATA_ACCESS | (0x00040000 if variante == "nao_protegida" else 0)
+        handle = fa.CreateFileW(str(path), access, 7,
             None if directory else ct.byref(attributes),
             3 if directory else 1, 0x02200000 if directory else 0x80, None)
         _check(handle not in (None, 0, av.PTR(-1).value))
         created = True
-        actual_owner, actual_protected, actual_aces = _observacao_independente(handle, fa, api)
-        _check(actual_owner == owner and actual_protected == (variante != "nao_protegida"))
-        if variante != "nao_protegida":
-            expected = [(0, 0x10 if variante == "herdada" else 0, mask, owner)]
-            if variante == "ace_extra": expected.append((0, 0, 0x00020080, owner))
-            _check(actual_aces == expected)
+        expected = [(0, 0x10 if variante == "herdada" else 0, mask, owner)]
+        if variante == "ace_extra": expected.append((0, 0, 0x00020080, owner))
+        observed = _observacao_independente(handle, fa, api)
+        _registrar_observacao(request, "APOS_CRIACAO", observed, owner, expected)
+        _check(observed[0] == owner, "FIXTURE_OWNER_DIVERGENTE")
+        if variante == "nao_protegida":
+            # Omitir P na entrada SDDL não comprova o control efetivo do objeto.
+            _check(observed[2]["se_dacl_protected"], "FIXTURE_BASE_NAO_PROTEGIDA")
+            _check(observed[1] == expected, "FIXTURE_ACES_BASE_DIVERGENTES")
+            _desproteger_fixture_propria(handle, descriptor, fa, api)
+            observed = _observacao_independente(handle, fa, api)
+            _registrar_observacao(request, "APOS_DESPROTECAO", observed, owner, expected)
+            _check(observed[0] == owner, "FIXTURE_OWNER_DIVERGENTE")
+            _check(not observed[2]["se_dacl_protected"], "FIXTURE_DACL_AINDA_PROTEGIDA")
+            # A desproteção pode acrescentar ACEs herdadas do pai. Não removê-las.
+            _check(expected[0] in observed[1], "FIXTURE_ACE_EXPLICITA_AUSENTE")
+        else:
+            _check(observed[2]["se_dacl_protected"], "FIXTURE_PROTECAO_DIVERGENTE")
+            _check(observed[1] == expected, "FIXTURE_ACES_DIVERGENTES")
         yield _Caso(handle, owner, classe, av.PoliticaPerfilE(classe, (AclAce(owner, mask),)), variante)
     finally:
-        # Nenhuma alteração de ACL/owner para fazer uma fixture passar.
+        # Só o objeto próprio do caso negativo é desprotegido; nunca alterar owner.
         if handle not in (None, 0, av.PTR(-1).value):
             _check(api.CloseHandle(handle))
         if descriptor.value:
