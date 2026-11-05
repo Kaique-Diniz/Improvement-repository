@@ -1,7 +1,8 @@
 """WIN: exemplos integralmente sintéticos e sem dados de clientes."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
 from io import BytesIO
+from hashlib import sha256
 from pathlib import Path
 import json
 
@@ -206,10 +207,24 @@ def test_bloqueio_critico_nao_e_contornado(tmp_path):
 
 
 def test_idempotencia_de_canonico_e_xlsx(tmp_path):
-    a=executar(tmp_path/'um');b=executar(tmp_path/'dois')
+    # O contrato exige os MESMOS bytes, inclusive metadata da fonte XLSX.
+    # Duas chamadas a financeiro() podem criar arquivos distintos no relógio.
+    raw=financeiro()
+    a=executar(tmp_path/'um',raw);b=executar(tmp_path/'dois',raw)
+    assert a['fontes'][0]['sha256']==b['fontes'][0]['sha256']==sha256(raw).hexdigest()
     assert a['decisoes']==b['decisoes']
     for nome in ('canonico.json','canonico_extraido.json','TESTE_LOCAL_NAO_IMPORTAR.xlsx'):
         assert (tmp_path/'um'/nome).read_bytes()==(tmp_path/'dois'/nome).read_bytes()
+
+
+def test_fontes_xlsx_distintas_preservam_hashes_reais(tmp_path):
+    um=financeiro(mutar=lambda w,s:setattr(w.properties,'created',datetime(2000,1,1)))
+    dois=financeiro(mutar=lambda w,s:setattr(w.properties,'created',datetime(2001,1,1)))
+    assert um!=dois
+    a=executar(tmp_path/'um',um);b=executar(tmp_path/'dois',dois)
+    assert a['fontes'][0]['sha256']==sha256(um).hexdigest()
+    assert b['fontes'][0]['sha256']==sha256(dois).hexdigest()
+    assert a['fontes'][0]['sha256']!=b['fontes'][0]['sha256']
 
 
 def test_upload_comum_e_download_autenticado_sem_cadastro(tmp_path):
