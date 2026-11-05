@@ -45,6 +45,6 @@ def test_cli_em_subprocesso_preserva_exit_status(tmp_path):
 
 def test_schemas_versionados_correspondem_aos_contratos():
     for nome, conteudo in documentos():
-        assert (RAIZ / "schemas/1.0" / nome).read_text() == conteudo
+        assert (RAIZ / "schemas/1.0" / nome).read_text(encoding='utf-8') == conteudo
         schema = json.loads(conteudo)
         assert schema["additionalProperties"] is False

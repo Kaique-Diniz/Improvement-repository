@@ -55,7 +55,7 @@ def test_comparador_preparado_para_boleto_continuado_sem_implementar_extrator(ca
     dados["origens"].append(continuacao)
     lote = LoteCanonico.model_validate({"unidades": [unidade.model_dump(mode="json")], "boletos": [dados]})
     for chave in ("canonico_esperado", "canonico_obtido"):
-        (raiz / caso[chave]).write_text(lote.model_dump_json())
+        (raiz / caso[chave]).write_text(lote.model_dump_json(), encoding='utf-8')
     assert main(args + ["--etapa", "contrato-canonico"]) == 0
     resultado = capsys.readouterr().out
     assert json.loads(resultado)["status"] == "comparacoes_ok"
@@ -66,7 +66,7 @@ def test_comparador_preparado_para_boleto_continuado_sem_implementar_extrator(ca
 def test_gabarito_detecta_erros_de_campos_continuidade_e_valores(caso_local, unidade, boleto, falha, status, capsys):
     raiz, caso, args = caso_local
     lote = LoteCanonico(unidades=(unidade,), boletos=(boleto,))
-    (raiz / caso["canonico_esperado"]).write_text(lote.model_dump_json())
+    (raiz / caso["canonico_esperado"]).write_text(lote.model_dump_json(), encoding='utf-8')
     obtido = lote.model_dump(mode="json")
     if falha == "campo": obtido["boletos"][0]["competencia"] = "2026-08"
     elif falha == "duplicidade":

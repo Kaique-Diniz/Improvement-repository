@@ -109,7 +109,7 @@ def test_projecao_altera_somente_cinco_campos_e_preserva_financeiro_AB(tmp_path,
 
 def test_torre_nova_conserva_identidade_provisoria_sem_alterar_financeiro(tmp_path,monkeypatch):
     specs={'A':SPECS['A'],'B':SPECS['B']};data=financeiro(specs)
-    cfg=json.loads(service.PERFIS_SAIDA_PATH.read_text());cfg[0]['torres']={'B':'2'}
+    cfg=json.loads(service.PERFIS_SAIDA_PATH.read_text(encoding='utf-8'));cfg[0]['torres']={'B':'2'}
     path=tmp_path/'mapa_parcial.json';path.write_text(json.dumps(cfg))
     monkeypatch.setattr(service,'PERFIS_SAIDA_PATH',path)
     r=executar(tmp_path/'saida',data,modo='A')

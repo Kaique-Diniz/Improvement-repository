@@ -92,17 +92,29 @@ def _compare_string_ordinal_ignore_case(a: str, b: str) -> int:
 
     Retorna 0 quando iguais, -1 quando a < b, 1 quando a > b — mesma
     semântica de retorno da API Win32 (LESS/EQUAL/GREATER ajustado).
+    NUL embutido ou falha da API lança OSError, nunca indica igualdade.
     """
+    a, b = str(a), str(b)
+    if "\0" in a or "\0" in b:
+        raise OSError("NUL embutido em caminho")
     if sys.platform == "win32":  # pragma: no cover - caminho Windows real
-        CSTR_LESS_THAN, CSTR_EQUAL, CSTR_GREATER_THAN = 1, 2, 3
-        resultado = ctypes.windll.oleaut32.CompareStringOrdinal(  # type: ignore[attr-defined]
-            0x400,  # LOCALE_USER_DEFAULT
-            1,      # NORM_IGNORECASE (flags)
-            str(a), len(a),
-            str(b), len(b),
-            True,   # bIgnoreCase
-        )
-        return {CSTR_EQUAL: 0, CSTR_LESS_THAN: -1, CSTR_GREATER_THAN: 1}.get(resultado, 1)
+        try:
+            comparar = ctypes.WinDLL("kernel32", use_last_error=True).CompareStringOrdinal
+        except (AttributeError, OSError):
+            raise OSError("CompareStringOrdinal indisponível") from None
+        comparar.argtypes = [ctypes.c_wchar_p, ctypes.c_int,
+                             ctypes.c_wchar_p, ctypes.c_int, ctypes.c_int]
+        comparar.restype = ctypes.c_int
+        # Win32 conta WCHARs de 16 bits, não pontos de código Python.
+        # surrogatepass preserva também unidades substitutas de nomes Windows.
+        tamanho_a = len(a.encode("utf-16-le", "surrogatepass")) // 2
+        tamanho_b = len(b.encode("utf-16-le", "surrogatepass")) // 2
+        if max(tamanho_a, tamanho_b) > 0x7FFFFFFF:
+            raise OSError("Caminho excede comprimento INT da API")
+        resultado = comparar(a, tamanho_a, b, tamanho_b, 1)  # BOOL TRUE
+        if resultado not in (1, 2, 3):
+            raise OSError(ctypes.get_last_error(), "CompareStringOrdinal falhou")
+        return resultado - 2
     x, y = a.casefold(), b.casefold()
     return (x > y) - (x < y)
 
@@ -119,14 +131,15 @@ def _mesmo_path_normalizado(handle_path: str, esperado: str) -> bool:
     comparação ordinal o rejeita. Reparse points (symlinks/junções) são
     rejeitados antes desta etapa por `_detectar_reparse_point`.
     """
+    # GetLongPathNameW recebe string terminada em NUL; rejeitar antes dela.
+    if "\0" in str(handle_path) or "\0" in str(esperado):
+        return False
     try:
         norm_handle = _normalizar_caminho_8_3(handle_path)
         norm_esperado = _normalizar_caminho_8_3(esperado)
+        return _compare_string_ordinal_ignore_case(norm_handle, norm_esperado) == 0
     except OSError:
         return False
-    if _compare_string_ordinal_ignore_case(norm_handle, norm_esperado) != 0:
-        return False
-    return True
 
 
 # ==========================================================================

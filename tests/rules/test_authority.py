@@ -51,7 +51,7 @@ def test_autorizacao_limitada_a_condominio_ambiente_e_acao(repo,plano,gestor,cam
 @pytest.mark.parametrize('adulteracao',['estado','conteudo','evento','truncar','rollback'])
 def test_edicao_manual_do_json_nao_aprova_nem_reescreve_historico(repo,plano,gestor,adulteracao):
     executar(repo,plano,gestor,'criar');antigo=arquivo_atual(repo).read_bytes()
-    executar(repo,plano,gestor,'submeter');p=arquivo_atual(repo);d=json.loads(p.read_text())
+    executar(repo,plano,gestor,'submeter');p=arquivo_atual(repo);d=json.loads(p.read_text(encoding='utf-8'))
     if adulteracao=='estado':d['registros'][0]['estado']='aprovado'
     elif adulteracao=='conteudo':d['registros'][0]['conteudo']['regras'][0]['prioridade']=100000
     elif adulteracao=='evento':d['eventos'][-1]['acao']='aprovar'
@@ -63,20 +63,20 @@ def test_edicao_manual_do_json_nao_aprova_nem_reescreve_historico(repo,plano,ges
 
 
 def test_recalcular_hash_sem_chave_nao_fabrica_aprovacao(repo,plano,gestor):
-    executar(repo,plano,gestor,'criar');p=arquivo_atual(repo);d=json.loads(p.read_text());d['registros'][0]['estado']='ativo';p.write_bytes(bytes_canonicos(d))
+    executar(repo,plano,gestor,'criar');p=arquivo_atual(repo);d=json.loads(p.read_text(encoding='utf-8'));d['registros'][0]['estado']='ativo';p.write_bytes(bytes_canonicos(d))
     m=json.loads(repo.ponteiro.read_text());m['sha256']=sha256(p.read_bytes()).hexdigest();repo.ponteiro.write_bytes(bytes_canonicos(m))
     with pytest.raises(ErroAplicacao,match='ASSINATURA_DE_AUTORIDADE_INVALIDA'):repo.carregar()
 
 
 @pytest.mark.parametrize('campo,valor',[('responsavel_id','autoproclamado'),('hash_conteudo','1'*64),('versao','9.0.0'),('assinatura','0'*64)])
 def test_cada_aprovacao_exige_recibo_autentico(repo,plano,gestor,campo,valor):
-    aprovar(repo,plano,gestor);p=arquivo_atual(repo);d=json.loads(p.read_text());d['eventos'][-1][campo]=valor;p.write_bytes(bytes_canonicos(d))
+    aprovar(repo,plano,gestor);p=arquivo_atual(repo);d=json.loads(p.read_text(encoding='utf-8'));d['eventos'][-1][campo]=valor;p.write_bytes(bytes_canonicos(d))
     atualizar_manifesto_confiavel(repo)
     with pytest.raises(ErroAplicacao,match='ASSINATURA_DE_AUTORIDADE_INVALIDA'):repo.carregar()
 
 
 def test_estado_nao_pode_divergir_de_eventos_mesmo_em_snapshot_assinado(repo,plano,gestor):
-    executar(repo,plano,gestor,'criar');p=arquivo_atual(repo);d=json.loads(p.read_text());d['registros'][0]['estado']='aprovado';p.write_bytes(bytes_canonicos(d))
+    executar(repo,plano,gestor,'criar');p=arquivo_atual(repo);d=json.loads(p.read_text(encoding='utf-8'));d['registros'][0]['estado']='aprovado';p.write_bytes(bytes_canonicos(d))
     atualizar_manifesto_confiavel(repo)
     with pytest.raises(ErroAplicacao,match='ESTADO_SEM_HISTORICO_VALIDO'):repo.carregar()
 
@@ -152,7 +152,7 @@ def test_politica_historica_arquivada_e_verificavel_apos_retirada_do_papel(repo,
 
 
 def test_recibo_sem_permissao_na_politica_historica_e_rejeitado(repo,plano,gestor):
-    aprovar(repo,plano,gestor);p=arquivo_atual(repo);d=json.loads(p.read_text())
+    aprovar(repo,plano,gestor);p=arquivo_atual(repo);d=json.loads(p.read_text(encoding='utf-8'))
     evento=d['eventos'][-1];evento['responsavel_id']='nao_autorizado'
     sem={k:v for k,v in evento.items()if k!='assinatura'}
     evento['assinatura']=repo.autoridade.assinar(sem,dominio='evento-plano-1.0')
@@ -191,7 +191,7 @@ def test_reabertura_reconstroi_estado_e_assinaturas(repo,plano,gestor):
 @pytest.mark.parametrize('campo,valor,codigo', [('hash_conteudo','1'*64,'EVENTO_NAO_CORRESPONDE_A_VERSAO'),
     ('versao','9.0.0','EVENTO_NAO_CORRESPONDE_A_VERSAO'),('hash_anterior','1'*64,'CADEIA_DE_EVENTOS_INVALIDA')])
 def test_mesmo_recibo_assinado_precisa_corresponder_ao_plano_e_cadeia(repo,plano,gestor,campo,valor,codigo):
-    aprovar(repo,plano,gestor);p=arquivo_atual(repo);d=json.loads(p.read_text());evento=d['eventos'][-1];evento[campo]=valor
+    aprovar(repo,plano,gestor);p=arquivo_atual(repo);d=json.loads(p.read_text(encoding='utf-8'));evento=d['eventos'][-1];evento[campo]=valor
     evento['assinatura']=repo.autoridade.assinar({k:v for k,v in evento.items()if k!='assinatura'},dominio='evento-plano-1.0')
     p.write_bytes(bytes_canonicos(d));atualizar_manifesto_confiavel(repo)
     with pytest.raises(ErroAplicacao,match=codigo):repo.carregar()

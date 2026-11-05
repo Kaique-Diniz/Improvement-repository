@@ -137,7 +137,7 @@ def test_sem_cadastro_e_estado_explicito_sem_copiar_historico(tmp_path):
     assert len(ocorr)==1 and ocorr[0]['gravidade']=='informativo' and ocorr[0]['escopo']=='processamento'
     row=rows(tmp_path/'depois')[1];assert row[2]is None and all(v is None for v in row[11:24])
     assert (tmp_path/'depois/TESTE_LOCAL_NAO_IMPORTAR.xlsx').read_bytes()==ref
-    manifest=json.loads((tmp_path/'depois/manifesto_diagnostico.json').read_text())
+    manifest=json.loads((tmp_path/'depois/manifesto_diagnostico.json').read_text(encoding='utf-8'))
     assert manifest['cadastro_complementar']==b['cadastro_complementar']
 
 
