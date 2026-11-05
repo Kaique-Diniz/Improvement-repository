@@ -1,6 +1,7 @@
 # Conversor Inteligente de Inadimplência — MVP local
 
 O fluxo padrão é **upload → reconhecimento → leitura → regras existentes → Excel diagnóstico → download**, sem arquivo documental permanente.
+A INT-01 integra Passaredo A1 e Forest Hill na interface clássica sem senha. [Contrato, execução e limites da integração](docs/INT_01_INTEGRACAO.md).
 Execute `python -m conversor.web` (ou `conversor-web`) sem senha manual. Abra `http://127.0.0.1:8000`: a sessão técnica é automática por navegador.
 O servidor escuta somente em `127.0.0.1`. [Instalação, retenção, limites e execução local](docs/MVP_EFEMERO_LOCAL.md).
 Não é homologado para cobrança, CRM ou exportação operacional. A frente Windows experimental permanece isolada e suspensa.

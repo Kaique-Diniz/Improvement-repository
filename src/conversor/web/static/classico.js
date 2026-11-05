@@ -11,8 +11,8 @@ async function api(path,opts={}){
 function error(e){$('erro').textContent=e.message||'Falha local. Tente novamente.';$('erro').hidden=false;}
 function clearResult(message='Sua análise aparecerá aqui.'){
   clearTimeout(expiry);current=null;details=null;$('resultado').hidden=true;$('vazio').hidden=false;
-  for(const id of ['linhas','previa-linhas','previa-cabecalho','resumo','avisos','detalhes-legiveis','json-detalhes'])$(id).replaceChildren();
-  $('detalhes').close();$('contexto').textContent=message;
+  for(const id of ['linhas','previa-linhas','previa-cabecalho','resumo','avisos','detalhes-legiveis','json-detalhes','revisao-cadastral-lista'])$(id).replaceChildren();
+  $('detalhes').close();$('revisao-cadastral').hidden=true;$('contexto').textContent=message;
 }
 function clearContext(){ctx=config=null;proposals=[];$('endereco-campos').disabled=true;$('mapeamento-campos').disabled=true;$('endereco-condominio').value='';$('vinculos-lista').replaceChildren();$('unidades-lista').replaceChildren();$('endereco-cadastro-resumo').textContent='Identifique o relatório para configurar';}
 function showConfig(data){
@@ -84,7 +84,14 @@ async function convert(demo=false){
     details=await(await api(`/api/conversoes/${current.id}/detalhes`)).json();$('resultado').hidden=false;$('contexto').textContent=`${current.administradora} · ${current.condominio} · ${brDate(current.data_ref)} · modo ${current.modo}`;
     $('resumo').replaceChildren();for(const [key,label] of [['unidades','Unidades'],['boletos','Boletos'],['elegiveis_pela_regua','Elegíveis pela régua'],['dividas_efetivamente_geradas','Dívidas no Excel']]){const card=node('div','', 'indicador');card.append(node('strong',current.resumo[key]),node('span',label));$('resumo').append(card);}
     $('avisos').textContent='Excel diagnóstico de 30 colunas. Sem cobrança ou importação operacional. Prévia e resultado expiram em até 15 minutos e são descartados após o download. Nenhuma associação pessoal é presumida.';
-    if(current.cadastro_passaredo?.associacoes_retidas)$('avisos').textContent+=` ${current.cadastro_passaredo.associacoes_retidas} associações cadastrais retidas, sem excluir dívidas elegíveis.`;
+    const cadastroAtual=current['cadastro_'+current.perfil];
+    const revisaoAtual=current['revisao_cadastral_'+current.perfil]||[];
+    if(cadastroAtual?.fornecido){const card=node('div','','indicador');card.append(node('strong',cadastroAtual.associacoes_retidas),node('span','Associações cadastrais retidas'));$('resumo').append(card);}
+    if(cadastroAtual?.associacoes_retidas)$('avisos').textContent+=` ${cadastroAtual.associacoes_retidas} associações cadastrais retidas, sem excluir dívidas elegíveis.`;
+    if(cadastroAtual?.documentos_rejeitados_no_cadastro)$('avisos').textContent+=` ${cadastroAtual.documentos_rejeitados_no_cadastro} documentos inválidos ou malformados no cadastro recebido, preservados como evidência temporária e não atribuídos.`;
+    $('revisao-cadastral').hidden=!revisaoAtual.length;$('revisao-cadastral-lista').replaceChildren();
+    const motivosCadastro={PASSAREDO_RESPONSAVEL_DIVERGENTE_CADASTRO:'Nomes divergentes',PASSAREDO_RESPONSAVEL_MULTIPLO_DOCUMENTO_RETIDO:'Multiplicidade sem vínculo documental suficiente',PASSAREDO_DOCUMENTOS_CONFLITANTES_CADASTRO:'Documentos conflitantes'};
+    for(const item of revisaoAtual)$('revisao-cadastral-lista').append(node('p',`Unidade ${item.unidade} · inadimplência: ${item.responsavel_inadimplencia} · cadastro: ${item.responsavel_cadastro} · ${item.lancamentos} lançamento(s) · ${motivosCadastro[item.motivo]||'Revisão documental'}.`));
     visibleBills=100;visiblePreview=50;renderBills();renderPreview();$('download').disabled=!current.arquivo_teste_disponivel;
     expiry=setTimeout(()=>discard('Resultado expirado e descartado.'),current.retencao_segundos*1000);
   }catch(e){error(e);}finally{$('progresso').hidden=true;$('analisar').disabled=false;$('demo').disabled=false;}

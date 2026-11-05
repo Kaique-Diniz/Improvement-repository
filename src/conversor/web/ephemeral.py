@@ -25,6 +25,7 @@ from conversor.adapters.document_probe import SondadorLocal
 from conversor.readers.text_support import ErroLeitura
 from .service import LIMIT, PERFIS, PedidoDiagnostico, analisar
 from .local_context import ContextosLocais, ConfiguracaoLocal
+from conversor.readers.auto_gestao_identity import IdentidadeTabularNaoComprovada
 
 
 RETENCAO = 15 * 60
@@ -176,14 +177,17 @@ class CicloEfemero:
                     raise HTTPException(413,'LIMITE_DA_PREVIA_EXCEDIDO')
             summary['avisos'] = ['DIAGNOSTICO_NAO_IMPORTAR', 'HISTORICO_ANTERIOR_NAO_DISPONIVEL',
                 'VINCULOS_PERSISTENTES_INDISPONIVEIS_EVIDENCIA_SOMENTE_DESTA_CONVERSAO']
-            if 'cadastro_passaredo' in result:
-                summary['cadastro_passaredo'] = result['cadastro_passaredo']
-                summary['revisao_cadastral_passaredo'] = result['revisao_cadastral_passaredo']
-                summary['identificacao_condominio'] = result['identificacao_condominio']
+            for perfil_tabular in ('passaredo', 'forest_hill'):
+                chave_cadastro = 'cadastro_' + perfil_tabular
+                if chave_cadastro in result:
+                    summary[chave_cadastro] = result[chave_cadastro]
+                    chave_revisao = 'revisao_cadastral_' + perfil_tabular
+                    summary[chave_revisao] = result[chave_revisao]
+                    summary['identificacao_condominio'] = result['identificacao_condominio']
         except HTTPException:
             raise
         except ErroLeitura as error:
-            if error.codigo in ('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL','IDENTIDADE_DOCUMENTAL_CONFLITANTE'):
+            if error.codigo in ('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL','AUTO_GESTAO_LAYOUT_RECONHECIDO_INFORME_PERFIL','IDENTIDADE_DOCUMENTAL_CONFLITANTE'):
                 raise HTTPException(422, error.codigo) from None
             raise HTTPException(422, 'DOCUMENTO_NAO_CONVERTIDO_COM_SEGURANCA') from None
         except Exception:
@@ -518,10 +522,10 @@ def criar_app_efemero(*, acesso=None, area_temporaria=None, relogio=time.monoton
             escolha=form.get('condominio','auto')
             return await asyncio.to_thread(runtime.administracao.criar,raw,owner,escolha)
         except ErroLeitura as e:
-            if e.codigo=='PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL':
+            if isinstance(e,IdentidadeTabularNaoComprovada):
                 return JSONResponse({'detail':e.codigo,'confirmacao_necessaria':True,
                     'mensagem':'Layout AUTO GESTÃO reconhecido; condomínio ainda não comprovado. Confirme somente se corresponder ao documento.',
-                    'candidatos':[{'id':'passaredo','nome':PERFIS['passaredo']['nome']}]},status_code=409)
+                    'candidatos':[{'id':id_,'nome':PERFIS[id_]['nome']} for id_ in e.candidatos]},status_code=409)
             raise HTTPException(422,'IDENTIDADE_CONFLITANTE' if e.codigo=='IDENTIDADE_DOCUMENTAL_CONFLITANTE' else 'DOCUMENTO_NAO_IDENTIFICADO_COM_SEGURANCA') from None
         except (MultiPartException,ValidationError,ValueError):
             raise HTTPException(422,'FORMULARIO_INVALIDO') from None

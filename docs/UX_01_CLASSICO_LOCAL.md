@@ -1,6 +1,6 @@
 # UX-01 — interface clássica local, sem senha manual
 
-Implementação sobre `e479d2362df85ee196ed0b0ba472c6fd56278e06`, branch `feat/mvp-classico-local-sem-login`, worktree `/workspace/Improvement-mvp-classico`. A frente Forest Hill não foi incorporada. Publicação autorizada para auditoria externa, sem merge ou aprovação operacional.
+Implementação sobre `e479d2362df85ee196ed0b0ba472c6fd56278e06`, branch `feat/mvp-classico-local-sem-login`, worktree `/workspace/Improvement-mvp-classico`. Esse é o registro da UX-01 isolada. A INT-01 incorpora Forest Hill em um novo worktree, sem alterar as branches publicadas; o estado atual está em `docs/INT_01_INTEGRACAO.md`. Publicação controlada da INT-01 autorizada para auditoria externa, sem merge ou aprovação operacional.
 
 ## Executar e usar
 
@@ -23,9 +23,9 @@ Nenhum arquivo é automaticamente enviado a cobrança, CRM ou exportação opera
 
 ## Reconhecimento seguro
 
-O SHA-256 é calculado sobre os bytes reais. O Passaredo homologado pode ser reconhecido em `auto` após validar XLSX, aba, colunas e fechamento. As 11 colunas compartilhadas e o nome/código do arquivo não bastam. Uma escolha explícita conflitante com uma identidade conhecida é rejeitada. Mais de um perfil vinculado aos mesmos bytes também é conflito.
+O SHA-256 é calculado sobre os bytes reais. Passaredo e Forest Hill homologados podem ser reconhecidos em `auto` após validar XLSX, aba, colunas, fechamento e gramática de unidade do perfil. As 11 colunas compartilhadas e o nome/código do arquivo não bastam. Uma escolha explícita conflitante com uma identidade conhecida é rejeitada. Mais de um perfil vinculado aos mesmos bytes também é conflito.
 
-Novos perfis precisam de registro de identidade e despacho de leitor próprios. Um hash de perfil futuro não implementado não cai no leitor Passaredo. Forest Hill permanece na sua frente isolada. Sem identidade conhecida, a sugestão de Passaredo exige confirmação humana somente para diagnóstico; não afirma homologação nem autorização operacional.
+Novos perfis precisam de registro de identidade e despacho de leitor próprios. Um hash de perfil futuro não implementado não cai no leitor Passaredo. Na INT-01, Forest Hill tem registro e despacho próprios. Sem identidade conhecida, são sugeridos apenas perfis compatíveis com todas as unidades; nenhum candidato é escolhido silenciosamente. A confirmação humana vale somente para diagnóstico; não afirma homologação nem autorização operacional.
 
 A revisão UX-01 substitui a exigência anterior de seleção manual para os bytes homologados. Não altera a regra Passaredo > 60 dias nem as validações/retencões A1. O teste anterior foi atualizado apenas nessa expectativa, mantendo a rejeição de layout desconhecido e acrescentando conflitos, fontes distintas e estrutura inválida com hash registrado.
 
