@@ -5,6 +5,7 @@ Pathnames só preparam/atacam fixtures; o adapter não os recebe. Nenhum privil�
 """
 import ctypes as ct
 from dataclasses import dataclass, field
+import json
 import struct
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -34,7 +35,39 @@ def _extra():
             [ct.c_wchar_p, ct.c_wchar_p, dh.DWORD]),
         ioctl=_bind(kernel, "DeviceIoControl", dh.BOOL, [dh.PTR, dh.DWORD, dh.PTR,
             dh.DWORD, dh.PTR, dh.DWORD, ct.POINTER(dh.DWORD), dh.PTR]),
+        reopen=_bind(kernel, "ReOpenFile", dh.PTR, [dh.PTR, dh.DWORD, dh.DWORD, dh.DWORD]),
     )
+
+
+def _sondar_reopen(handle, extra, api, flags):
+    """Diagnóstico legado; jamais usa seu resultado para aprovar a cadeia."""
+    own = extra["reopen"](handle, dh.ACCESS, dh.SHARE, flags)
+    # Nenhuma outra chamada nativa, nem limpeza, antes da captura thread-local.
+    error = ct.get_last_error() if own in (None, 0, dh.PTR(-1).value) else 0
+    ok = dh._handle(own)
+    try:
+        return {"reopen_ok": ok, "winerror": error, "flags": flags}
+    finally:
+        if ok: _check(api.CloseHandle(own), "FIXTURE_SONDA_NAO_FECHADA")
+
+
+def _registrar(request, stage, **values):
+    _check(all(type(v) in (bool, int) for v in values.values()), "DIAGNOSTICO_NAO_SANITIZADO")
+    request.node.user_properties.extend((stage+"_"+k, v) for k, v in values.items())
+    print(json.dumps({"etapa": stage, **values}, sort_keys=True))
+
+
+def _etapa(request, stage, operation):
+    try:
+        result = operation()
+    except dh.ErroDiretorioWindows as error:
+        _registrar(request, stage, sucesso=False,
+            ntstatus=-1 if error.ntstatus is None else error.ntstatus,
+            io_status=-1 if error.io_status is None else error.io_status,
+            io_information=-1 if error.io_information is None else error.io_information)
+        raise
+    _registrar(request, stage, sucesso=True)
+    return result
 
 
 def _identidade_observada(handle, extra):
@@ -63,13 +96,25 @@ class _Arvore:
     extra: dict = field(repr=False)
     descriptor: object = field(repr=False)
     unicode_identity: object = field(repr=False)
+    request: object = field(repr=False)
 
     def chain(self):
-        return dh.CadeiaDiretorios.de_handle_validado(self.handle, identidade=self.identities[0],
-            politica=self.policy, owner_esperado=self.owner)
+        return _etapa(self.request, "ANCHOR", lambda: dh.CadeiaDiretorios.de_handle_validado(
+            self.handle, identidade=self.identities[0], politica=self.policy, owner_esperado=self.owner))
 
     def open_child(self, chain):
-        return chain.abrir_componente("filho", identidade=self.identities[1], politica=self.policy)
+        return _etapa(self.request, "FILHO", lambda: chain.abrir_componente(
+            "filho", identidade=self.identities[1], politica=self.policy))
+
+    def comprovar_cadeia(self):
+        with self.chain() as chain:
+            result = self.open_child(chain)
+            _check(result.perfil_confere and not result.autoriza_acesso
+                and not result.aplicada_ao_leitor, "PRECONDICAO_POSITIVA_FALHOU")
+            _etapa(self.request, "NETO", lambda: chain.abrir_componente(
+                "neto", identidade=self.identities[2], politica=self.policy))
+        _check(_identidade_observada(self.handle, self.extra)[0] == self.identities[0],
+            "ANCHOR_EMPRESTADO_NAO_PRESERVADO")
 
 
 @pytest.fixture
@@ -114,8 +159,14 @@ def arvore(tmp_path, request):
         for handle in handles[1:]:
             _check(api.CloseHandle(handle), "FIXTURE_FECHAMENTO_FALHOU")
         handles = handles[:1]
-        yield _Arvore(root, child, grandchild, target, handles[0], owner, policy,
-            tuple(identities[:3]), api, fa, extra, descriptor, identities[3])
+        for flags in (0x02200000, 0x02000000, 0x00200000, 0):
+            _registrar(request, "REOPEN_LEGADO", **_sondar_reopen(handles[0], extra, api, flags))
+        tree = _Arvore(root, child, grandchild, target, handles[0], owner, policy,
+            tuple(identities[:3]), api, fa, extra, descriptor, identities[3], request)
+        # Fora do pytest.raises dos casos negativos: uma precondição defeituosa
+        # não pode ser confundida com o ataque que o teste pretende demonstrar.
+        tree.comprovar_cadeia()
+        yield tree
     finally:
         failures = False
         for handle in reversed(handles):
@@ -128,6 +179,7 @@ def arvore(tmp_path, request):
 
 def test_nativo_abertura_relativa_unicode_e_cadeia(arvore):
     a = arvore
+    a.comprovar_cadeia()
     with a.chain() as chain:
         result = a.open_child(chain)
         _check(result.perfil_confere and not result.autoriza_acesso
@@ -150,6 +202,9 @@ def test_nativo_share_impede_rename_de_todos_os_nos_vivos(arvore, target):
     a = arvore
     path = getattr(a, target)
     moved = path.with_name(path.name+"_trocado")
+    _check(a.extra["move"](str(path), str(moved), 0), "FIXTURE_RENAME_ANTES_DO_LEASE_FALHOU")
+    _check(a.extra["move"](str(moved), str(path), 0), "FIXTURE_RENAME_RETORNO_FALHOU")
+    a.comprovar_cadeia()
     with a.chain() as chain:
         a.open_child(chain)
         chain.abrir_componente("neto", identidade=a.identities[2], politica=a.policy)
@@ -166,19 +221,27 @@ def test_nativo_share_impede_rename_de_todos_os_nos_vivos(arvore, target):
 @pytest.mark.parametrize("target", ["root", "child"])
 def test_nativo_handle_de_escrita_preexistente_causa_recusa(arvore, target):
     a = arvore
+    a.comprovar_cadeia()
     writer = a.fa.CreateFileW(str(getattr(a, target)), 2, 7, None, 3, 0x02200000, None)
     _check(dh._handle(writer), "FIXTURE_WRITER_NAO_COMPROVADO")
     try:
         with pytest.raises(dh.ErroDiretorioWindows,
-                match="ANCHOR_NAO_REABERTO" if target == "root" else "ABERTURA_RELATIVA_FALHOU"):
-            with a.chain() as chain:
-                a.open_child(chain)
+                match="^ANCHOR_NAO_REABERTO$" if target == "root" else "^ABERTURA_RELATIVA_FALHOU$") as error:
+            if target == "root":
+                with a.chain():
+                    _check(False, "ANCHOR_COM_CONFLITO_ACEITO")
+            else:
+                with a.chain() as chain:
+                    a.open_child(chain)
+        _check(error.value.ntstatus == 0xC0000043, "CONFLITO_DE_SHARE_NAO_COMPROVADO")
     finally:
         _check(a.api.CloseHandle(writer), "FIXTURE_WRITER_NAO_FECHADO")
+    a.comprovar_cadeia()
 
 
 def test_nativo_identidade_inesperada_e_substituicao_antes_de_abrir(arvore):
     a = arvore
+    a.comprovar_cadeia()
     old = a.root / "filho_anterior"
     _check(a.extra["move"](str(a.child), str(old), 0), "FIXTURE_TROCA_NAO_COMPROVADA")
     attributes = _SECURITY_ATTRIBUTES(ct.sizeof(_SECURITY_ATTRIBUTES), a.descriptor, False)
@@ -193,8 +256,8 @@ def test_nativo_identidade_inesperada_e_substituicao_antes_de_abrir(arvore):
                 "FIXTURE_IDENTIDADE_NAO_MUDOU")
         finally:
             _check(a.api.CloseHandle(handle))
-        with pytest.raises(dh.ErroDiretorioWindows, match="IDENTIDADE_DIVERGENTE"):
-            with a.chain() as chain:
+        with a.chain() as chain:
+            with pytest.raises(dh.ErroDiretorioWindows, match="^IDENTIDADE_DIVERGENTE$"):
                 a.open_child(chain)
     finally:
         if replacement: _check(a.fa.RemoveDirectoryW(str(a.child)))
@@ -213,6 +276,7 @@ def test_nativo_componentes_invalidos(arvore, component):
 @pytest.mark.parametrize("scope", ["anchor", "filho"])
 def test_nativo_rejeita_reparse_confirmado_sem_seguir_alvo(arvore, kind, scope):
     a = arvore
+    a.comprovar_cadeia()
     link = a.root / "desvio"
     created = False
     try:
@@ -245,14 +309,20 @@ def test_nativo_rejeita_reparse_confirmado_sem_seguir_alvo(arvore, kind, scope):
             identity, tag = _identidade_observada(oracle, a.extra)
             _check(tag.FileAttributes & 0x400 and tag.ReparseTag == expected_tag,
                 "FIXTURE_REPARSE_NAO_COMPROVADO")
-            with pytest.raises(dh.ErroDiretorioWindows, match="ABERTURA_RELATIVA_FALHOU|OBJETO_REPARSE"):
-                if scope == "anchor":
+            if scope == "anchor":
+                with pytest.raises(dh.ErroDiretorioWindows, match="^OBJETO_REPARSE$"):
                     with dh.CadeiaDiretorios.de_handle_validado(oracle, identidade=identity,
                             politica=a.policy, owner_esperado=a.owner):
                         _check(False, "REPARSE_ACEITO")
-                else:
-                    with a.chain() as chain:
-                        chain.abrir_componente("desvio", identidade=identity, politica=a.policy)
+            else:
+                with a.chain() as chain:
+                    with pytest.raises(dh.ErroDiretorioWindows,
+                            match="^ABERTURA_RELATIVA_FALHOU$|^OBJETO_REPARSE$") as error:
+                        _etapa(a.request, "REPARSE", lambda: chain.abrir_componente(
+                            "desvio", identidade=identity, politica=a.policy))
+                    if str(error.value) == "ABERTURA_RELATIVA_FALHOU":
+                        _check(error.value.ntstatus == 0xC000050B,
+                            "ERRO_NAO_COMPROVA_REPARSE")  # STATUS_REPARSE_POINT_ENCOUNTERED
         finally:
             _check(a.api.CloseHandle(oracle))
     finally:

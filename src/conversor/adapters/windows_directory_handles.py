@@ -64,6 +64,12 @@ class _FILE_FS_DEVICE_INFORMATION(ct.Structure):
 class ErroDiretorioWindows(ValueError):
     """Apenas códigos fixos; sem nome, SID, identidade ou mensagem nativa."""
 
+    def __init__(self, code, *, ntstatus=None, io_status=None, io_information=None):
+        super().__init__(code)
+        self.ntstatus = None if ntstatus is None else ntstatus & 0xFFFFFFFF
+        self.io_status = None if io_status is None else io_status & 0xFFFFFFFF
+        self.io_information = io_information
+
 
 def _exigir(value, code):
     if not value:
@@ -77,7 +83,6 @@ class _API:
             kernel = ct.WinDLL("kernel32", use_last_error=True)
             native = ct.WinDLL("ntdll", use_last_error=True)
             signatures = {
-                "ReOpenFile": (kernel, PTR, [PTR, DWORD, DWORD, DWORD]),
                 "NtOpenFile": (native, NTSTATUS, [ct.POINTER(PTR), DWORD,
                     ct.POINTER(_OBJECT_ATTRIBUTES), ct.POINTER(_IO_STATUS_BLOCK), DWORD, DWORD]),
                 "NtQueryVolumeInformationFile": (native, NTSTATUS, [PTR,
@@ -180,8 +185,9 @@ def _estado(api, handle, *, consultar_volume=True):
     device, ios = _FILE_FS_DEVICE_INFORMATION(), _IO_STATUS_BLOCK()
     status = _call(api, "NtQueryVolumeInformationFile", handle, ct.byref(ios),
         ct.byref(device), ct.sizeof(device), 4)  # FileFsDeviceInformation
-    _exigir(status == 0 and ios.Status == 0 and ios.Information == ct.sizeof(device),
-        "VOLUME_NAO_COMPROVADO")
+    if not (status == 0 and ios.Status == 0 and ios.Information == ct.sizeof(device)):
+        raise ErroDiretorioWindows("VOLUME_NAO_COMPROVADO", ntstatus=status,
+            io_status=ios.Status, io_information=ios.Information)
     _exigir(device.DeviceType == 7 and not device.Characteristics & (0x1 | 0x10),
         "VOLUME_NAO_SUPORTADO")  # DISK; não REMOVABLE_MEDIA/REMOTE_DEVICE
     serial, maximum, flags = DWORD(), DWORD(), DWORD()
@@ -235,11 +241,11 @@ class CadeiaDiretorios:
         try:
             _exigir(_estado(chain._api, handle, consultar_volume=False) == identidade,
                 "IDENTIDADE_DIVERGENTE")
-            # ReOpenFile adquire OUTRO file object com share restrito; DuplicateHandle
-            # sozinho conservaria o compartilhamento permissivo do anchor original.
-            own = _call(chain._api, "ReOpenFile", handle, ACCESS, SHARE, 0x02200000)
-            _exigir(_handle(own), "ANCHOR_NAO_REABERTO")
-            chain._nos.append(_No(own, identidade, politica, owner_esperado))
+            # Nome NT vazio refere-se ao próprio objeto do handle. É uma nova
+            # abertura síncrona de DIRETÓRIO, com share próprio, não DuplicateHandle.
+            # Não reutiliza as flags Win32 de ReOpenFile nem reabre por pathname.
+            chain._abrir(handle, b"", identidade, politica, owner_esperado,
+                "ANCHOR_NAO_REABERTO")
             chain._conferir()
             _exigir(_estado(chain._api, handle, consultar_volume=False) == identidade,
                 "IDENTIDADE_DIVERGENTE")
@@ -255,6 +261,26 @@ class CadeiaDiretorios:
             _verificar_acl(node.handle, node.politica, node.owner)
             _exigir(_estado(self._api, node.handle) == node.identidade, "IDENTIDADE_DIVERGENTE")
 
+    def _abrir(self, parent, raw, identity, policy, owner, code):
+        # O vazio é usado SOMENTE internamente para adquirir o anchor. Componentes
+        # públicos já passaram por _componente e nunca podem ser vazios.
+        buffer = ct.create_string_buffer(raw+b"\0\0")
+        name = _UNICODE_STRING(len(raw), len(raw)+2, ct.addressof(buffer))
+        attrs = _OBJECT_ATTRIBUTES(ct.sizeof(_OBJECT_ATTRIBUTES), parent,
+            ct.pointer(name), OBJECT_FLAGS, None, None)
+        ios, child = _IO_STATUS_BLOCK(), PTR()
+        ios.Status = 0x103  # sentinel STATUS_PENDING; exigir conclusão explícita
+        try:
+            status = _call(self._api, "NtOpenFile", ct.byref(child), ACCESS,
+                ct.byref(attrs), ct.byref(ios), SHARE, OPTIONS)
+        finally:
+            if _handle(child.value):
+                self._nos.append(_No(child.value, identity, policy, owner))
+        if not (status == 0 and ios.Status == 0 and ios.Information == 1
+                and _handle(child.value)):  # FILE_OPENED
+            raise ErroDiretorioWindows(code, ntstatus=status, io_status=ios.Status,
+                io_information=ios.Information)
+
     def abrir_componente(self, nome, *, identidade, politica):
         with self._lock:
             try:
@@ -264,21 +290,8 @@ class CadeiaDiretorios:
                 _binding(parent.handle, identidade, politica, parent.owner)
                 _exigir(identidade.volume == parent.identidade.volume, "VOLUME_DIVERGENTE")
                 self._conferir()
-                # Buffer UTF-16 contado em BYTES, independente do wchar_t do host.
-                buffer = ct.create_string_buffer(raw+b"\0\0")
-                name = _UNICODE_STRING(len(raw), len(raw)+2, ct.addressof(buffer))
-                attrs = _OBJECT_ATTRIBUTES(ct.sizeof(_OBJECT_ATTRIBUTES), parent.handle,
-                    ct.pointer(name), OBJECT_FLAGS, None, None)
-                ios, child = _IO_STATUS_BLOCK(), PTR()
-                try:
-                    status = _call(self._api, "NtOpenFile", ct.byref(child), ACCESS,
-                        ct.byref(attrs), ct.byref(ios), SHARE, OPTIONS)
-                finally:
-                    # Mesmo retorno de erro com handle preenchido precisa ser fechado.
-                    if _handle(child.value):
-                        self._nos.append(_No(child.value, identidade, politica, parent.owner))
-                _exigir(status == 0 and ios.Status == 0 and ios.Information == 1
-                    and _handle(child.value), "ABERTURA_RELATIVA_FALHOU")  # FILE_OPENED
+                self._abrir(parent.handle, raw, identidade, politica, parent.owner,
+                    "ABERTURA_RELATIVA_FALHOU")
                 self._conferir()
                 return ConformidadeDiretorio()
             except BaseException:

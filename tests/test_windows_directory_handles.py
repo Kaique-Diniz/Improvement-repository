@@ -61,23 +61,25 @@ class API:
         fs.value = self.fs
         return 1
 
-    def ReOpenFile(self, original, rights, share, flags):
-        assert original == 100 and rights == dh.ACCESS and share == 1 and flags == 0x02200000
-        self.reopens.append(original)
-        return 200
-
     def NtOpenFile(self, output, rights, attributes, ios, share, options):
         attrs = ct.cast(attributes, ct.POINTER(dh._OBJECT_ATTRIBUTES)).contents
         name = attrs.ObjectName.contents
         raw = ct.string_at(name.Buffer, name.Length)
-        self.opens.append((attrs.RootDirectory, raw.decode("utf-16-le")))
+        if raw:
+            self.opens.append((attrs.RootDirectory, raw.decode("utf-16-le")))
+            returned = self.next_handle
+            self.next_handle += 100
+        else:
+            assert attrs.RootDirectory == 100
+            self.reopens.append(attrs.RootDirectory)
+            returned = 200
         assert attrs.Length == ct.sizeof(attrs) and name.MaximumLength == name.Length+2
         assert attrs.Attributes == 0x1040 and attrs.SecurityDescriptor is None
         assert attrs.SecurityQualityOfService is None
         assert ct.string_at(name.Buffer+name.Length, 2) == b"\0\0"
         assert rights == dh.ACCESS and share == 1 and options == 0x00200021
-        put(output, dh.PTR, self.next_handle)
-        self.next_handle += 100
+        assert ct.cast(ios, ct.POINTER(dh._IO_STATUS_BLOCK)).contents.Status == 0x103
+        put(output, dh.PTR, returned)
         result = dh._IO_STATUS_BLOCK(); result.Status = 0; result.Information = 1
         put(ios, dh._IO_STATUS_BLOCK, result)
         return 0
@@ -193,13 +195,13 @@ def test_volume_divergente_antes_da_abertura(api):
 
 
 def test_alteracao_de_ancestral_durante_abertura_fecha_tudo(api):
+    c = chain()
     original = api.NtOpenFile
     def race(*args):
         status = original(*args)
         api.identities[200] = CHILD
         return status
     api.NtOpenFile = race
-    c = chain()
     with pytest.raises(dh.ErroDiretorioWindows, match="IDENTIDADE_DIVERGENTE"):
         open_child(c)
     assert api.closed == [300, 200]
@@ -221,6 +223,7 @@ def test_identidade_muda_entre_consulta_e_acl(api):
 @pytest.mark.parametrize("status,io_status,info", [(0x103, 0, 1), (-1073741757, 0, 1),
     (0, -1, 1), (0, 0, 0), (0, 0, 2)])
 def test_status_pendente_erro_share_ou_ios_incoerente_fecha_saida(api, status, io_status, info):
+    c = chain()
     original = api.NtOpenFile
     def fail(*args):
         original(*args)
@@ -228,19 +231,18 @@ def test_status_pendente_erro_share_ou_ios_incoerente_fecha_saida(api, status, i
         put(args[3], dh._IO_STATUS_BLOCK, result)
         return status
     api.NtOpenFile = fail
-    c = chain()
     with pytest.raises(dh.ErroDiretorioWindows, match="ABERTURA_RELATIVA_FALHOU"):
         open_child(c)
     assert api.closed == [300, 200]
 
 
-@pytest.mark.parametrize("where", ["NtOpenFile", "ReOpenFile", "GetFileInformationByHandleEx",
+@pytest.mark.parametrize("where", ["NtOpenFile", "NtAnchor", "GetFileInformationByHandleEx",
     "NtQueryVolumeInformationFile", "GetVolumeInformationByHandleW", "GetFileType"])
 def test_api_falha_sem_vazar_mensagem_nativa(api, where):
     def fail(*args):
         raise OSError(SID+" SENTINELA_PRIVADA")
     c = chain() if where == "NtOpenFile" else None
-    setattr(api, where, fail)
+    setattr(api, "NtOpenFile" if where == "NtAnchor" else where, fail)
     with pytest.raises(dh.ErroDiretorioWindows, match="^API_WINDOWS_FALHOU$") as error:
         open_child(c) if c else chain()
     assert "SENTINELA" not in str(error.value) and SID not in str(error.value)
@@ -268,12 +270,12 @@ def test_resultado_acl_inesperado_nao_concede_capacidade(api, monkeypatch, field
 
 
 def test_erro_nativo_apos_preencher_handle_ainda_fecha(api):
+    c = chain()
     original = api.NtOpenFile
     def fail(*args):
         original(*args)
         raise OSError("sem detalhes")
     api.NtOpenFile = fail
-    c = chain()
     with pytest.raises(dh.ErroDiretorioWindows, match="API_WINDOWS_FALHOU"):
         open_child(c)
     assert api.closed == [300, 200]
@@ -309,7 +311,10 @@ def test_erro_no_corpo_e_objeto_fechado_nao_podem_reabrir(api):
 
 @pytest.mark.parametrize("value", [None, 0, dh.PTR(-1).value])
 def test_reopen_handle_invalido_nunca_fecha_anchor(api, value):
-    api.ReOpenFile = lambda *args: value
+    def invalid(output, *args):
+        put(output, dh.PTR, value)
+        return 0
+    api.NtOpenFile = invalid
     with pytest.raises(dh.ErroDiretorioWindows, match="ANCHOR_NAO_REABERTO"):
         chain()
     assert not api.closed
@@ -317,11 +322,11 @@ def test_reopen_handle_invalido_nunca_fecha_anchor(api, value):
 
 @pytest.mark.parametrize("value", [None, 0, dh.PTR(-1).value])
 def test_saida_ntopen_handle_invalido_fecha_apenas_cadeia(api, value):
+    c = chain()
     def fail(output, *args):
         put(output, dh.PTR, value)
         return 0
     api.NtOpenFile = fail
-    c = chain()
     with pytest.raises(dh.ErroDiretorioWindows, match="ABERTURA_RELATIVA_FALHOU"):
         open_child(c)
     assert api.closed == [200]
@@ -407,8 +412,7 @@ def test_assinaturas_e_layout_windows(monkeypatch):
     assert native.NtOpenFile.restype is dh.NTSTATUS
     assert native.NtOpenFile.argtypes == [ct.POINTER(dh.PTR), dh.DWORD,
         ct.POINTER(dh._OBJECT_ATTRIBUTES), ct.POINTER(dh._IO_STATUS_BLOCK), dh.DWORD, dh.DWORD]
-    assert native.ReOpenFile.argtypes == [dh.PTR, dh.DWORD, dh.DWORD, dh.DWORD]
-    assert native.ReOpenFile.restype is dh.PTR
+    assert not hasattr(native, "ReOpenFile")
     assert not dh.ACCESS & (1 | 2 | 4 | 0x10000 | 0x40000 | 0x80000)
     assert not dh.OPTIONS & (0x1000 | 0x4000)  # sem DELETE_ON_CLOSE/backup intent
 
@@ -422,3 +426,79 @@ def test_api_indisponivel_sem_fallback(monkeypatch, failure):
     monkeypatch.setattr(ct, "WinDLL", dll, raising=False)
     with pytest.raises(dh.ErroDiretorioWindows, match="API_WINDOWS_INDISPONIVEL"):
         dh._API()
+
+
+@pytest.mark.parametrize("status,io_status,info", [(-1073741757, -1073741757, 0),
+    (-1073741790, -1073741790, 0), (0x103, 0x103, 0), (0, -1, 1), (0, 0, 2)])
+def test_anchor_status_nao_e_confundido_com_filhos_e_libera_saida(api, status, io_status, info):
+    def fail(output, rights, attrs, ios, share, options):
+        assert ct.cast(attrs, ct.POINTER(dh._OBJECT_ATTRIBUTES)).contents.ObjectName.contents.Length == 0
+        put(output, dh.PTR, 200)
+        result = dh._IO_STATUS_BLOCK(); result.Status = io_status; result.Information = info
+        put(ios, dh._IO_STATUS_BLOCK, result)
+        return status
+    api.NtOpenFile = fail
+    with pytest.raises(dh.ErroDiretorioWindows, match="^ANCHOR_NAO_REABERTO$") as error:
+        chain()
+    assert error.value.ntstatus == status & 0xFFFFFFFF
+    assert error.value.io_status == io_status & 0xFFFFFFFF
+    assert error.value.io_information == info
+    assert api.closed == [200] and not api.opens
+
+
+def test_anchor_excecao_apos_alocacao_fecha_saida(api):
+    original = api.NtOpenFile
+    def fail(*args):
+        original(*args)
+        raise OSError(SID)
+    api.NtOpenFile = fail
+    with pytest.raises(dh.ErroDiretorioWindows, match="^API_WINDOWS_FALHOU$"):
+        chain()
+    assert api.closed == [200] and not api.opens
+
+
+def test_anchor_identidade_e_acl_sao_revalidados_apos_nova_abertura(api):
+    original = api.NtOpenFile
+    def fail(*args):
+        status = original(*args)
+        api.identities[200] = CHILD
+        return status
+    api.NtOpenFile = fail
+    with pytest.raises(dh.ErroDiretorioWindows, match="IDENTIDADE_DIVERGENTE"):
+        chain()
+    assert api.closed == [200] and not api.acls
+
+
+@pytest.mark.parametrize("flags", [0x02200000, 0x02000000, 0x00200000, 0])
+@pytest.mark.parametrize("valid", [False, True])
+def test_sonda_legada_captura_last_error_antes_de_qualquer_limpeza(monkeypatch, flags, valid):
+    from tests.test_windows_directory_handles_native import _sondar_reopen
+    events = []
+    def reopen(handle, rights, share, actual_flags):
+        assert handle == 100 and rights == dh.ACCESS and share == 1 and actual_flags == flags
+        events.append("reopen")
+        return 200 if valid else dh.PTR(-1).value
+    def last_error():
+        events.append("last_error")
+        return 5
+    def close(handle):
+        assert handle == 200
+        events.append("close")
+        return 1
+    monkeypatch.setattr(ct, "get_last_error", last_error, raising=False)
+    result = _sondar_reopen(100, {"reopen": reopen}, SimpleNamespace(CloseHandle=close), flags)
+    assert result == {"reopen_ok": valid, "winerror": 0 if valid else 5, "flags": flags}
+    assert events == (["reopen", "close"] if valid else ["reopen", "last_error"])
+
+
+def test_diagnostico_nt_registra_apenas_codigos_numericos(monkeypatch, capsys):
+    from tests.test_windows_directory_handles_native import _etapa
+    request = SimpleNamespace(node=SimpleNamespace(user_properties=[]))
+    def fail():
+        raise dh.ErroDiretorioWindows("ANCHOR_NAO_REABERTO", ntstatus=-1073741757,
+            io_status=-1073741757, io_information=0)
+    with pytest.raises(dh.ErroDiretorioWindows):
+        _etapa(request, "ANCHOR", fail)
+    text = capsys.readouterr().out
+    assert SID not in text and "ntstatus" in text and "3221225539" in text
+    assert all(type(value) in (bool, int) for _, value in request.node.user_properties)
