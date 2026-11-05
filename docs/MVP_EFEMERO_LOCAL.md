@@ -1,6 +1,6 @@
 # MVP de conversão efêmera local
 
-Esta frente parte da main `04f29ff5fc9124b988bd611d3d1b8d7224ae874f`, em worktree próprio. Não contém a infraestrutura experimental P0.2-D, nem modifica a branch/PR #6. A correção de idempotência das fixtures está em outro worktree/diff.
+A versão consolidada combina, por merge sem conflitos, a entrega XLSX `eb26e0ff0ce0988522bb2b67a41ab694a0fe9a75` e o MVP `71e0b58547ffdebee9f7883852473bd75a283e06`. Ambos os commits originais são ancestrais da branch `feat/mvp-efemero-consolidado`, em worktree próprio, sobre a main original `04f29ff5fc9124b988bd611d3d1b8d7224ae874f`. Não contém a infraestrutura experimental P0.2-D nem modifica a branch/PR #6.
 
 ## Executar
 
@@ -58,9 +58,31 @@ As regressões sintéticas incluem expiração pelo coletor sem tráfego HTTP, d
 
 A publicação é para auditoria. Permanecem pendentes o limite global de memória do processo, a identificação e o tratamento seguro dos resíduos de encerramento forçado, o isolamento/prazo dos parsers e a interrupção controlada de conversões canceladas. Os limites por upload, workers e cache reduzem a concorrência e a retenção, mas não satisfazem essas garantias por si só.
 
-### Resultado local desta revisão de publicação
+### Registro histórico: publicação isolada do MVP (`71e0b58`)
 
 - Python 3.12: 30 regressões do fluxo efêmero aprovadas; suíte completa com 1.933 aprovados, uma falha, zero erros/skips e um warning de depreciação do Starlette/AnyIO.
-- A falha é `tests/bbz/test_edificio_win.py::test_idempotencia_de_canonico_e_xlsx`, na comparação das decisões de duas fontes sintetizadas separadamente. Ela permanece nesta branch: a correção que reutiliza os mesmos bytes é publicada independentemente em `fix/xlsx-idempotencia-entradas`. A suíte completa desta frente **não está verde**.
+- A falha é `tests/bbz/test_edificio_win.py::test_idempotencia_de_canonico_e_xlsx`, na comparação das decisões de duas fontes sintetizadas separadamente. Ela permanecia na branch isolada do MVP; a correção que reutiliza os mesmos bytes foi publicada independentemente em `fix/xlsx-idempotencia-entradas`. A suíte completa daquela entrega isolada **não estava verde**. A consolidação abaixo inclui essa correção.
 - Chromium real: autenticação, upload PDF/cadastro/referência, reconhecimento FL/PLAZA, botão de demonstração, download de 30 colunas com valores sintéticos esperados e recusa de segundo download aprovados. A área temporária ficou sem arquivos após converter e foi removida no SIGTERM normal.
 - `compileall`, sintaxe JavaScript, `pip check`, whitespace e revisão de escopo são verificados antes do commit. Nenhum arquivo financeiro real, credencial operacional ou fixture binária é incluído.
+
+## Consolidação funcional — validação local
+
+- A integração preserva os dois commits aprovados e não exigiu resolver conflitos. `xlsx_reader.py` e `test_edificio_win.py` mantêm exatamente a entrega XLSX; os demais módulos de produção mantêm exatamente a entrega MVP. Não há mudanças adicionais em regras, formatos, hashes, identificadores, bloqueios ou ACLs.
+- Testes direcionados: **77 aprovados**. Suíte Linux/Python 3.12 completa: **1.935 aprovados**, zero falhas, erros ou skips; um warning de depreciação do Starlette/AnyIO.
+- Em três processos Python separados, com intervalo entre execuções, passaram os três cenários de cada execução: mesmos bytes preservam decisões/canônicos/Excel, fontes distintas mantêm seus hashes SHA-256 reais, e o endpoint efêmero produz Excel idêntico para entradas idênticas. Nenhum hash é normalizado.
+- Chromium real confirmou autenticação, upload sintético PDF/cadastro/referência, reconhecimento FL/PLAZA, 30 colunas e valores esperados, download, exemplo sintético e descarte normal. A área temporária ficou vazia após converter e foi removida no SIGTERM.
+- `compileall`, `pip check`, sintaxe JavaScript, YAML do workflow e whitespace foram verificados localmente. Nenhum teste legado foi removido, ignorado ou relaxado.
+
+O workflow herdado da main configurava Python 3.11 e instalava somente pytest/openpyxl, incompatível com o requisito Python >=3.12 do projeto. Nesta branch funcional, ele usa `windows-latest`, Python 3.12, venv exclusivo, instalação `.[test,web]`, `pip check`, `compileall`, três repetições de idempotência em processos separados e a suíte completa. Permissões: `contents: read`. O push nesta branch também dispara a validação; o gatilho de PR para main foi preservado. Não foram transportados os módulos experimentais Windows nem modificados testes para esconder diferenças nativas.
+
+**Windows permanece pendente de evidência real nesta revisão local.** A validação Linux e o YAML não certificam a execução Windows. O acesso da CLI à API GitHub retornou `Forbidden`; a interface web acessível não possui sessão autenticada. A abertura do PR draft e a coleta do resultado dependem de acesso disponível, sem mudança de rede ou autenticação interativa.
+
+### Pendências que continuam abertas
+
+- Limite global de memória/RSS e isolamento/prazo máximo de parsers: os limites atuais abrangem uploads, concorrência e cache, não todas as alocações do processo.
+- Resíduos após SIGKILL/queda de energia: não são identificados nem recolhidos automaticamente na próxima inicialização. A limpeza normal e as tentativas de limpeza de diretórios próprios não comprovam recuperação de uma execução anterior.
+- Cancelamento após iniciar um worker: o worker termina e limpa seu temporário; um resultado sem destinatário pode permanecer em memória até o TTL. O encerramento normal espera os workers, sem limite máximo de processamento.
+- Cópias do navegador, swap e apagamento forense permanecem fora da garantia de descarte.
+- Compatibilidade Windows deste conjunto ainda depende da execução real do workflow. Nenhuma nova frente ACL foi iniciada.
+
+A próxima prioridade funcional é uma nova administradora por vez, mediante identificação do formato e exemplos representativos sintéticos. Reconhecimento/leitor serão reutilizados somente com compatibilidade documental comprovada, sem criar regras financeiras. Esta consolidação não acrescenta camadas de segurança nem inicia uma administradora sem evidência do formato.
