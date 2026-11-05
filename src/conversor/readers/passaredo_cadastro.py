@@ -5,7 +5,7 @@ import re
 import unicodedata
 from openpyxl.utils import get_column_letter
 
-from conversor.domain.canonical import Contato, Documento, Endereco, Telefone
+from conversor.domain.canonical import Contato, Documento, Endereco, Telefone, documento_validado
 from conversor.readers.text_support import ErroLeitura
 from .passaredo_table import tabela
 
@@ -15,7 +15,13 @@ CAMPOS_PERMITIDOS = CAMPOS_OBRIGATORIOS + (
     'PROFISSAO', 'VEICULOS', 'DESDE',
 )
 EMAIL_VALIDO = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
-TELEFONE_BR = re.compile(r"\(?\s*(\d{2})\s*\)?[\s.-]*(\d{4,5})[\s.-]*(\d{4})")
+CPF_FORMATO = re.compile(r'(?:[0-9]{11}|[0-9]{3}\.[0-9]{3}\.[0-9]{3}-[0-9]{2})')
+CNPJ_FORMATO = re.compile(r'(?:[0-9]{14}|[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2})')
+TELEFONE_BR = re.compile(
+    r'(?P<pais>\+55[ \t.-]*)?'
+    r'(?:(?:\((?P<ddd_parenteses>[0-9]{2})\)|(?P<ddd>[0-9]{2}))[ \t.-]*)?'
+    r'(?P<inicio>[0-9]{4,5})[ \t.-]?(?P<fim>[0-9]{4})'
+)
 
 def _sem_acentos(texto):
     norm = unicodedata.normalize("NFKD", str(texto))
@@ -25,21 +31,32 @@ def _texto(valor):
     return "" if valor is None else str(valor).strip()
 
 def normalizar_documento(valor):
-    digitos = re.sub(r"\D", "", _texto(valor))
-    if not digitos:
+    texto = _texto(valor)
+    if not texto or isinstance(valor, bool):
         return None
-    if len(digitos) not in (11, 14):
-        raise ErroLeitura("PASSAREDO_DOCUMENTO_INVALIDO")
-    tipo = "cpf" if len(digitos) == 11 else "cnpj"
-    return Documento(tipo=tipo, valor=digitos)
+    if CPF_FORMATO.fullmatch(texto):
+        tipo = 'cpf'
+    elif CNPJ_FORMATO.fullmatch(texto):
+        tipo = 'cnpj'
+    else:
+        return None
+    documento = Documento(tipo=tipo, valor=texto)
+    digitos = documento_validado(documento)
+    return Documento(tipo=tipo, valor=digitos) if digitos else None
 
 def extrair_telefones(valor):
     telefones = []
     texto = _texto(valor)
-    for match in TELEFONE_BR.finditer(texto):
-        ddd = match.group(1)
-        numero = match.group(2) + match.group(3)
-        numero = re.sub(r"\D", "", numero)
+    # FONE/CELULAR identificam o papel. Cada token precisa ser um telefone
+    # completo; não procurar um trecho válido dentro de dígitos maiores/texto.
+    for parte in re.split(r'[;,/\r\n]+', texto):
+        match = TELEFONE_BR.fullmatch(parte.strip())
+        if match is None:
+            continue
+        ddd = match['ddd_parenteses'] or match['ddd'] or ''
+        if match['pais'] and not ddd:
+            continue
+        numero = match['inicio'] + match['fim']
         telefone = Telefone(ddd=ddd, numero=numero)
         if telefone not in telefones:
             telefones.append(telefone)
@@ -135,6 +152,8 @@ class CadastroPassaredo:
     desde: str = ""
     documentos: tuple[Documento, ...] = ()
     documentos_colunas: tuple[str, ...] = ()
+    documentos_rejeitados: tuple[str, ...] = ()
+    documentos_rejeitados_colunas: tuple[str, ...] = ()
     telefones_excedentes: tuple[Telefone, ...] = ()
     emails_excedentes: tuple[str, ...] = ()
     valores_originais: str = ""
@@ -186,12 +205,18 @@ class LeitorPassaredoCadastro:
             
             doc_raw = registro.get("CPF_CNPJ", registro.get("CPF/CNPJ", registro.get("CPF", "")))
             documentos, documentos_colunas = [], []
+            rejeitados, rejeitados_colunas = [], []
             for campo in ('CPF_CNPJ', 'CPF'):
                 valor = registro.get(campo)
                 documento = normalizar_documento(valor)
                 if documento is not None:
                     documentos.append(documento)
                     documentos_colunas.append(colunas[campo])
+                elif _texto(valor):
+                    # Conservar a representação recebida, sem atribuí-la como
+                    # documento a uma pessoa nem interromper as demais linhas.
+                    rejeitados.append(str(valor))
+                    rejeitados_colunas.append(colunas[campo])
             
             registros.append(CadastroPassaredo(
                 linha=linha, 
@@ -203,6 +228,8 @@ class LeitorPassaredoCadastro:
                 desde=_texto(registro.get("DESDE")),
                 documentos=tuple(documentos),
                 documentos_colunas=tuple(documentos_colunas),
+                documentos_rejeitados=tuple(rejeitados),
+                documentos_rejeitados_colunas=tuple(rejeitados_colunas),
                 telefones_excedentes=telefones[5:],
                 emails_excedentes=emails[3:],
                 valores_originais=json.dumps(registro, ensure_ascii=False, default=str),

@@ -186,7 +186,7 @@ def test_campo_dias_decimal_inteiro_nao_e_multiplicado_por_dez():
 def test_documento_invalido_continua_em_evidencia_e_nao_vai_para_excel(tmp_path):
     result=executar(tmp_path,cad=cadastro([ficha(documento='11111111111')]))
     assert saida(tmp_path)[1][2] is None
-    assert 'DOCUMENTO_INVALIDO' in result['decisoes'][0]['documento']['estado']
+    assert 'PASSAREDO_DOCUMENTO_INVALIDO_NAO_ATRIBUIDO' in result['decisoes'][0]['alertas_cadastrais']
 
 
 def test_modo_b_nao_atribui_cadastro_unico_a_responsaveis_diferentes(tmp_path):

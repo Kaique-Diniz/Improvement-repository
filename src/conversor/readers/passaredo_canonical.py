@@ -85,6 +85,12 @@ def ler_cadastro(conteudo, *, contexto):
         ressalvas.append(RessalvaLeitura(codigo='PASSAREDO_CADASTRO_ORIGINAL',
             gravidade='informativo', registro_id=u.id, origens=(fonte,),
             valores_originais=(registro.valores_originais,)))
+        if registro.documentos_rejeitados:
+            ressalvas.append(RessalvaLeitura(codigo='PASSAREDO_DOCUMENTO_INVALIDO_NAO_ATRIBUIDO',
+                registro_id=u.id,
+                origens=tuple(origem(digest, contexto, registro.linha, c)
+                    for c in registro.documentos_rejeitados_colunas),
+                valores_originais=registro.documentos_rejeitados))
         if registro.telefones_excedentes or registro.emails_excedentes:
             ressalvas.append(RessalvaLeitura(codigo='PASSAREDO_CONTATOS_EXCEDENTES_PRESERVADOS',
                 registro_id=u.id, origens=(fonte,), valores_originais=(registro.valores_originais,)))
