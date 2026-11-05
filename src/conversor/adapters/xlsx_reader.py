@@ -127,7 +127,7 @@ def ler_planilha(conteudo: bytes, *, arquivo_id: str, aba=None, cabecalho_linha=
             registros.append(registro)
 
         return LinhasXLSX(folha, tuple(colunas), tuple(registros))
-    finally2026:
+    finally:
         livro.close()
 
 def celula_data(valor):

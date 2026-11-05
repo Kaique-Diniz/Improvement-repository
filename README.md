@@ -1,12 +1,13 @@
 # Conversor Inteligente de Inadimplência — MVP local
 
-Aplicação web para **upload → reconhecimento → leitura → análise A/B → consulta → XLSX de teste**.
-Reutiliza os leitores Habita/FL/Cadastro, o núcleo determinístico 4.2 e o escritor
-universal existente. **Desenvolvimento e testes privados; não homologado para produção.**
-A solicitação mais recente priorizou esse fluxo funcional sobre os incrementos
-puramente documentais anteriores. Os registros abaixo dessa seção são históricos.
+O fluxo padrão é **upload → reconhecimento → leitura → regras existentes → Excel diagnóstico → download**, sem arquivo documental permanente.
+Execute `python -m conversor.web` (ou `conversor-web`) e defina a chave local na entrada oculta.
+O servidor escuta somente em `127.0.0.1`. [Instalação, retenção, limites e execução local](docs/MVP_EFEMERO_LOCAL.md).
+Não é homologado para cobrança, CRM ou exportação operacional. A frente Windows experimental permanece isolada e suspensa.
+Os módulos e testes de persistência abaixo são legados; suas funcionalidades não estão disponíveis no fluxo efêmero.
+O inicializador antigo requer agora a opção explícita `--legado-persistente`; instruções antigas com `--private-dir` não selecionam esse modo automaticamente.
 
-## Vínculos documentais persistentes — revisão local
+## Legado: vínculos documentais persistentes
 
 O ABROLHOS pode reutilizar vínculos individuais comprovados e aprovados pela
 interface **Vínculos de condomínios**, sem reenviar o template a cada análise.
