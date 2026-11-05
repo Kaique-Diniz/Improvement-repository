@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conversor local · Excel diagnóstico</title><link rel="stylesheet" href="/assets/efemero.css"></head>
+<body><main>
+<header><p class="eyebrow">CONVERSOR LOCAL</p><h1>Do relatório ao Excel,<br>sem guardar os documentos.</h1>
+<p>Reconhecimento e regras já aprovadas para uma conferência diagnóstica. Nenhuma cobrança ou exportação operacional é autorizada.</p></header>
+<section id="login-panel"><h2>Acesso local</h2><form id="login-form"><label for="key">Chave definida ao iniciar o servidor</label>
+<div class="inline"><input id="key" name="chave" type="password" required autocomplete="off" minlength="12" maxlength="128"><button>Entrar</button></div></form></section>
+<section id="conversion-panel" hidden><div class="section-title"><h2>Nova conversão</h2><button id="logout" class="quiet" type="button">Sair e descartar resultados</button></div>
+<form id="conversion-form"><div class="grid">
+<label class="wide">Relatório de inadimplência <span>PDF textual ou XLSX · até 20 MiB</span><input name="inadimplencia" type="file" accept=".pdf,.xlsx" required></label>
+<label>Cadastro da mesma conversão <span>PDF opcional · até 20 MiB</span><input name="cadastro" type="file" accept=".pdf"></label>
+<label>Referência documental <span>XLSX opcional · até 20 MiB</span><input name="referencia" type="file" accept=".xlsx"></label>
+<label>Data de referência<input name="data_ref" id="reference-date" type="date" required></label>
+<label>Modo<select name="modo"><option value="A">A — dívidas elegíveis</option><option value="B">B — inclui linhas cadastrais previstas</option></select></label>
+<label class="wide">Condomínio<select name="condominio" id="profile"><option value="auto">Reconhecer pelo documento</option></select></label>
+</div><p class="note">Sem vínculos ou documentos de conversões anteriores. Quando uma comprovação for necessária, envie-a nesta conversão; sem evidência, os bloqueios existentes permanecem.</p>
+<div class="actions"><button id="convert" type="submit">Converter em Excel diagnóstico</button><button id="demo" type="button" class="secondary">Experimentar exemplo sintético</button></div></form></section>
+<p id="status" role="status" aria-live="polite"></p>
+<section id="result" hidden><p class="eyebrow">CONVERSÃO CONCLUÍDA</p><h2 id="result-title"></h2><p id="result-summary"></p>
+<div class="actions"><button id="download" type="button">Baixar Excel diagnóstico</button><button id="discard" class="secondary" type="button">Descartar resultado</button></div>
+<p id="result-warning" class="note"></p></section>
+<footer><strong>Retenção limitada</strong><p>Os documentos e arquivos intermediários são descartados ao terminar o processamento. O Excel fica disponível na memória por até 15 minutos, até concluir seu download, ao descartar ou ao sair.</p>
+<p>Respostas e conversões em andamento precisam terminar ou falhar antes da liberação dos dados que utilizam. O encerramento normal limpa a área temporária; uma interrupção forçada pode deixar resíduos. Cópias salvas no navegador ou no computador são de sua responsabilidade.</p></footer>
+</main><script src="/assets/efemero.js" defer></script></body></html>
