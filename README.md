@@ -1,7 +1,7 @@
 # Conversor Inteligente de Inadimplência — MVP local
 
 O fluxo padrão é **upload → reconhecimento → leitura → regras existentes → Excel diagnóstico → download**, sem arquivo documental permanente.
-Execute `python -m conversor.web` (ou `conversor-web`) e defina a chave local na entrada oculta.
+Execute `python -m conversor.web` (ou `conversor-web`) sem senha manual. Abra `http://127.0.0.1:8000`: a sessão técnica é automática por navegador.
 O servidor escuta somente em `127.0.0.1`. [Instalação, retenção, limites e execução local](docs/MVP_EFEMERO_LOCAL.md).
 Não é homologado para cobrança, CRM ou exportação operacional. A frente Windows experimental permanece isolada e suspensa.
 Os módulos e testes de persistência abaixo são legados; suas funcionalidades não estão disponíveis no fluxo efêmero.

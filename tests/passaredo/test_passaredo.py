@@ -42,8 +42,9 @@ def test_layout_nao_prova_condominio_nem_codigo_do_nome_do_arquivo(monkeypatch):
     assert perfil['identificacao_diagnostica']=='condominio_informado_pelo_usuario'
     assert leitor=='passaredo_inadimplencia_xlsx_v1'
     monkeypatch.setitem(PERFIS['passaredo']['fontes_homologacao_sha256'],'inadimplencia',sha256(raw).hexdigest())
-    with pytest.raises(ErroLeitura, match='PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL'):
-        reconhecer(raw)
+    # UX-01: bytes homologados e estrutura válida agora comprovam o perfil.
+    assert reconhecer(raw)[0]['id']=='passaredo'
+    assert reconhecer(raw,perfil_informado='auto')[0]['identificacao_diagnostica']=='fonte_homologada_por_hash'
     assert reconhecer(raw,perfil_informado='passaredo')[0]['identificacao_diagnostica']=='fonte_homologada_por_hash'
 
 

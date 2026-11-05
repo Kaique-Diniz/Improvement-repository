@@ -116,15 +116,26 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
                 LeitorPassaredoCadastro().identificar(conteudo)
             else:
                 identificar_passaredo(conteudo)
-            perfil = PERFIS['passaredo']
             papel = 'cadastro' if cadastro else 'inadimplencia'
-            homologado = sha256(conteudo).hexdigest() == perfil['fontes_homologacao_sha256'][papel]
-            if perfil_informado != 'passaredo':
+            digest = sha256(conteudo).hexdigest()
+            conhecidos = [p for p in PERFIS.values()
+                if p.get('fontes_homologacao_sha256', {}).get(papel) == digest]
+            if len(conhecidos) > 1:
+                raise ErroLeitura('IDENTIDADE_DOCUMENTAL_CONFLITANTE')
+            conhecido = conhecidos[0] if conhecidos else None
+            if conhecido and perfil_informado not in (None, 'auto', conhecido['id']):
+                raise ErroLeitura('IDENTIDADE_DOCUMENTAL_CONFLITANTE')
+            escolhido = conhecido['id'] if conhecido else perfil_informado
+            # Novos perfis precisam de despacho próprio; nunca herdar o leitor
+            # Passaredo somente por coincidência de cabeçalho ou hash registrado.
+            if escolhido not in ('passaredo',):
+                if conhecido:
+                    raise ErroLeitura('PERFIL_TABULAR_AINDA_NAO_IMPLEMENTADO')
                 raise ErroLeitura('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL')
-            # As colunas reconhecem o layout; não provam sozinhas o condomínio.
-            # Sem cabeçalho de identidade, a seleção explícita é obrigatória,
-            # inclusive para bytes homologados. Hash não dispensa essa seleção.
-            # Nunca usar nome de arquivo ou código nele contido.
+            perfil = PERFIS[escolhido]
+            homologado = conhecido is not None
+            # O hash é prova dos bytes exatos, após a validação estrutural acima.
+            # Layout compartilhado e nome de arquivo não comprovam identidade.
             perfil = dict(perfil, identificacao_diagnostica=(
                 'fonte_homologada_por_hash' if homologado else 'condominio_informado_pelo_usuario'))
             return perfil, '', ('passaredo_cadastro_xlsx_v1' if cadastro else 'passaredo_inadimplencia_xlsx_v1')

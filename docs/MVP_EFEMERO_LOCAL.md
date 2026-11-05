@@ -15,7 +15,7 @@ python -m conversor.web --port 8000
 
 No PowerShell, ative com `.\.venv\Scripts\Activate.ps1`; os comandos Python são os mesmos. A validação desta entrega foi em Linux, incluindo Chromium; a execução Windows desta frente ainda requer validação própria.
 
-Defina uma chave de 12 a 128 caracteres na entrada oculta do terminal. Ela permanece na memória, não é exibida nem gravada pelo aplicativo. Para automação local, pode-se fornecer `CONVERSOR_CHAVE_LOCAL` pelo ambiente, sem colocar seu valor em logs ou argumentos. Abra `http://127.0.0.1:8000`, autentique-se e envie o relatório. Há um exemplo inteiramente sintético na própria tela. Não existe opção de host público no inicializador padrão.
+Abra `http://127.0.0.1:8000`. A interface clássica inicia com sessão técnica automática por navegador, sem senha, prompt ou variável CONVERSOR_CHAVE_LOCAL. Origem, Host e token CSRF administrado pelo próprio cliente protegem a API; não há opção de host público neste modo. Os detalhes estão em `docs/UX_01_CLASSICO_LOCAL.md`.
 
 `python -m conversor.web.ephemeral` é uma entrada equivalente. A aplicação antiga continua importável pelos testes; seu inicializador só pode ser usado explicitamente com `--legado-persistente` e não faz parte do contrato efêmero. Não use esse modo para a nova entrega.
 
@@ -25,7 +25,7 @@ Defina uma chave de 12 a 128 caracteres na entrada oculta do terminal. Ela perma
 - Cadastro PDF/XLSX e referência XLSX opcionais: evidência somente desta conversão, até 20 MiB cada. O sondador rejeita conteúdo inválido/protegido, macros, links externos e limites estruturais nos três papéis antes de converter.
 - Campos A/B, data e condomínio usam o contrato existente. O reconhecimento não usa nome de arquivo como comprovação.
 - Leitores, elegibilidade, valores, vencimentos, composições, IDs, hashes de proveniência e escritor de 30 colunas permanecem os mesmos. A única alteração no serviço é a leitura UTF-8 explícita da configuração versionada; também foi corrigido o erro sintático `finally2026:` da main para permitir importar o leitor XLSX.
-- Não são carregados inventários/fontes anteriores, cadastro de endereços do usuário ou repositório de vínculos persistentes. Não há criação de novos vínculos operacionais. Quando as regras exigem referência documental (por exemplo, ABROLHOS), ela precisa ser fornecida novamente; sem prova, o bloqueio original é preservado.
+- Não são carregados inventários/fontes anteriores nem repositório de vínculos persistentes. Na UX-01, o endereço administrativo pode ser configurado somente na sessão e aplicado ao condomínio efetivamente identificado. Não há criação de novos vínculos operacionais. Quando as regras exigem referência documental (por exemplo, ABROLHOS), ela precisa ser fornecida novamente; sem prova, o bloqueio original é preservado.
 - O Excel permanece diagnóstico: `DIAGNOSTICO_NAO_IMPORTAR.xlsx`. Cobrança, CRM e exportação operacional continuam bloqueados. Planos/HMAC/recibos não são criados ou modificados.
 
 ## Retenção e descarte

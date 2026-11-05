@@ -16,7 +16,7 @@ A coluna AA mantém o literal `NM_DIVIDA_CEDENTE`, sem espaço final. O template
 
 ## Identificação e validação
 
-As colunas reconhecem o layout XLSX, mas não comprovam o condomínio. Sem identificação interna, selecionar explicitamente **AUTO GESTÃO · CONDOMÍNIO PASSAREDO** é obrigatório, inclusive para arquivos com hash conhecido. O hash registra a evidência; não substitui a seleção.
+As colunas reconhecem o layout XLSX, mas não comprovam o condomínio. Na UX-01, bytes exatos da fonte homologada, após validação estrutural, permitem reconhecimento automático por SHA-256. Arquivos novos com layout compartilhado exigem confirmação explícita de **AUTO GESTÃO · CONDOMÍNIO PASSAREDO**; nome de arquivo não comprova identidade. Conflito com uma identidade conhecida bloqueia a associação. Essa decisão posterior substitui a seleção manual obrigatória do baseline, sem alterar a régua ou o cadastro A1.
 
 A seleção também não substitui a validação do arquivo. A aba Sheet1, os cabeçalhos, a contagem de itens, o fechamento Gerado em e a ausência de fórmulas/abas inesperadas continuam obrigatórios. O sondador mantém limites e rejeição de documentos inseguros, macros e links externos. Não há reconhecimento baseado no nome de arquivo.
 
