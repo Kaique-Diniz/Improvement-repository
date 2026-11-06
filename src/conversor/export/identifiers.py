@@ -8,6 +8,7 @@ from conversor.domain.base import Hash, Id, Modelo, Texto
 from conversor.domain.canonical import Endereco, Unidade
 from conversor.domain.forest_hill import complemento_unidade
 from conversor.domain.oma import complemento_unidade as complemento_oma
+from conversor.domain.itajuba import complemento_unidade as complemento_itajuba, TORRES as TORRES_ITAJUBA
 from conversor.readers.text_support import ErroLeitura
 
 POLITICA_ENDERECO_CONDOMINIO = 'endereco_condominio_prioritario@2'
@@ -76,7 +77,7 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
-    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental', 'oma_documental'] = 'torre_unidade'
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental', 'oma_documental', 'itajuba_documental'] = 'torre_unidade'
     formatos_unidade: tuple[FormatoTipoUnidade, ...] = ()
     sufixo_cedente: Texto | None = None
     rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
@@ -85,6 +86,11 @@ class PerfilIdentificadores(Modelo):
 
     @model_validator(mode='after')
     def mapa_explicito(self):
+        if self.codificador == 'itajuba_documental':
+            if (self.torres!=TORRES_ITAJUBA or self.formatos_unidade or self.sufixo_cedente!='CONDOMINIO ITAJUBA'
+                    or self.administradora_id!='bn_planner' or self.condominio_id!='condominio_itajuba' or self.largura_unidade!=4):
+                raise ValueError('ITAJUBA_PERFIL_DOCUMENTAL_INCOMPATIVEL')
+            return self
         if self.codificador == 'oma_documental':
             if (self.torres or self.formatos_unidade or self.sufixo_cedente != 'PARQUE SANTA MONICA'
                     or self.condominio_id != 'condominio_parque_santa_monica' or self.administradora_id != 'oma'):
@@ -124,6 +130,10 @@ class PerfilIdentificadores(Modelo):
         if (administradora_id, unidade.administradora_id, unidade.condominio_id) != (
                 self.administradora_id, self.administradora_id, self.condominio_id):
             raise ErroLeitura('PERFIL_IDENTIFICADORES_DE_OUTRO_CONDOMINIO')
+        if self.codificador == 'itajuba_documental':
+            try:complemento=complemento_itajuba(unidade.bloco_original,unidade.unidade_original)
+            except ValueError:raise ErroLeitura('UNIDADE_SEM_CODIFICACAO_DOCUMENTAL')from None
+            return f'{complemento}-{self.sufixo_cedente}',complemento
         if self.codificador == 'oma_documental':
             try:
                 complemento = complemento_oma(unidade.bloco_original, unidade.unidade_original)

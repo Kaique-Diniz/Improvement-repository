@@ -61,6 +61,10 @@ from conversor.readers.oma_xlsx import LeitorOMAXLSX, CABECALHO as CABECALHO_OMA
 from conversor.readers.oma_cadastro import LeitorCadastroOMA, ALIAS as ALIAS_CADASTRO_OMA
 from conversor.readers.oma_identity import reconhecer_oma
 from conversor.application.oma_cadastro import associar as associar_oma
+from conversor.readers.itajuba_pdf import LeitorItajubaPDF, originais as originais_itajuba
+from conversor.readers.itajuba_cadastro import LeitorCadastroItajuba, CABECALHO as CABECALHO_ITAJUBA
+from conversor.readers.itajuba_identity import reconhecer_itajuba
+from conversor.application.itajuba import associar as associar_itajuba, rotulo as rotulo_itajuba
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
@@ -73,7 +77,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica', 'itajuba'] = 'auto'
 
 
 def normalizar(s):
@@ -115,6 +119,12 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
             perfil=_perfil_bbz(codigo,identificacao['nome'],repositorio_identidades)
             return perfil,codigo,LeitorCadastroBBZ.formato_id
     sonda = SondadorLocal().sondar(conteudo, arquivo_id='upload')
+    if ((not cadastro and sonda.tipo == 'pdf_texto' and (perfil_informado == 'itajuba' or any(
+            'Lista de Ctas a Receber' in f.texto for f in sonda.fragmentos[:1])))
+            or (cadastro and sonda.tipo == 'xlsx' and (perfil_informado == 'itajuba' or any(
+                tuple(c.strip() for c in linha.split('\t')) == CABECALHO_ITAJUBA
+                for f in sonda.fragmentos for linha in f.texto.splitlines())))):
+        return reconhecer_itajuba(conteudo, PERFIS, cadastro=cadastro, escolha=perfil_informado)
     if sonda.tipo == 'xlsx' and sonda.completo and not sonda.bloqueios and sonda.fragmentos:
         primeira = sonda.fragmentos[0].texto.splitlines()
         campos = {cabecalho_normalizado(c) for c in primeira[0].split('\t')} if primeira else set()
@@ -176,6 +186,11 @@ def ler(conteudo, perfil, codigo, leitor, papel):
     fonte = FonteProtegida(arquivo_id=papel, sha256=sha256(conteudo).hexdigest())
     ctx = ContextoLeitura(perfil['condominio_id'], perfil['administradora_id'], leitor,
                          papel, codigo, leitor_versao=leitor + '@1')
+    if perfil['familia'] == 'bn_planner':
+        parser = LeitorCadastroItajuba() if papel == 'cadastro' else LeitorItajubaPDF()
+        if leitor != parser.formato_id:
+            raise ErroLeitura('ITAJUBA_LEITOR_DE_OUTRO_PAPEL')
+        return parser.ler(conteudo, contexto=ctx), ctx
     if perfil['familia'] == 'oma':
         esperado = LeitorCadastroOMA.formato_id if papel == 'cadastro' else LeitorOMAXLSX.formato_id
         if leitor != esperado:
@@ -358,6 +373,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         raise ErroLeitura('SELECAO_DIVERGENTE_DO_CABECALHO')
     progresso('Extraindo unidades, cotas e composições')
     lote, ctx = ler(conteudo, perfil, codigo, leitor, 'inadimplencia')
+    dados_itajuba = originais_itajuba(lote) if perfil['familia'] == 'bn_planner' else {}
     lote_extraido = lote if perfil['familia'] == 'bbz' else None
     descricoes_recibos = {}
     if perfil['familia'] == 'bbz':
@@ -416,7 +432,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True,
-            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma') else None)
+            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma', 'bn_planner') else None)
         mesmo_codigo = (codigo_origem_bbz(cc) == codigo_origem_bbz(codigo)) if perfil['familia']=='bbz' else cc == codigo
         if pc['id'] != perfil['id'] or not mesmo_codigo:
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
@@ -451,7 +467,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if escopo_destino and snapshot_vinculos:
                 lote,cadastro_bbz=reter_associacoes_persistentes(lote,cadastro_bbz,
                     retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo))
-        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma'):
+        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma', 'bn_planner'):
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     pessoas_passaredo, resumo_passaredo, originais_passaredo, revisao_passaredo = {}, None, {}, []
@@ -466,6 +482,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         resumo_passaredo['dias_informados_divergentes'] = len(divergencias_dias)
     if perfil['familia'] == 'oma':
         lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_oma(lote, cad)
+    if perfil['familia'] == 'bn_planner':
+        lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_itajuba(lote, cad)
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
     if escopo_destino and snapshot_vinculos:
         escopo_destino=escopo_destino.model_copy(update={'cadastro_revisao':snapshot_vinculos.revisao,
@@ -501,7 +519,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
-    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma', 'bn_planner') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
         if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
@@ -596,10 +614,15 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
             'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
-        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma'):
+        if dados_itajuba:
+            original_itajuba = dados_itajuba[b.id]
+            decisoes[-1]['documento_financeiro_original'] = original_itajuba['documento']
+            decisoes[-1]['evidencia_documental_itajuba'] = {k:original_itajuba[k] for k in
+                ('tipo','responsavel','inquilino','papel_inquilino','acordo','ordem','ocorrencia')}
+        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma', 'bn_planner'):
             decisoes[-1]['alertas_cadastrais'] = sorted(set(decisoes[-1]['alertas_cadastrais'] + [
                 r.codigo for r in lote.ressalvas if r.registro_id in (b.id, u.id)
-                and r.codigo.startswith(('PASSAREDO_','OMA_')) and r.gravidade != 'informativo']))
+                and r.codigo.startswith(('PASSAREDO_','OMA_','ITAJUBA_')) and r.gravidade != 'informativo']))
         if escopo_destino and repositorio_vinculos:
             membro=next(m for m in escopo_destino.unidades if m.unidade_id==u.id)
             decisoes[-1]['vinculo_destino']=membro.model_dump(mode='json')
@@ -657,7 +680,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 parcela_final = parcela
             nome_divida = boleto.identificador
             base_rotulo = 'identificador_origem'
-            if boleto.id in originais_passaredo:
+            if boleto.id in dados_itajuba:
+                nome_divida = rotulo_itajuba(dados_itajuba[boleto.id], boleto.vencimento, parcela_final)
+                base_rotulo = 'tipo_documental_itajuba_vencimento_apresentacao'
+            elif boleto.id in originais_passaredo:
                 base_rotulo = 'descricao_original_passaredo'
                 nome_divida = originais_passaredo[boleto.id]['descricao']
                 if perfil['id'] == 'forest_hill':
@@ -686,10 +712,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 linhas_info.append({'tipo': 'divida', 'unidade_id': u.id, 'boleto_id': boleto.id})
         cadastral_inequivoca = (perfil['familia'] not in ('passaredo', 'forest_hill') or len({
             originais_passaredo[b.id]['responsavel'] for b in boletos_por_id.values()}) == 1)
+        if dados_itajuba:
+            cadastral_inequivoca = len({dados_itajuba[b.id]['responsavel'] for b in boletos_por_id.values()}) == 1
         if pedido.modo == 'B' and any(d['situacao_financeira'] == 'excluido' for d in ds):
             pendencias = [m for d in ds if d['situacao'] == 'revisao' for m in d['bloqueios']]
             if not cadastral_inequivoca:
-                pendencias.append('PASSAREDO_RESPONSAVEIS_DISTINTOS_LINHA_CADASTRAL_RETIDA')
+                pendencias.append('ITAJUBA_RESPONSAVEIS_DISTINTOS_LINHA_CADASTRAL_RETIDA' if dados_itajuba else 'PASSAREDO_RESPONSAVEIS_DISTINTOS_LINHA_CADASTRAL_RETIDA')
             if any(d['situacao'] == 'revisao' and not d['bloqueios'] for d in ds):
                 pendencias.append('CONDICAO_INDETERMINADA')
             prever('cadastral', u, base, bloqueios=pendencias)

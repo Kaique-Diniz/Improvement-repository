@@ -310,5 +310,34 @@
       "dividas": "AA2:AD2641; apresentação do vencimento, parcela e valor original"
     }
   }
+},
+{
+  "id": "itajuba_unidade_documentada",
+  "versao": "1.0.0",
+  "uso": "diagnostico_nao_operacional",
+  "administradora_id": "bn_planner",
+  "condominio_id": "condominio_itajuba",
+  "nome_cedente": "BN PLANNER",
+  "produto": "CONDOMINIO ITAJUBA",
+  "largura_unidade": 4,
+  "torres": {
+    "T-01": "T01",
+    "T-02": "T02",
+    "T-03": "T03",
+    "T-04": "T04",
+    "T-05": "T05"
+  },
+  "codificador": "itajuba_documental",
+  "sufixo_cedente": "CONDOMINIO ITAJUBA",
+  "evidencia": {
+    "arquivo": "referencia_documental_itajuba_template",
+    "sha256": "7d07b9b4b73495428c1df32b3460002e78c6e1cb394be9b7275f88e9086fd5c3",
+    "aba": "Dados",
+    "celulas": {
+      "identidade": "A2:B3785; G2:G3785; Y2:Z3785",
+      "descricao_parcela": "AA2:AB3785; classificação documental e parcela, sem corrigir a fonte pelo histórico",
+      "financeiro": "AC2:AD3785; vencimento e total original"
+    }
+  }
 }
 ]

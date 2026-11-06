@@ -350,5 +350,43 @@
     "Modo B mantém no máximo uma linha cadastral adicional por unidade; não reproduz duplicações históricas.",
     "Mês/ano do rótulo é apresentação do vencimento, sem competência inferida. Cadastro antigo exige nome/unidade e documentos validados."
   ]
+},
+{
+  "id": "itajuba",
+  "condominio_id": "condominio_itajuba",
+  "administradora_id": "bn_planner",
+  "nome": "CONDOMINIO ITAJUBA",
+  "administradora": "BN PLANNER",
+  "familia": "bn_planner",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "CONDOMINIO ITAJUBA"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "itajuba_prazo_30_provisorio",
+  "dias": 30,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "9a53a4bacc31c07bcfb60745789183f759dbde4e29aa65036058076dbd89346e",
+    "cadastro": "969989cd7072baf839d95499abe0cadf1ef0cd2a5d1b2bc3c9ff471f891613fc"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_E438_extrajudicial",
+    "linha": 438
+  },
+  "ressalvas": [
+    "Somente diagnóstico: atraso estritamente superior a 30 dias corridos. Inclusividade e vigência operacional pendentes. Judicial suspenso; não criar fluxo judicial.",
+    "Escopo documental a partir de dezembro/2023: vencimentos anteriores exigem revisão e não são encaminhados silenciosamente. Competência e responsabilidade da garantidora não são inferidas.",
+    "Cada linha e cada ocorrência são preservadas, inclusive documentos repetidos e multiplicidades financeiras. Total original é Tx Cond + Outros, sem encargos externos.",
+    "Cadastro opcional por responsável de cada lançamento, com política A1. Inquilino e marcador de acordo são evidências distintas; não presumem titularidade nem exclusão financeira.",
+    "Cadastro XLSX sem nome interno exige hash homologado; seleção ou nome de arquivo não comprovam identidade. Inad Prop não gera boletos. Exportação operacional indisponível."
+  ]
 }
 ]
