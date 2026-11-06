@@ -32,7 +32,7 @@ from conversor.application.bbz_cadastro import reter_associacoes_persistentes
 from conversor.application.document_links import resolver_vinculos, registrar_conflitos, retencoes_do_snapshot
 from conversor.application.grouped_diagnostics import projetar_cotas
 from conversor.application.reading import resultado_leitura
-from conversor.application.passaredo_cadastro import associar as associar_passaredo, POLITICA as POLITICA_PASSAREDO
+from conversor.application.passaredo_cadastro import associar as associar_passaredo
 from conversor.domain.audit_identity import ReconciliacaoOcorrencias
 from conversor.domain.base import Data, Modelo
 from conversor.domain.billing_evaluation import CoberturaApontamentos, EntradaSimulacao
@@ -797,7 +797,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'arquivo_teste_disponivel': bool(linhas) and validacao['estado'] != 'erro_critico',
         'validacao_conversao': validacao, 'comparacao': None}
     if resumo_passaredo is not None:
-        resultado['politica_cadastral'] = POLITICA_PASSAREDO
+        resultado['politica_cadastral'] = resumo_passaredo['politica']
         chave_cadastro = 'cadastro_' + perfil['id']
         resultado[chave_cadastro] = manifesto[chave_cadastro] = resumo_passaredo
         resultado['revisao_cadastral_' + perfil['id']] = revisao_passaredo
