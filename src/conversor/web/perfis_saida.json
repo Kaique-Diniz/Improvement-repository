@@ -310,5 +310,27 @@
       "dividas": "AA2:AD2641; apresentação do vencimento, parcela e valor original"
     }
   }
+},
+{
+  "id": "beach_parque_documental",
+  "versao": "1.0.0",
+  "uso": "diagnostico_nao_operacional",
+  "administradora_id": "habitacional",
+  "condominio_id": "condominio_terraco_beach_parque",
+  "nome_cedente": "HABITACIONAL",
+  "produto": "TERRAÇO BEACH PARQUE",
+  "largura_unidade": 5,
+  "torres": {},
+  "codificador": "beach_parque_documental",
+  "sufixo_cedente": "TERRAÇO BEACH PARQUE",
+  "evidencia": {
+    "arquivo": "referencia_documental_beach_parque_template",
+    "sha256": "028e987ef0e657a75cf7e40a2096e2d8e5971377189c3186c3c2b5f76fef1a52",
+    "aba": "Dados",
+    "celulas": {
+      "identidade": "A2:B851; G2:G851; Y2:Z851",
+      "descricao": "AA2:AB851; histórico e apresentação documentada do vencimento"
+    }
+  }
 }
 ]

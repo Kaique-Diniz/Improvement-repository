@@ -76,7 +76,7 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
-    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental', 'oma_documental'] = 'torre_unidade'
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental', 'oma_documental', 'beach_parque_documental'] = 'torre_unidade'
     formatos_unidade: tuple[FormatoTipoUnidade, ...] = ()
     sufixo_cedente: Texto | None = None
     rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
@@ -85,6 +85,11 @@ class PerfilIdentificadores(Modelo):
 
     @model_validator(mode='after')
     def mapa_explicito(self):
+        if self.codificador == 'beach_parque_documental':
+            if (self.torres or self.formatos_unidade or self.sufixo_cedente != 'TERRAÇO BEACH PARQUE'
+                    or self.condominio_id != 'condominio_terraco_beach_parque' or self.administradora_id != 'habitacional'):
+                raise ValueError('BPQ_PERFIL_DOCUMENTAL_INCOMPATIVEL')
+            return self
         if self.codificador == 'oma_documental':
             if (self.torres or self.formatos_unidade or self.sufixo_cedente != 'PARQUE SANTA MONICA'
                     or self.condominio_id != 'condominio_parque_santa_monica' or self.administradora_id != 'oma'):
@@ -124,6 +129,13 @@ class PerfilIdentificadores(Modelo):
         if (administradora_id, unidade.administradora_id, unidade.condominio_id) != (
                 self.administradora_id, self.administradora_id, self.condominio_id):
             raise ErroLeitura('PERFIL_IDENTIFICADORES_DE_OUTRO_CONDOMINIO')
+        if self.codificador == 'beach_parque_documental':
+            from conversor.domain.beach_parque import complemento_unidade as complemento_bpq
+            try:
+                complemento = complemento_bpq(unidade.bloco_original, unidade.unidade_original)
+            except ValueError:
+                raise ErroLeitura('UNIDADE_SEM_CODIFICACAO_DOCUMENTAL') from None
+            return f'{complemento}-{self.sufixo_cedente}', complemento
         if self.codificador == 'oma_documental':
             try:
                 complemento = complemento_oma(unidade.bloco_original, unidade.unidade_original)

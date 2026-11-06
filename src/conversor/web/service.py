@@ -61,6 +61,11 @@ from conversor.readers.oma_xlsx import LeitorOMAXLSX, CABECALHO as CABECALHO_OMA
 from conversor.readers.oma_cadastro import LeitorCadastroOMA, ALIAS as ALIAS_CADASTRO_OMA
 from conversor.readers.oma_identity import reconhecer_oma
 from conversor.application.oma_cadastro import associar as associar_oma
+from conversor.readers.beach_parque_xlsx import LeitorBeachParqueXLSX, originais as originais_beach
+from conversor.readers.beach_parque_cadastro import LeitorCadastroBeachParque, identificar as identificar_cadastro_beach
+from conversor.readers.beach_parque_identity import reconhecer_beach
+from conversor.application.beach_parque_cadastro import associar as associar_beach
+from conversor.domain.beach_parque import rotulo_descricao as rotulo_beach
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
@@ -73,7 +78,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica', 'terraco_beach_parque'] = 'auto'
 
 
 def normalizar(s):
@@ -103,6 +108,10 @@ def _perfil_bbz(codigo,nome,repositorio_identidades=None):
 
 def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil_informado=None):
     if cadastro and conteudo.startswith(b'%PDF-'):
+        # A família própria valida também a geometria particular do cabeçalho.
+        if perfil_informado == 'terraco_beach_parque' or sha256(conteudo).hexdigest() == PERFIS['terraco_beach_parque']['fontes_homologacao_sha256']['cadastro']:
+            identificacao = identificar_cadastro_beach(conteudo)
+            return reconhecer_beach(conteudo, PERFIS, cadastro=True, escolha=perfil_informado, identidade_pdf=identificacao)
         try:
             identificacao=identificar_cadastro_bbz(conteudo)
         except ErroLeitura as erro:
@@ -128,6 +137,8 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
         if estrutura_oma or perfil_informado == 'parque_santa_monica':
             return reconhecer_oma(conteudo, PERFIS, escolha=perfil_informado)
         codigo,nome = identificar_bbz(conteudo)
+        if codigo == '3075' or normalizar(nome) == normalizar('TERRAÇO BEACH PARQUE') or perfil_informado == 'terraco_beach_parque':
+            return reconhecer_beach(conteudo, PERFIS, escolha=perfil_informado)
         perfil=_perfil_bbz(codigo,nome,repositorio_identidades)
         return perfil,codigo,LeitorBBZXLSX.formato_id
     if sonda.tipo != 'pdf_texto' or sonda.bloqueios or not sonda.completo:
@@ -176,6 +187,11 @@ def ler(conteudo, perfil, codigo, leitor, papel):
     fonte = FonteProtegida(arquivo_id=papel, sha256=sha256(conteudo).hexdigest())
     ctx = ContextoLeitura(perfil['condominio_id'], perfil['administradora_id'], leitor,
                          papel, codigo, leitor_versao=leitor + '@1')
+    if perfil['familia'] == 'habitacional_beach':
+        parser = LeitorCadastroBeachParque() if papel == 'cadastro' else LeitorBeachParqueXLSX()
+        if leitor != parser.formato_id:
+            raise ErroLeitura('BPQ_LEITOR_DE_OUTRO_PAPEL')
+        return parser.ler(conteudo, contexto=ctx), ctx
     if perfil['familia'] == 'oma':
         esperado = LeitorCadastroOMA.formato_id if papel == 'cadastro' else LeitorOMAXLSX.formato_id
         if leitor != esperado:
@@ -416,7 +432,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True,
-            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma') else None)
+            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma', 'habitacional_beach') else None)
         mesmo_codigo = (codigo_origem_bbz(cc) == codigo_origem_bbz(codigo)) if perfil['familia']=='bbz' else cc == codigo
         if pc['id'] != perfil['id'] or not mesmo_codigo:
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
@@ -451,7 +467,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if escopo_destino and snapshot_vinculos:
                 lote,cadastro_bbz=reter_associacoes_persistentes(lote,cadastro_bbz,
                     retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo))
-        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma'):
+        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma', 'habitacional_beach'):
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     pessoas_passaredo, resumo_passaredo, originais_passaredo, revisao_passaredo = {}, None, {}, []
@@ -466,6 +482,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         resumo_passaredo['dias_informados_divergentes'] = len(divergencias_dias)
     if perfil['familia'] == 'oma':
         lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_oma(lote, cad)
+    dados_beach = {}
+    if perfil['familia'] == 'habitacional_beach':
+        lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_beach(lote, cad)
+        dados_beach = originais_beach(lote)
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
     if escopo_destino and snapshot_vinculos:
         escopo_destino=escopo_destino.model_copy(update={'cadastro_revisao':snapshot_vinculos.revisao,
@@ -501,7 +521,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
-    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma', 'habitacional_beach') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
         if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
@@ -596,10 +616,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
             'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
-        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma'):
+        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma', 'habitacional_beach'):
             decisoes[-1]['alertas_cadastrais'] = sorted(set(decisoes[-1]['alertas_cadastrais'] + [
                 r.codigo for r in lote.ressalvas if r.registro_id in (b.id, u.id)
-                and r.codigo.startswith(('PASSAREDO_','OMA_')) and r.gravidade != 'informativo']))
+                and r.codigo.startswith(('PASSAREDO_','OMA_','BPQ_')) and r.gravidade != 'informativo']))
+        if b.id in dados_beach:
+            decisoes[-1]['recibo_original'] = dados_beach[b.id]['recibo_original']
         if escopo_destino and repositorio_vinculos:
             membro=next(m for m in escopo_destino.unidades if m.unidade_id==u.id)
             decisoes[-1]['vinculo_destino']=membro.model_dump(mode='json')
@@ -657,7 +679,11 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
                 parcela_final = parcela
             nome_divida = boleto.identificador
             base_rotulo = 'identificador_origem'
-            if boleto.id in originais_passaredo:
+            if boleto.id in dados_beach:
+                base_rotulo = 'historico_original_beach_parque'
+                nome_divida, com_mes = rotulo_beach(dados_beach[boleto.id]['componentes'][0]['historico'], boleto.vencimento, parcela_final)
+                if com_mes: base_rotulo += '_vencimento_apresentacao'
+            elif boleto.id in originais_passaredo:
                 base_rotulo = 'descricao_original_passaredo'
                 nome_divida = originais_passaredo[boleto.id]['descricao']
                 if perfil['id'] == 'forest_hill':

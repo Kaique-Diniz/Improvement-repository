@@ -350,5 +350,42 @@
     "Modo B mantém no máximo uma linha cadastral adicional por unidade; não reproduz duplicações históricas.",
     "Mês/ano do rótulo é apresentação do vencimento, sem competência inferida. Cadastro antigo exige nome/unidade e documentos validados."
   ]
+},
+{
+  "id": "terraco_beach_parque",
+  "condominio_id": "condominio_terraco_beach_parque",
+  "administradora_id": "habitacional",
+  "nome": "TERRAÇO BEACH PARQUE",
+  "administradora": "HABITACIONAL",
+  "familia": "habitacional_beach",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "TERRAÇO BEACH PARQUE"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "bpq_prazo_30_provisorio",
+  "dias": 30,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "7624f6d8371b83d71ea876fa53c25583c2060e3196dcfe1fd5199d378c50a4b0",
+    "cadastro": "48ce080932e90bba989bcb1e9539a54c2c14b9874fa719fcf932ad24de9f855a"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_linha570_extrajudicial",
+    "linha": 570
+  },
+  "ressalvas": [
+    "Diagnóstico provisório: atraso > 30 dias corridos. Inclusividade e vigência operacional pendentes. Judicial 60 dias não acrescenta filtro; não enviar cartas.",
+    "3075 interno e 2811 no nome de arquivo não comprovam equivalência nem código de destino.",
+    "Cadastro de 2025 exige nome/unidade e documento válido do titular; pagador e locatário não comprovam titularidade. Restrições exigem revisão humana, sem ação de contato.",
+    "Mês/ano nos rótulos documentados é apresentação, sem competência inferida. Sem persistência pessoal ou exportação operacional."
+  ]
 }
 ]
