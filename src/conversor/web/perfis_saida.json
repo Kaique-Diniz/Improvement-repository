@@ -287,5 +287,28 @@
       "rotulos": "AA2:AB1626; descrição e parcela; mês/ano do vencimento nos padrões documentados."
     }
   }
+},
+{
+  "id": "oma_parque_santa_monica_documental",
+  "versao": "1.0.0",
+  "uso": "diagnostico_nao_operacional",
+  "administradora_id": "oma",
+  "condominio_id": "condominio_parque_santa_monica",
+  "nome_cedente": "OMA",
+  "produto": "PARQUE SANTA MONICA",
+  "largura_unidade": 4,
+  "torres": {},
+  "codificador": "oma_documental",
+  "sufixo_cedente": "PARQUE SANTA MONICA",
+  "rotulo_divida": "vencimento_apresentacao",
+  "evidencia": {
+    "arquivo": "referencia_documental_parque_santa_monica_template",
+    "sha256": "bbdf44bb9bd6ece2c271e15e9562f8c284dce600794eb8ef7a4c5ff4d73d7476",
+    "aba": "Dados",
+    "celulas": {
+      "identidade": "A2:B2641; G2:G2641; Y2:Z2641",
+      "dividas": "AA2:AD2641; apresentação do vencimento, parcela e valor original"
+    }
+  }
 }
 ]

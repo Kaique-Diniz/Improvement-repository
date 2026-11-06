@@ -312,5 +312,43 @@
     "Cadastro opcional: documentos e contatos exigem nome e unidade concordantes, com validações A1. Divergência e multiplicidade retêm a associação, sem excluir dívidas elegíveis.",
     "Mês/ano em rótulos comprovados é apresentação do vencimento, sem atribuição de competência. Sem exportação operacional ou vínculos permanentes."
   ]
+},
+{
+  "id": "parque_santa_monica",
+  "condominio_id": "condominio_parque_santa_monica",
+  "administradora_id": "oma",
+  "nome": "PARQUE SANTA MONICA",
+  "administradora": "OMA",
+  "familia": "oma",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "PARQUE SANTA MONICA",
+    "COND. EDIF. PQ RESIDENCIAL SANTA MONICA"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "oma_prazo_60_provisorio",
+  "dias": 60,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "24a37c493aad7ffc3929970689e6e2238c5be12796913992b9db2b15117efce7",
+    "cadastro": "4ce1de1d299af6e608d671ba471ea89243de695fbe16a83d5cf2425a90e03c2d"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_linha242_extrajudicial",
+    "linha": 242
+  },
+  "ressalvas": [
+    "Somente diagnóstico. Atraso > 60 dias corridos é provisório; inclusividade e vigência operacional pendentes. Judicial 90 dias não acrescenta filtro.",
+    "3067 no nome de arquivo e 0566 no cadastro são códigos de origem distintos, não códigos de destino.",
+    "Modo B mantém no máximo uma linha cadastral adicional por unidade; não reproduz duplicações históricas.",
+    "Mês/ano do rótulo é apresentação do vencimento, sem competência inferida. Cadastro antigo exige nome/unidade e documentos validados."
+  ]
 }
 ]

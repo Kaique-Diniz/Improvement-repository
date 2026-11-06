@@ -57,6 +57,10 @@ from conversor.readers.passaredo_cadastro import CAMPOS_OBRIGATORIOS as CAMPOS_P
 from conversor.readers.passaredo_canonical import lancamentos_originais
 from conversor.domain.forest_hill import rotulo_descricao as rotulo_forest_hill
 from conversor.readers.auto_gestao_identity import reconhecer_tabular, ler_tabular, PERFIS_TABULARES
+from conversor.readers.oma_xlsx import LeitorOMAXLSX, CABECALHO as CABECALHO_OMA
+from conversor.readers.oma_cadastro import LeitorCadastroOMA, ALIAS as ALIAS_CADASTRO_OMA
+from conversor.readers.oma_identity import reconhecer_oma
+from conversor.application.oma_cadastro import associar as associar_oma
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
@@ -69,7 +73,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica'] = 'auto'
 
 
 def normalizar(s):
@@ -104,6 +108,9 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
         except ErroLeitura as erro:
             if erro.codigo!='FORMATO_DESCONHECIDO':raise
         else:
+            if (identificacao['nome'] == ALIAS_CADASTRO_OMA or perfil_informado == 'parque_santa_monica' or
+                    sha256(conteudo).hexdigest() == PERFIS['parque_santa_monica']['fontes_homologacao_sha256']['cadastro']):
+                return reconhecer_oma(conteudo, PERFIS, cadastro=True, escolha=perfil_informado, identidade_pdf=identificacao)
             codigo=identificacao['codigo']
             perfil=_perfil_bbz(codigo,identificacao['nome'],repositorio_identidades)
             return perfil,codigo,LeitorCadastroBBZ.formato_id
@@ -116,6 +123,10 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
         if set(CAMPOS_PASSAREDO if cadastro else COLUNAS_PASSAREDO) <= campos:
             return reconhecer_tabular(conteudo, PERFIS, cadastro=cadastro, escolha=perfil_informado)
     if sonda.tipo == 'xlsx' and not cadastro:
+        estrutura_oma = any(tuple(c.strip() for c in linha.split('\t')) == CABECALHO_OMA
+            for f in sonda.fragmentos for linha in f.texto.splitlines())
+        if estrutura_oma or perfil_informado == 'parque_santa_monica':
+            return reconhecer_oma(conteudo, PERFIS, escolha=perfil_informado)
         codigo,nome = identificar_bbz(conteudo)
         perfil=_perfil_bbz(codigo,nome,repositorio_identidades)
         return perfil,codigo,LeitorBBZXLSX.formato_id
@@ -165,6 +176,12 @@ def ler(conteudo, perfil, codigo, leitor, papel):
     fonte = FonteProtegida(arquivo_id=papel, sha256=sha256(conteudo).hexdigest())
     ctx = ContextoLeitura(perfil['condominio_id'], perfil['administradora_id'], leitor,
                          papel, codigo, leitor_versao=leitor + '@1')
+    if perfil['familia'] == 'oma':
+        esperado = LeitorCadastroOMA.formato_id if papel == 'cadastro' else LeitorOMAXLSX.formato_id
+        if leitor != esperado:
+            raise ErroLeitura('OMA_LEITOR_DE_OUTRO_PAPEL')
+        parser = LeitorCadastroOMA() if papel == 'cadastro' else LeitorOMAXLSX()
+        return parser.ler(conteudo, contexto=ctx), ctx
     if perfil['id'] in PERFIS_TABULARES:
         return ler_tabular(conteudo, contexto=ctx, perfil_id=perfil['id'], formato=leitor, papel=papel), ctx
     class Fontes:
@@ -399,7 +416,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True,
-            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill') else None)
+            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma') else None)
         mesmo_codigo = (codigo_origem_bbz(cc) == codigo_origem_bbz(codigo)) if perfil['familia']=='bbz' else cc == codigo
         if pc['id'] != perfil['id'] or not mesmo_codigo:
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
@@ -434,7 +451,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if escopo_destino and snapshot_vinculos:
                 lote,cadastro_bbz=reter_associacoes_persistentes(lote,cadastro_bbz,
                     retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo))
-        elif perfil['familia'] not in ('passaredo', 'forest_hill'):
+        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma'):
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     pessoas_passaredo, resumo_passaredo, originais_passaredo, revisao_passaredo = {}, None, {}, []
@@ -447,6 +464,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             for b in lote.boletos if originais_passaredo[b.id]['dias'] != (pedido.data_ref-b.vencimento).days)
         lote = lote.model_copy(update={'ressalvas': lote.ressalvas + divergencias_dias})
         resumo_passaredo['dias_informados_divergentes'] = len(divergencias_dias)
+    if perfil['familia'] == 'oma':
+        lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_oma(lote, cad)
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
     if escopo_destino and snapshot_vinculos:
         escopo_destino=escopo_destino.model_copy(update={'cadastro_revisao':snapshot_vinculos.revisao,
@@ -482,7 +501,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
-    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
         if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
@@ -577,10 +596,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
             'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
-        if perfil['familia'] in ('passaredo', 'forest_hill'):
+        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma'):
             decisoes[-1]['alertas_cadastrais'] = sorted(set(decisoes[-1]['alertas_cadastrais'] + [
                 r.codigo for r in lote.ressalvas if r.registro_id in (b.id, u.id)
-                and r.codigo.startswith('PASSAREDO_') and r.gravidade != 'informativo']))
+                and r.codigo.startswith(('PASSAREDO_','OMA_')) and r.gravidade != 'informativo']))
         if escopo_destino and repositorio_vinculos:
             membro=next(m for m in escopo_destino.unidades if m.unidade_id==u.id)
             decisoes[-1]['vinculo_destino']=membro.model_dump(mode='json')

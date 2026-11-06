@@ -7,6 +7,7 @@ from pydantic import AwareDatetime, Field, model_validator
 from conversor.domain.base import Hash, Id, Modelo, Texto
 from conversor.domain.canonical import Endereco, Unidade
 from conversor.domain.forest_hill import complemento_unidade
+from conversor.domain.oma import complemento_unidade as complemento_oma
 from conversor.readers.text_support import ErroLeitura
 
 POLITICA_ENDERECO_CONDOMINIO = 'endereco_condominio_prioritario@2'
@@ -75,7 +76,7 @@ class PerfilIdentificadores(Modelo):
     largura_unidade: Annotated[int, Field(strict=True, ge=1, le=12)]
     torres: dict[str, str]
     evidencia: EvidenciaCodificacao
-    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental'] = 'torre_unidade'
+    codificador: Literal['torre_unidade', 'bloco_unidade_sufixo', 'unidade_sufixo', 'bloco_unidade_textual', 'bloco_tipo_unidade', 'forest_hill_documental', 'oma_documental'] = 'torre_unidade'
     formatos_unidade: tuple[FormatoTipoUnidade, ...] = ()
     sufixo_cedente: Texto | None = None
     rotulo_divida: Literal['competencia_ou_identificador', 'vencimento_apresentacao'] = 'competencia_ou_identificador'
@@ -84,6 +85,11 @@ class PerfilIdentificadores(Modelo):
 
     @model_validator(mode='after')
     def mapa_explicito(self):
+        if self.codificador == 'oma_documental':
+            if (self.torres or self.formatos_unidade or self.sufixo_cedente != 'PARQUE SANTA MONICA'
+                    or self.condominio_id != 'condominio_parque_santa_monica' or self.administradora_id != 'oma'):
+                raise ValueError('OMA_PERFIL_DOCUMENTAL_INCOMPATIVEL')
+            return self
         if self.codificador == 'forest_hill_documental':
             if (self.torres or self.formatos_unidade or self.sufixo_cedente != 'CONDOMINIO RESIDENCIAL FOREST HILL'
                     or self.condominio_id != 'condominio_forest_hill' or self.administradora_id != 'auto_gestao'):
@@ -118,6 +124,12 @@ class PerfilIdentificadores(Modelo):
         if (administradora_id, unidade.administradora_id, unidade.condominio_id) != (
                 self.administradora_id, self.administradora_id, self.condominio_id):
             raise ErroLeitura('PERFIL_IDENTIFICADORES_DE_OUTRO_CONDOMINIO')
+        if self.codificador == 'oma_documental':
+            try:
+                complemento = complemento_oma(unidade.bloco_original, unidade.unidade_original)
+            except ValueError:
+                raise ErroLeitura('UNIDADE_SEM_CODIFICACAO_DOCUMENTAL') from None
+            return f'{complemento}-{self.sufixo_cedente}', complemento
         if self.codificador == 'forest_hill_documental':
             if unidade.bloco_original != '':
                 raise ErroLeitura('FOREST_HILL_BLOCO_NAO_DOCUMENTADO')

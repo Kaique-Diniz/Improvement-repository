@@ -26,6 +26,7 @@ from conversor.readers.text_support import ErroLeitura
 from .service import LIMIT, PERFIS, PedidoDiagnostico, analisar
 from .local_context import ContextosLocais, ConfiguracaoLocal
 from conversor.readers.auto_gestao_identity import IdentidadeTabularNaoComprovada
+from conversor.readers.oma_identity import IdentidadeOMANaoComprovada, validar_cadastro_protegido
 
 
 RETENCAO = 15 * 60
@@ -148,6 +149,10 @@ class CicloEfemero:
                 raise HTTPException(503, 'ENCERRANDO')
             for role, content in files.items():
                 probe = SondadorLocal().sondar(content, arquivo_id=role)
+                if (role == 'cadastro' and content.startswith(b'%PDF-') and
+                        tuple(probe.bloqueios) == ('DOCUMENTO_PROTEGIDO',)):
+                    validar_cadastro_protegido(content, files['inadimplencia'], escolha=pedido.condominio, perfis=PERFIS)
+                    continue
                 if probe.tipo not in ('pdf_texto', 'xlsx') or probe.bloqueios or not probe.completo:
                     raise HTTPException(422, 'DOCUMENTO_NAO_EXTRAIVEL_COM_SEGURANCA')
             directory = tempfile.TemporaryDirectory(prefix='conversao-', dir=self.root)
@@ -177,7 +182,7 @@ class CicloEfemero:
                     raise HTTPException(413,'LIMITE_DA_PREVIA_EXCEDIDO')
             summary['avisos'] = ['DIAGNOSTICO_NAO_IMPORTAR', 'HISTORICO_ANTERIOR_NAO_DISPONIVEL',
                 'VINCULOS_PERSISTENTES_INDISPONIVEIS_EVIDENCIA_SOMENTE_DESTA_CONVERSAO']
-            for perfil_tabular in ('passaredo', 'forest_hill'):
+            for perfil_tabular in ('passaredo', 'forest_hill', 'parque_santa_monica'):
                 chave_cadastro = 'cadastro_' + perfil_tabular
                 if chave_cadastro in result:
                     summary[chave_cadastro] = result[chave_cadastro]
@@ -187,7 +192,7 @@ class CicloEfemero:
         except HTTPException:
             raise
         except ErroLeitura as error:
-            if error.codigo in ('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL','AUTO_GESTAO_LAYOUT_RECONHECIDO_INFORME_PERFIL','IDENTIDADE_DOCUMENTAL_CONFLITANTE'):
+            if error.codigo in ('PASSAREDO_LAYOUT_RECONHECIDO_INFORME_PERFIL','AUTO_GESTAO_LAYOUT_RECONHECIDO_INFORME_PERFIL','OMA_IDENTIDADE_PROVAVEL_CONFIRME_PERFIL','IDENTIDADE_DOCUMENTAL_CONFLITANTE'):
                 raise HTTPException(422, error.codigo) from None
             raise HTTPException(422, 'DOCUMENTO_NAO_CONVERTIDO_COM_SEGURANCA') from None
         except Exception:
@@ -522,9 +527,9 @@ def criar_app_efemero(*, acesso=None, area_temporaria=None, relogio=time.monoton
             escolha=form.get('condominio','auto')
             return await asyncio.to_thread(runtime.administracao.criar,raw,owner,escolha)
         except ErroLeitura as e:
-            if isinstance(e,IdentidadeTabularNaoComprovada):
+            if isinstance(e,(IdentidadeTabularNaoComprovada,IdentidadeOMANaoComprovada)):
                 return JSONResponse({'detail':e.codigo,'confirmacao_necessaria':True,
-                    'mensagem':'Layout AUTO GESTÃO reconhecido; condomínio ainda não comprovado. Confirme somente se corresponder ao documento.',
+                    'mensagem':('Identidade documental OMA compatível; confirme o condomínio deste documento.' if isinstance(e,IdentidadeOMANaoComprovada) else 'Layout AUTO GESTÃO reconhecido; condomínio ainda não comprovado. Confirme somente se corresponder ao documento.'),
                     'candidatos':[{'id':id_,'nome':PERFIS[id_]['nome']} for id_ in e.candidatos]},status_code=409)
             raise HTTPException(422,'IDENTIDADE_CONFLITANTE' if e.codigo=='IDENTIDADE_DOCUMENTAL_CONFLITANTE' else 'DOCUMENTO_NAO_IDENTIFICADO_COM_SEGURANCA') from None
         except (MultiPartException,ValidationError,ValueError):

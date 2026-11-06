@@ -89,8 +89,9 @@ async function convert(demo=false){
     if(cadastroAtual?.fornecido){const card=node('div','','indicador');card.append(node('strong',cadastroAtual.associacoes_retidas),node('span','Associações cadastrais retidas'));$('resumo').append(card);}
     if(cadastroAtual?.associacoes_retidas)$('avisos').textContent+=` ${cadastroAtual.associacoes_retidas} associações cadastrais retidas, sem excluir dívidas elegíveis.`;
     if(cadastroAtual?.documentos_rejeitados_no_cadastro)$('avisos').textContent+=` ${cadastroAtual.documentos_rejeitados_no_cadastro} documentos inválidos ou malformados no cadastro recebido, preservados como evidência temporária e não atribuídos.`;
+    if(cadastroAtual?.datas_emissao_cadastro?.length)$('avisos').textContent+=` Cadastro emitido em ${cadastroAtual.datas_emissao_cadastro.map(brDate).join(', ')}; documentos e contatos exigem comprovação da identidade atual.`;
     $('revisao-cadastral').hidden=!revisaoAtual.length;$('revisao-cadastral-lista').replaceChildren();
-    const motivosCadastro={PASSAREDO_RESPONSAVEL_DIVERGENTE_CADASTRO:'Nomes divergentes',PASSAREDO_RESPONSAVEL_MULTIPLO_DOCUMENTO_RETIDO:'Multiplicidade sem vínculo documental suficiente',PASSAREDO_DOCUMENTOS_CONFLITANTES_CADASTRO:'Documentos conflitantes'};
+    const motivosCadastro={OMA_DOCUMENTO_AUSENTE_OU_INVALIDO_ASSOCIACAO_RETIDA:'Documento ausente ou inválido; associação pessoal retida',PASSAREDO_RESPONSAVEL_DIVERGENTE_CADASTRO:'Nomes divergentes',PASSAREDO_RESPONSAVEL_MULTIPLO_DOCUMENTO_RETIDO:'Multiplicidade sem vínculo documental suficiente',PASSAREDO_DOCUMENTOS_CONFLITANTES_CADASTRO:'Documentos conflitantes'};
     for(const item of revisaoAtual)$('revisao-cadastral-lista').append(node('p',`Unidade ${item.unidade} · inadimplência: ${item.responsavel_inadimplencia} · cadastro: ${item.responsavel_cadastro} · ${item.lancamentos} lançamento(s) · ${motivosCadastro[item.motivo]||'Revisão documental'}.`));
     visibleBills=100;visiblePreview=50;renderBills();renderPreview();$('download').disabled=!current.arquivo_teste_disponivel;
     expiry=setTimeout(()=>discard('Resultado expirado e descartado.'),current.retencao_segundos*1000);

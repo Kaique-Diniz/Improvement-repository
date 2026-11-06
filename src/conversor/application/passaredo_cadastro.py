@@ -32,8 +32,8 @@ def responsabilidade_multipla_sem_vinculo_empresarial(nome, documentos):
     return lista_explicita or not (cnpj_exclusivo and indicador_empresarial)
 
 
-def associar(lote, cadastro=None):
-    dados = lancamentos_originais(lote)
+def associar(lote, cadastro=None, *, obter_originais=lancamentos_originais, unidades_equivalentes=None):
+    dados = obter_originais(lote)
     unidades = {u.id: u for u in lote.unidades}
     pessoas_cad, unidades_cad = {}, {}
     ressalvas = list(lote.ressalvas)
@@ -62,7 +62,9 @@ def associar(lote, cadastro=None):
             stats['lancamentos_sem_cadastro'] += 1
         else:
             cu = unidades_cad[u.id]
-            if (cu.bloco_original, cu.unidade_original) != (u.bloco_original, u.unidade_original):
+            mesma_unidade = ((cu.bloco_original, cu.unidade_original) == (u.bloco_original, u.unidade_original)
+                if unidades_equivalentes is None else unidades_equivalentes(u, cu))
+            if not mesma_unidade:
                 raise ErroLeitura('PASSAREDO_IDENTIDADE_CADASTRAL_DIVERGENTE')
             if not p.nome.strip() or normalizar_assinatura(p.nome) != normalizar_assinatura(c.nome):
                 codigo = 'PASSAREDO_RESPONSAVEL_DIVERGENTE_CADASTRO'
