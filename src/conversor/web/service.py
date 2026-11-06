@@ -61,6 +61,10 @@ from conversor.readers.oma_xlsx import LeitorOMAXLSX, CABECALHO as CABECALHO_OMA
 from conversor.readers.oma_cadastro import LeitorCadastroOMA, ALIAS as ALIAS_CADASTRO_OMA
 from conversor.readers.oma_identity import reconhecer_oma
 from conversor.application.oma_cadastro import associar as associar_oma
+from conversor.readers.vero_xlsx import LeitorVeroXLSX, CABECALHO as CABECALHO_VERO
+from conversor.readers.vero_cadastro import LeitorCadastroVero
+from conversor.readers.vero_identity import reconhecer_vero
+from conversor.application.vero_cadastro import associar as associar_vero
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
 PERFIS_PATH = Path(__file__).with_name('perfis.json')
@@ -73,7 +77,7 @@ LIMIT = 20 * 1024 * 1024
 class PedidoDiagnostico(Modelo):
     data_ref: Data
     modo: Literal['A', 'B']
-    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica'] = 'auto'
+    condominio: Literal['auto', 'tree', 'plaza', 'nova_york', 'innova_blue', 'nova_reboucas', 'edificio_win', 'abrolhos', 'passaredo', 'forest_hill', 'parque_santa_monica', 'vero_encanto'] = 'auto'
 
 
 def normalizar(s):
@@ -115,6 +119,11 @@ def reconhecer(conteudo, *, cadastro=False, repositorio_identidades=None, perfil
             perfil=_perfil_bbz(codigo,identificacao['nome'],repositorio_identidades)
             return perfil,codigo,LeitorCadastroBBZ.formato_id
     sonda = SondadorLocal().sondar(conteudo, arquivo_id='upload')
+    if ((cadastro and sonda.tipo == 'pdf_texto' and any('Dados do condomínio' in f.texto for f in sonda.fragmentos[:1]))
+            or (not cadastro and sonda.tipo == 'xlsx' and (perfil_informado == 'vero_encanto' or any(
+                tuple(c.strip() for c in linha.split('\t')) == CABECALHO_VERO
+                for f in sonda.fragmentos for linha in f.texto.splitlines())))):
+        return reconhecer_vero(conteudo, PERFIS, cadastro=cadastro, escolha=perfil_informado)
     if sonda.tipo == 'xlsx' and sonda.completo and not sonda.bloqueios and sonda.fragmentos:
         primeira = sonda.fragmentos[0].texto.splitlines()
         campos = {cabecalho_normalizado(c) for c in primeira[0].split('\t')} if primeira else set()
@@ -176,6 +185,11 @@ def ler(conteudo, perfil, codigo, leitor, papel):
     fonte = FonteProtegida(arquivo_id=papel, sha256=sha256(conteudo).hexdigest())
     ctx = ContextoLeitura(perfil['condominio_id'], perfil['administradora_id'], leitor,
                          papel, codigo, leitor_versao=leitor + '@1')
+    if perfil['familia'] == 'lello_vero':
+        parser = LeitorCadastroVero() if papel == 'cadastro' else LeitorVeroXLSX()
+        if leitor != parser.formato_id:
+            raise ErroLeitura('VERO_LEITOR_DE_OUTRO_PAPEL')
+        return parser.ler(conteudo, contexto=ctx), ctx
     if perfil['familia'] == 'oma':
         esperado = LeitorCadastroOMA.formato_id if papel == 'cadastro' else LeitorOMAXLSX.formato_id
         if leitor != esperado:
@@ -416,7 +430,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     if cadastro:
         progresso('Cruzando o cadastro e preservando conflitos')
         pc, cc, lc = reconhecer(cadastro, cadastro=True,
-            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma') else None)
+            perfil_informado=perfil['id'] if perfil['familia'] in ('passaredo', 'forest_hill', 'oma', 'lello_vero') else None)
         mesmo_codigo = (codigo_origem_bbz(cc) == codigo_origem_bbz(codigo)) if perfil['familia']=='bbz' else cc == codigo
         if pc['id'] != perfil['id'] or not mesmo_codigo:
             raise ErroLeitura('CADASTRO_DE_OUTRO_CONDOMINIO')
@@ -451,7 +465,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             if escopo_destino and snapshot_vinculos:
                 lote,cadastro_bbz=reter_associacoes_persistentes(lote,cadastro_bbz,
                     retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo))
-        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma'):
+        elif perfil['familia'] not in ('passaredo', 'forest_hill', 'oma', 'lello_vero'):
             lote = cruzar_cadastro(lote, cad)
         fontes.append({'papel': 'cadastro', 'sha256': sha256(cadastro).hexdigest(), 'leitor': lc + '@1'})
     pessoas_passaredo, resumo_passaredo, originais_passaredo, revisao_passaredo = {}, None, {}, []
@@ -466,6 +480,8 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         resumo_passaredo['dias_informados_divergentes'] = len(divergencias_dias)
     if perfil['familia'] == 'oma':
         lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_oma(lote, cad)
+    if perfil['familia'] == 'lello_vero':
+        lote, pessoas_passaredo, resumo_passaredo, revisao_passaredo = associar_vero(lote, cad)
     ocorrencias = list(resultado_leitura(lote, processamento_id=processamento_id).ocorrencias)
     if escopo_destino and snapshot_vinculos:
         escopo_destino=escopo_destino.model_copy(update={'cadastro_revisao':snapshot_vinculos.revisao,
@@ -501,7 +517,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         ocorrencias.extend(conferencia.ocorrencias_revisao(processamento_id=processamento_id))
     if historico:
         ocorrencias.extend(historico)
-    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
+    reavaliacoes = [] if perfil['familia'] in ('bbz', 'passaredo', 'forest_hill', 'oma', 'lello_vero') else reavaliar_pendencias_cadastrais(lote, historico, cadastro=cad)
     reavaliadas = {r['ocorrencia_id'] for r in reavaliacoes}
     fechamento = (conferir_fechamento_habita(conteudo, contexto=ctx, lote=lote, ocorrencias=ocorrencias)
         if perfil['id'] == 'tree' and leitor == 'habita_composicao_real_v1' else None)
@@ -596,10 +612,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             'anomalia_global_reconciliada': bool(reconciliadas_diagnostico),
             'apto_xlsx_diagnostico': status == 'elegivel',
             'bloqueios': motivos})
-        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma'):
+        if perfil['familia'] in ('passaredo', 'forest_hill', 'oma', 'lello_vero'):
             decisoes[-1]['alertas_cadastrais'] = sorted(set(decisoes[-1]['alertas_cadastrais'] + [
                 r.codigo for r in lote.ressalvas if r.registro_id in (b.id, u.id)
-                and r.codigo.startswith(('PASSAREDO_','OMA_')) and r.gravidade != 'informativo']))
+                and r.codigo.startswith(('PASSAREDO_','OMA_','VERO_')) and r.gravidade != 'informativo']))
         if escopo_destino and repositorio_vinculos:
             membro=next(m for m in escopo_destino.unidades if m.unidade_id==u.id)
             decisoes[-1]['vinculo_destino']=membro.model_dump(mode='json')
@@ -857,6 +873,12 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         escrever_json(caminho_extraido, lote_extraido.model_dump(mode='json'))
         manifesto['canonico_extraido'] = {'nome': caminho_extraido.name,
                                          'sha256': sha256(caminho_extraido.read_bytes()).hexdigest()}
+    if perfil['familia'] == 'lello_vero' and cad is not None:
+        caminho_cadastro = output / 'cadastro_vero_original.json'
+        escrever_json(caminho_cadastro, cad.model_dump(mode='json'))
+        manifesto['evidencia_cadastral'] = {'arquivo':caminho_cadastro.name,
+            'sha256':sha256(caminho_cadastro.read_bytes()).hexdigest(),
+            'participantes_individuais':len(cad.pessoas), 'persistencia_permanente':False}
     escrever_json(output / 'manifesto_diagnostico.json', manifesto)
     escrever_json(output / 'auditoria.json', resultado)
     escrever_json(output / 'canonico.json', lote.model_dump(mode='json'))

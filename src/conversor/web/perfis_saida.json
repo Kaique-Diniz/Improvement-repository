@@ -310,5 +310,28 @@
       "dividas": "AA2:AD2641; apresentação do vencimento, parcela e valor original"
     }
   }
+},
+{
+  "id": "vero_encanto_documental",
+  "versao": "1.0.0",
+  "uso": "diagnostico_nao_operacional",
+  "administradora_id": "lello_2",
+  "condominio_id": "condominio_vero_encanto",
+  "nome_cedente": "LELLO_2",
+  "produto": "COND PROJETO IMOBILIARIO DI 31 I – VERO ENCANTO",
+  "largura_unidade": 4,
+  "torres": {},
+  "codificador": "vero_documental",
+  "sufixo_cedente": "DI 31 I – VERO ENCANTO",
+  "rotulo_divida": "vencimento_apresentacao",
+  "evidencia": {
+    "arquivo": "referencia_documental_vero_encanto_template",
+    "sha256": "a45ea9ab7c48f81c02652bdc8846c5b75b3096789542a34f75da7e9048c35f01",
+    "aba": "Dados",
+    "celulas": {
+      "identidade": "A2:B446; G2:G446; Y2:Z446",
+      "dividas": "AA2:AD446; apresentação do vencimento, parcela e original"
+    }
+  }
 }
 ]
