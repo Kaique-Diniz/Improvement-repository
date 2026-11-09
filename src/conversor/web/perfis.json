@@ -350,5 +350,119 @@
     "Modo B mantém no máximo uma linha cadastral adicional por unidade; não reproduz duplicações históricas.",
     "Mês/ano do rótulo é apresentação do vencimento, sem competência inferida. Cadastro antigo exige nome/unidade e documentos validados."
   ]
+},
+{
+  "id": "vero_encanto",
+  "condominio_id": "condominio_vero_encanto",
+  "administradora_id": "lello_2",
+  "nome": "PROJETO IMOBILIARIO DI 31 I – VERO ENCANTO",
+  "administradora": "LELLO_2",
+  "familia": "lello_vero",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "VERO ENCANTO",
+    "PROJETO IMOBILIARIO DI 31 I VERO ENCANTO"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "vero_prazo_30_provisorio",
+  "dias": 30,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "0a442fdb3580ef9fb3b867dcc45a879ceaf0937a65196bf4241670eddf8fa70e",
+    "cadastro": "0f5b196f8ad81182e218a88f3258130e60b074fd4c965a12a0138286692bbefc"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_E586_extrajudicial",
+    "linha": 586
+  },
+  "ressalvas": [
+    "Somente diagnóstico: 31 dias completos equivale a atraso > 30 dias corridos. Inclusividade e vigência operacional pendentes; referência explícita, sem presumir data de extração.",
+    "Judicial 90 dias não acrescenta filtro. Multa e correção/juros são evidência; original e componentes preservados, sem recalcular encargos.",
+    "10888 na inadimplência, 10888-10 no cadastro e 3286 no nome do arquivo são referências distintas; nenhum é presumido como código de integração.",
+    "Cadastro opcional por participante: nome e torre/unidade concordantes, documento válido e ausência de conflito. Percentual de participação não define titular; não escolher o primeiro coproprietário.",
+    "Mês/ano é apresentação do vencimento, sem competência contábil inferida. Modo B segue contrato universal, sem duplicações históricas. Exportação operacional indisponível."
+  ]
+},
+{
+  "id": "itajuba",
+  "condominio_id": "condominio_itajuba",
+  "administradora_id": "bn_planner",
+  "nome": "CONDOMINIO ITAJUBA",
+  "administradora": "BN PLANNER",
+  "familia": "bn_planner",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "CONDOMINIO ITAJUBA"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "itajuba_prazo_30_provisorio",
+  "dias": 30,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "9a53a4bacc31c07bcfb60745789183f759dbde4e29aa65036058076dbd89346e",
+    "cadastro": "969989cd7072baf839d95499abe0cadf1ef0cd2a5d1b2bc3c9ff471f891613fc"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_E438_extrajudicial",
+    "linha": 438
+  },
+  "ressalvas": [
+    "Somente diagnóstico: atraso estritamente superior a 30 dias corridos. Inclusividade e vigência operacional pendentes. Judicial suspenso; não criar fluxo judicial.",
+    "Escopo documental a partir de dezembro/2023: vencimentos anteriores exigem revisão e não são encaminhados silenciosamente. Competência e responsabilidade da garantidora não são inferidas.",
+    "Cada linha e cada ocorrência são preservadas, inclusive documentos repetidos e multiplicidades financeiras. Total original é Tx Cond + Outros, sem encargos externos.",
+    "Cadastro opcional por responsável de cada lançamento, com política A1. Inquilino e marcador de acordo são evidências distintas; não presumem titularidade nem exclusão financeira.",
+    "Cadastro XLSX sem nome interno exige hash homologado; seleção ou nome de arquivo não comprovam identidade. Inad Prop não gera boletos. Exportação operacional indisponível."
+  ]
+},
+{
+  "id": "terraco_beach_parque",
+  "condominio_id": "condominio_terraco_beach_parque",
+  "administradora_id": "habitacional",
+  "nome": "TERRAÇO BEACH PARQUE",
+  "administradora": "HABITACIONAL",
+  "familia": "habitacional_beach",
+  "configuracao_versao": "1.0.0",
+  "aliases": [
+    "TERRAÇO BEACH PARQUE"
+  ],
+  "vigente_de": null,
+  "vigente_ate": null,
+  "exclusoes": [],
+  "regra_prazo": "bpq_prazo_30_provisorio",
+  "dias": 30,
+  "prioridade_exclusao": 1,
+  "prioridade_prazo": 0,
+  "informar_ausencia_cadastro": true,
+  "fontes_homologacao_sha256": {
+    "inadimplencia": "7624f6d8371b83d71ea876fa53c25583c2060e3196dcfe1fd5199d378c50a4b0",
+    "cadastro": "48ce080932e90bba989bcb1e9539a54c2c14b9874fa719fcf932ad24de9f855a"
+  },
+  "origem_regua": {
+    "arquivo_id": "regua_atualizada_20261104",
+    "sha256": "c29d7fc13a662a434ba82ba6d62e04e25f56563d3a0d5221b601dd1b407e3c65",
+    "leitor_versao": "vinculacao_documental_regua@1",
+    "identificador": "aba_REGUA_DE_COBRANCA_linha570_extrajudicial",
+    "linha": 570
+  },
+  "ressalvas": [
+    "Diagnóstico provisório: atraso > 30 dias corridos. Inclusividade e vigência operacional pendentes. Judicial 60 dias não acrescenta filtro; não enviar cartas.",
+    "3075 interno e 2811 no nome de arquivo não comprovam equivalência nem código de destino.",
+    "Cadastro de 2025 exige nome/unidade e documento válido do titular; pagador e locatário não comprovam titularidade. Restrições exigem revisão humana, sem ação de contato.",
+    "Mês/ano nos rótulos documentados é apresentação, sem competência inferida. Sem persistência pessoal ou exportação operacional."
+  ]
 }
 ]
