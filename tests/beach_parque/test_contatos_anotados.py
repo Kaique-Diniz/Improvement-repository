@@ -5,6 +5,7 @@ import json
 import pytest
 
 from conversor.domain.template import COLUNAS
+from conversor.application.beach_parque_cadastro import POLITICA
 from conversor.readers.beach_parque_cadastro import (
     ANOTACAO_DESCONHECIDA, CONTATO_AMBIGUO, CONTATO_SEGMENTADO,
     CONTATO_TERCEIRO, segmentar_contato,
@@ -55,7 +56,7 @@ def test_valor_completo_e_anotacao_neutra_preservam_origem_e_colunas(tmp_path,an
     assert row[2]==CPF and result['cadastro_'+PROFILE]['associacoes_retidas']==0
     if tipo=='telefone':assert row[11:13]==('11','912345678')and not person.contato.emails
     else:assert row[21]==EMAIL and not person.contato.telefones
-    assert result['politica_cadastral']=='beach_parque_titular_nominal_documento_valido_A1@1'
+    assert result['politica_cadastral']==POLITICA
     assert not result['autoriza_cobranca']and not result['permite_exportacao_operacional']
 
 

@@ -11,6 +11,7 @@ from openpyxl import load_workbook
 from conversor.application.beach_parque_cadastro import associar, resolver_linha_cadastral, POLITICA_B1
 from conversor.domain.canonical import Contato, RessalvaLeitura
 from conversor.domain.template import COLUNAS
+from conversor.application.beach_parque_cadastro import POLITICA
 from conversor.readers.text_support import ErroLeitura
 from .fixtures import financeiro,cadastro,ficha,recibo,NOME,CPF,REF
 from .test_beach_parque import executar,rows,ler_fin,ler_cad,PROFILE
@@ -70,7 +71,7 @@ def test_contatos_do_titular_preservam_bpq02_e_evidencia(tmp_path,anotacao):
     manifesto=json.loads((tmp_path/'manifesto_diagnostico.json').read_text(encoding='utf-8'))
     auditoria=json.loads((tmp_path/'auditoria.json').read_text(encoding='utf-8'))
     assert manifesto['modo_b_cadastral_beach_parque']==auditoria['modo_b_cadastral_beach_parque']==b1(result)
-    assert b1(result)['politica']==POLITICA_B1 and result['politica_cadastral']=='beach_parque_titular_nominal_documento_valido_A1@1'
+    assert b1(result)['politica']==POLITICA_B1 and result['politica_cadastral']==POLITICA
     serialized=json.dumps(b1(result))
     assert CPF not in serialized and NOME not in serialized and 'example.invalid'not in serialized
 

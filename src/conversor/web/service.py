@@ -880,7 +880,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'validacao_conversao': validacao, 'comparacao': None}
     if perfil['familia']=='habitacional_beach' and pedido.modo=='B':
         resultado['modo_b_cadastral_beach_parque'] = manifesto['modo_b_cadastral_beach_parque'] = {
-            'politica':POLITICA_B1,
+            'politica':POLITICA_B1, 'politica_a1':resumo_passaredo['politica'],
             'decisoes':decisoes_b1}
     if resumo_passaredo is not None:
         resultado['politica_cadastral'] = resumo_passaredo['politica']
