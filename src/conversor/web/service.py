@@ -72,7 +72,7 @@ from conversor.application.itajuba import associar as associar_itajuba, rotulo a
 from conversor.readers.beach_parque_xlsx import LeitorBeachParqueXLSX, originais as originais_beach
 from conversor.readers.beach_parque_cadastro import LeitorCadastroBeachParque, identificar as identificar_cadastro_beach
 from conversor.readers.beach_parque_identity import reconhecer_beach
-from conversor.application.beach_parque_cadastro import associar as associar_beach
+from conversor.application.beach_parque_cadastro import associar as associar_beach, resolver_linha_cadastral, POLITICA_B1
 from conversor.domain.beach_parque import rotulo_descricao as rotulo_beach
 from conversor.rules.engine import avaliar_regras, resolver_candidatos
 
@@ -573,6 +573,7 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
     globais = [o for o in efetivas if o.bloqueante and (o.escopo != 'registro' or o.registro_id not in identidades)]
     fora_vigencia = bool(perfil['vigente_de'] and pedido.data_ref < date.fromisoformat(perfil['vigente_de']))
     decisoes, linhas, linhas_info, previa = [], [], [], []
+    decisoes_b1 = []
     rotulos_template, enderecos_template = {}, {}
     retencoes_vinculos=retencoes_do_snapshot(snapshot_vinculos,lote_extraido,codigo) if snapshot_vinculos else {}
 
@@ -756,15 +757,26 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
             originais_passaredo[b.id]['responsavel'] for b in boletos_por_id.values()}) == 1)
         if dados_itajuba:
             cadastral_inequivoca = len({dados_itajuba[b.id]['responsavel'] for b in boletos_por_id.values()}) == 1
+        base_cadastral = base
         if pedido.modo == 'B' and any(d['situacao_financeira'] == 'excluido' for d in ds):
+            if perfil['familia'] == 'habitacional_beach':
+                pessoal,decisao_b1 = resolver_linha_cadastral(lote,u,pessoa,ds,pessoas_passaredo,cad)
+                decisao_b1['exportada'] = cadastral_inequivoca and any(d['situacao']=='nao_elegivel' for d in ds) and not any(d['situacao']=='revisao' for d in ds)
+                decisoes_b1.append(decisao_b1)
+                if pessoal is not None:
+                    contato_b1 = base['pessoa'].contato.model_copy(update={
+                        'telefones':pessoal.contato.telefones,'emails':pessoal.contato.emails,
+                        'origem':pessoal.contato.origem})
+                    saida_b1 = pessoal.model_copy(update={'nome':base['pessoa'].nome,'contato':contato_b1})
+                    base_cadastral = dict(base,pessoa=saida_b1)
             pendencias = [m for d in ds if d['situacao'] == 'revisao' for m in d['bloqueios']]
             if not cadastral_inequivoca:
                 pendencias.append('ITAJUBA_RESPONSAVEIS_DISTINTOS_LINHA_CADASTRAL_RETIDA' if dados_itajuba else 'PASSAREDO_RESPONSAVEIS_DISTINTOS_LINHA_CADASTRAL_RETIDA')
             if any(d['situacao'] == 'revisao' and not d['bloqueios'] for d in ds):
                 pendencias.append('CONDICAO_INDETERMINADA')
-            prever('cadastral', u, base, bloqueios=pendencias)
+            prever('cadastral', u, base_cadastral, bloqueios=pendencias)
         if pedido.modo == 'B' and cadastral_inequivoca and any(d['situacao'] == 'nao_elegivel' for d in ds) and not any(d['situacao'] == 'revisao' for d in ds):
-            linhas.append(LinhaExportacao(**base, tipo='cadastral'))
+            linhas.append(LinhaExportacao(**base_cadastral, tipo='cadastral'))
             linhas_info.append({'tipo': 'cadastral', 'unidade_id': u.id})
     output = Path(destino)
     output.mkdir(mode=0o700, parents=True, exist_ok=True)
@@ -866,6 +878,10 @@ def analisar(conteudo, pedido: PedidoDiagnostico, *, processamento_id, destino,
         'ocorrencias': [o.model_dump(mode='json') for o in ocorrencias],
         'arquivo_teste_disponivel': bool(linhas) and validacao['estado'] != 'erro_critico',
         'validacao_conversao': validacao, 'comparacao': None}
+    if perfil['familia']=='habitacional_beach' and pedido.modo=='B':
+        resultado['modo_b_cadastral_beach_parque'] = manifesto['modo_b_cadastral_beach_parque'] = {
+            'politica':POLITICA_B1,
+            'decisoes':decisoes_b1}
     if resumo_passaredo is not None:
         resultado['politica_cadastral'] = resumo_passaredo['politica']
         chave_cadastro = 'cadastro_' + perfil['id']

@@ -180,6 +180,8 @@ class CicloEfemero:
                 payload = {k:result[k] for k in ('decisoes','previa_template','codificacao_template',
                     'endereco_condominio','comparacao','resumo','data_ref','modo','perfil','condominio')}
                 payload['boletos'] = {b['id']:b for b in canonical['boletos']}
+                if result['perfil']=='terraco_beach_parque' and result['modo']=='B':
+                    payload['modo_b_cadastral_beach_parque'] = result['modo_b_cadastral_beach_parque']
                 detalhes = json.dumps(payload,ensure_ascii=False,separators=(',',':')).encode('utf-8')
                 if len(detalhes)>MAX_CACHE:
                     raise HTTPException(413,'LIMITE_DA_PREVIA_EXCEDIDO')
