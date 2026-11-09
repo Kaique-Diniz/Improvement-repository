@@ -4,6 +4,7 @@ Reutiliza a extração geométrica e contratos de evidência existentes, sem
 classificar a administradora como BBZ nem reutilizar sua política de associação.
 """
 import json
+from dataclasses import dataclass, field
 from datetime import datetime
 import re
 from conversor.domain.bbz_cadastro import CampoCadastroBBZ, FichaCadastroBBZ, ParticipanteBBZ
@@ -16,6 +17,78 @@ from .text_support import id_estavel
 
 FORMATO = 'beach_parque_cadastro_pdf_v1'
 ALIAS = 'terraco beach parque'
+
+CONTATO_SEGMENTADO = 'BPQ_CONTATO_ANOTADO_SEGMENTADO'
+CONTATO_AMBIGUO = 'BPQ_CONTATO_ATRIBUICAO_AMBIGUA'
+CONTATO_TERCEIRO = 'BPQ_CONTATO_TERCEIRO_IDENTIFICADO'
+ANOTACAO_DESCONHECIDA = 'BPQ_CONTATO_ANOTACAO_DESCONHECIDA'
+DIAGNOSTICOS_CONTATO = {CONTATO_SEGMENTADO, CONTATO_AMBIGUO, CONTATO_TERCEIRO,
+    ANOTACAO_DESCONHECIDA, 'EMAIL_NAO_SEGMENTADO', 'TELEFONE_NAO_SEGMENTADO',
+    'BBZ_CONTATO_NAO_SEGMENTADO'}
+ROTULO_CONTATO = re.compile(r'(E-mail|Celular|Telefone residencial|Telefone comercial|Telefone|Fax)\s*-\s*(.*)', re.I)
+ATUALIZACAO = r'(?:atualizad[oa]|alterad[oa]) em ([0-9]{2}/[0-9]{2}/[0-9]{4})\.?'
+ANOTACOES_NEUTRAS = (
+    re.compile(r'(.+?)\s+-\s+(' + ATUALIZACAO + r')', re.I),
+    re.compile(r'(.+?)\s+\((' + ATUALIZACAO + r')\)\.?', re.I),
+)
+
+
+@dataclass(frozen=True)
+class ContatoSegmentado:
+    """Resultado local; seção, papel e geometria ficam em CampoCadastroBBZ.
+
+    Nenhuma anotação é prova de titularidade ou de vigência. Os valores brutos
+    ficam separados dos normalizados e nunca participam do repr/log de erros.
+    """
+    rotulo: str
+    valor_original: str = field(repr=False)
+    anotacao_original: str = field(default='', repr=False)
+    telefones: tuple = field(default=(), repr=False)
+    emails: tuple = field(default=(), repr=False)
+    codigo: str | None = None
+
+
+def segmentar_contato(celula):
+    """Gramática BPQ fechada: campo completo, opcionalmente anotação neutra.
+
+    Não busca o primeiro número/endereço em texto livre. Desconhecidos e
+    atribuições a terceiros bloqueiam o campo inteiro, inclusive listas.
+    """
+    m = ROTULO_CONTATO.fullmatch(celula)
+    if not m:
+        return ContatoSegmentado('', celula, codigo='BBZ_CONTATO_NAO_SEGMENTADO')
+    rotulo, original = m[1], m[2].strip()
+    email = rotulo.lower() == 'e-mail'
+    valor, anotacao = original, ''
+    for padrao in ANOTACOES_NEUTRAS:
+        anotado = padrao.fullmatch(original)
+        if anotado:
+            try:
+                datetime.strptime(anotado[3], '%d/%m/%Y')
+            except ValueError:
+                return ContatoSegmentado(rotulo, original, codigo=ANOTACAO_DESCONHECIDA)
+            valor, anotacao = anotado[1].strip(), anotado[2]
+            break
+    if email:
+        partes = tuple(p.strip() for p in re.split(r'[;,]', valor) if p.strip())
+        valido = bool(partes) and all(email_valido(p) for p in partes)
+        telefones, emails = (), tuple(dict.fromkeys(partes)) if valido else ()
+    else:
+        telefones, valido = _telefone(valor)
+        emails = ()
+    if valido:
+        return ContatoSegmentado(rotulo, original, anotacao, telefones, emails,
+            CONTATO_SEGMENTADO if anotacao else None)
+    # Estas buscas só classificam a rejeição; nunca recuperam um contato.
+    if re.search(r'(?:telefone|contato|e-mail) d[oa] (?:filh[oa]|locat[aá]ri[oa]|pagador|familiar|representante|funcion[aá]ri[oa]|espos[oa]|marido)\b', original, re.I):
+        codigo = CONTATO_TERCEIRO
+    elif re.search(r'(?:verificar|conferir|confirmar) (?:titular|titularidade|respons[aá]vel)\b', original, re.I):
+        codigo = CONTATO_AMBIGUO
+    elif re.search(r'\s+-\s+|\([^)]*[A-Za-z]', original) or anotacao:
+        codigo = ANOTACAO_DESCONHECIDA
+    else:
+        codigo = 'EMAIL_NAO_SEGMENTADO' if email else 'TELEFONE_NAO_SEGMENTADO'
+    return ContatoSegmentado(rotulo, original, anotacao, codigo=codigo)
 
 
 def conferir_identidade(identidade, contexto=None):
@@ -139,7 +212,7 @@ class LeitorCadastroBeachParque:
                     else:
                         atual = dict(bloco=bloco[1],unidade=unidade[1],nome=unidade[2],cliente=cliente[1],
                             cabecalhos=[],campos=[],alertas_origens={},iniciou_cobranca=False,participantes={p:dict(nome='',docs=[],tels=[],emails=[])
-                            for p in ('titular','locatario','pagador','unidade')},alertas=[])
+                            for p in ('titular','locatario','pagador','unidade')},alertas=[],diagnosticos_contatos=[])
                         atual['participantes']['titular']['nome']=unidade[2]
                         fichas[chave]=atual;secao='cabecalho';papel='titular'
                     if re.search(r'\blitigio\b',normalizar_assinatura(unidade[2])):
@@ -199,19 +272,14 @@ class LeitorCadastroBeachParque:
                     for inicio,fim in ((0,300),(300,600)):
                         celula=l.texto(inicio,fim)
                         if not celula:continue
-                        m=re.fullmatch(r'(E-mail|Celular|Telefone residencial|Telefone comercial|Telefone|Fax)\s*-\s*(.*)',celula,re.I)
-                        if not m:
-                            atual['alertas'].append('BBZ_CONTATO_NAO_SEGMENTADO');continue
+                        contato=segmentar_contato(celula)
+                        contato_origem=origem(l,inicio,fim)
+                        if contato.codigo:
+                            atual['alertas'].append(contato.codigo)
+                            atual['diagnosticos_contatos'].append((contato.codigo,contato_origem))
                         dados=atual['participantes'][papel]
-                        if m[1].lower()=='e-mail':
-                            for email in re.split(r'[;,]',m[2]):
-                                email=email.strip()
-                                if email_valido(email):dados['emails'].append((email,origem(l,inicio,fim)))
-                                elif email:atual['alertas'].append('EMAIL_NAO_SEGMENTADO')
-                        else:
-                            telefones,valido=_telefone(m[2])
-                            if not valido:atual['alertas'].append('TELEFONE_NAO_SEGMENTADO')
-                            for telefone in telefones:dados['tels'].append((telefone,origem(l,inicio,fim)))
+                        dados['emails'].extend((email,contato_origem)for email in contato.emails)
+                        dados['tels'].extend((telefone,contato_origem)for telefone in contato.telefones)
         if len(fichas)!=fonte.identidade['unidades_resumo']:
             falha('BBZ_CADASTRO_CONTAGEM_UNIDADES_DIVERGENTE')
         unidades=[];pessoas=[];ressalvas=[]
@@ -233,7 +301,11 @@ class LeitorCadastroBeachParque:
             ressalvas.append(RessalvaLeitura(codigo='BPQ_CADASTRO_FICHA_ORIGINAL',gravidade='informativo',registro_id=uid,
                 origens=ficha.cabecalhos,valores_originais=(ficha.model_dump_json(),)))
             for codigo in ficha.alertas:
+                if codigo in DIAGNOSTICOS_CONTATO:continue
                 ressalvas.append(RessalvaLeitura(codigo=codigo,registro_id=uid,origens=(f['alertas_origens'].get(codigo,o),)))
+            for codigo,contato_origem in dict.fromkeys(f['diagnosticos_contatos']):
+                ressalvas.append(RessalvaLeitura(codigo=codigo,registro_id=uid,
+                    gravidade='informativo'if codigo==CONTATO_SEGMENTADO else'alerta',origens=(contato_origem,)))
             if len(tels)>5 or len(emails)>3:
                 ressalvas.append(RessalvaLeitura(codigo='CONTATOS_EXCEDENTES_PRESERVADOS',registro_id=uid,origens=(o,)))
         primeiro=fonte.paginas[0][0]
